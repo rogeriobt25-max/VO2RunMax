@@ -4849,7 +4849,7 @@ function buildPlanUI(race){
   ${isShort?'':`<div style="font-size:10px;color:var(--t3);background:rgba(0,0,0,0.03);border:1px solid var(--bdr);border-radius:6px;padding:7px 12px;margin-bottom:.75rem;line-height:1.6;display:none" id="dias-ativos-${race}">
   ⚡ <strong style="color:var(--t2)">Dias ativos por fase:</strong> ${is42?'Base 3–4 treinos · Build 4–5 treinos · Específica 4–5 treinos · Pico 5 treinos · Taper 3–4 treinos':race==='21'?'21km 12sem: 4 treinos constantes (Base→Específica→Pico→Taper) · 21km 16sem: inicia 3 treinos, evolui para 4 gradualmente':'Base 3–4 treinos · Build 4–5 treinos · Recuo 3 treinos · Taper 3–4 treinos'}. <strong style="color:var(--t2)">SEG</strong>: descanso (iniciante) ou rec.ativa progressiva (inter/avançado) · <strong style="color:var(--t2)">SEX</strong>: descanso pré-longão (leve opcional p/ avançado/improve) · <strong style="color:var(--t2)">DOM</strong> sempre descanso.
   </div>`}
-  <div class="exp-bar"><span>Exportar</span><button class="btn-exp btn-exp-pr" onclick="printPlan('${race}')">🖨 Salvar PDF</button><button class="btn-exp" style="background:rgba(0,100,180,0.10);border:1px solid rgba(0,100,180,0.35);color:#0a6acf" onclick="exportGarminFromRace('${race}')">⌚ Garmin (.fit)</button><button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsExportFromRace('${race}')">📅 intervals.icu</button></div>
+  <div class="exp-bar"><span>Exportar</span><button class="btn-exp btn-exp-pr" onclick="printPlan('${race}')">🖨 Salvar PDF</button><button class="btn-exp" style="background:rgba(0,100,180,0.10);border:1px solid rgba(0,100,180,0.35);color:#0a6acf;display:none" onclick="exportGarminFromRace('${race}')">⌚ Garmin (.fit)</button><button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsExportFromRace('${race}')">📅 intervals.icu</button></div>
   <div id="save-bar-${race}" style="display:flex;justify-content:center;margin-bottom:1rem"><button class="btn-save" onclick="openSaveModal('${race}')">📋 Salvar em Meus Treinos</button></div>
   </div>
   <div id="plan-weeks-${race}"></div>`;
@@ -5749,7 +5749,7 @@ function renderSavedList(){
         <div class="exp-bar" style="margin-bottom:10px">
           <span>Exportar</span>
           <button class="btn-exp btn-exp-pr" onclick="printSaved(${plan.id})">🖨 Salvar PDF</button>
-          <button class="btn-exp" style="background:rgba(0,100,180,0.10);border:1px solid rgba(0,100,180,0.35);color:#0a6acf" onclick="exportGarminJSON(${plan.id})">⌚ Garmin (.fit)</button>
+          <button class="btn-exp" style="background:rgba(0,100,180,0.10);border:1px solid rgba(0,100,180,0.35);color:#0a6acf;display:none" onclick="exportGarminJSON(${plan.id})">⌚ Garmin (.fit)</button>
           <button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsExportFromSaved(${plan.id})">📅 intervals.icu</button>
         </div>
         ${plan.intensityDist?buildIntensityBoxHTML(plan.intensityDist,plan.race==='42'):''}
@@ -7894,7 +7894,7 @@ function showIntervalsConfigModal(onOk){
           <div>
             <div style="font-weight:800;color:#00a855;font-size:13px;margin-bottom:3px">Conta conectada!</div>
             <div style="font-size:11px;color:var(--t2)">Atleta: <code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:12px">${cfg.athleteId}</code></div>
-            ${cfg.thresholdPaceLabel?`<div style="font-size:11px;color:var(--t2);margin-top:2px">Limiar: <code style="background:var(--s3);padding:1px 6px;border-radius:4px;font-size:12px">${cfg.thresholdPaceLabel}/km</code></div>`:''}
+
           </div>
         </div>
       </div>
