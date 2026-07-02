@@ -1514,6 +1514,10 @@ window.doRegister=doRegister;
 async function doLogout(){
   if(!confirm('Sair da conta?'))return;
   await fbAuth.signOut();
+  // Limpa a config local do intervals.icu (API Key/Athlete ID) para não vazar
+  // pra outra conta que fizer login neste mesmo navegador em seguida.
+  localStorage.removeItem('icu_config');
+  localStorage.removeItem('icu_config_owner');
   showToast('👋 Sessão encerrada.');
 }
 window.doLogout=doLogout;
@@ -7663,6 +7667,10 @@ function icuGetConfig(){
 }
 function icuSaveConfig(cfg){
   localStorage.setItem('icu_config', JSON.stringify(cfg));
+  // Marca de quem é essa config (uid logado, ou 'anon' se configurada sem login).
+  // Evita que a chave de um usuário "vaze" pro Firestore de outro usuário que
+  // logar depois no mesmo navegador sem ter desconectado antes (ver icuSyncConfigOnLogin).
+  localStorage.setItem('icu_config_owner', (typeof currentUser!=='undefined'&&currentUser)?currentUser.uid:'anon');
   // Espelha na nuvem em segundo plano (não bloqueia a UI; falha silenciosamente se offline)
   if(typeof currentUser!=='undefined'&&currentUser&&typeof fbDb!=='undefined'&&fbDb){
     saveIcuConfigToCloud(currentUser.uid,cfg);
@@ -7679,15 +7687,28 @@ function icuGetAthleteId(){ return icuGetConfig().athleteId||''; }
 async function icuSyncConfigOnLogin(uid){
   try{
     const local=icuGetConfig();
+    const localOwner=localStorage.getItem('icu_config_owner')||'';
     const cloud=await loadIcuConfigFromCloud(uid);
     const hasLocal=!!(local&&local.apiKey&&local.athleteId);
     const hasCloud=!!(cloud&&cloud.apiKey&&cloud.athleteId);
+    // Só considera a config local "dela" se foi salva sem login (anon/pré-login)
+    // ou pelo próprio uid que está logando agora. Se pertencer a outro uid
+    // (usuário anterior que esqueceu de desconectar/logout no mesmo navegador),
+    // NUNCA subimos essa chave para a nuvem deste usuário.
+    const localBelongsToThisUser = hasLocal && (localOwner===uid || localOwner==='anon' || !localOwner);
     if(hasCloud){
       // Nuvem é a fonte de verdade entre dispositivos diferentes
       localStorage.setItem('icu_config', JSON.stringify(cloud));
-    } else if(hasLocal){
+      localStorage.setItem('icu_config_owner', uid);
+    } else if(localBelongsToThisUser){
       // Só existia localmente (ex.: configurado antes do login) — sobe para a nuvem
       await saveIcuConfigToCloud(uid, local);
+      localStorage.setItem('icu_config_owner', uid);
+    } else if(hasLocal){
+      // Config local pertence a outra conta que usou este navegador antes —
+      // descarta em vez de herdar (evitaria enviar treinos pro atleta errado).
+      localStorage.removeItem('icu_config');
+      localStorage.removeItem('icu_config_owner');
     }
   }catch(e){ console.warn('icuSyncConfigOnLogin error', e); }
 }
