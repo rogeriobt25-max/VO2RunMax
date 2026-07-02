@@ -4849,7 +4849,7 @@ function buildPlanUI(race){
   ${isShort?'':`<div style="font-size:10px;color:var(--t3);background:rgba(0,0,0,0.03);border:1px solid var(--bdr);border-radius:6px;padding:7px 12px;margin-bottom:.75rem;line-height:1.6;display:none" id="dias-ativos-${race}">
   ⚡ <strong style="color:var(--t2)">Dias ativos por fase:</strong> ${is42?'Base 3–4 treinos · Build 4–5 treinos · Específica 4–5 treinos · Pico 5 treinos · Taper 3–4 treinos':race==='21'?'21km 12sem: 4 treinos constantes (Base→Específica→Pico→Taper) · 21km 16sem: inicia 3 treinos, evolui para 4 gradualmente':'Base 3–4 treinos · Build 4–5 treinos · Recuo 3 treinos · Taper 3–4 treinos'}. <strong style="color:var(--t2)">SEG</strong>: descanso (iniciante) ou rec.ativa progressiva (inter/avançado) · <strong style="color:var(--t2)">SEX</strong>: descanso pré-longão (leve opcional p/ avançado/improve) · <strong style="color:var(--t2)">DOM</strong> sempre descanso.
   </div>`}
-  <div class="exp-bar"><span>Exportar</span><button class="btn-exp btn-exp-pr" onclick="printPlan('${race}')">🖨 Salvar PDF</button><button class="btn-exp" style="background:rgba(0,100,180,0.10);border:1px solid rgba(0,100,180,0.35);color:#0a6acf;display:none" onclick="exportGarminFromRace('${race}')">⌚ Garmin (.fit)</button><button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsExportFromRace('${race}')">📅 intervals.icu</button><button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsWeeklyExportFromRace('${race}')">🗓 Semanal (intervals.icu)</button></div>
+  <div class="exp-bar"><span>Exportar</span><button class="btn-exp" style="background:rgba(0,100,180,0.10);border:1px solid rgba(0,100,180,0.35);color:#0a6acf;display:none" onclick="exportGarminFromRace('${race}')">⌚ Garmin (.fit)</button><button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsExportFromRace('${race}')">📅 Enviar planilha</button><button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsWeeklyExportFromRace('${race}')">🗓 Semana a semana</button></div>
   <div id="save-bar-${race}" style="display:flex;justify-content:center;margin-bottom:1rem"><button class="btn-save" onclick="openSaveModal('${race}')">📋 Salvar em Meus Treinos</button></div>
   </div>
   <div id="plan-weeks-${race}"></div>`;
@@ -5748,10 +5748,9 @@ function renderSavedList(){
       <div class="saved-weeks-panel" id="swpanel-${plan.id}">
         <div class="exp-bar" style="margin-bottom:10px">
           <span>Exportar</span>
-          <button class="btn-exp btn-exp-pr" onclick="printSaved(${plan.id})">🖨 Salvar PDF</button>
           <button class="btn-exp" style="background:rgba(0,100,180,0.10);border:1px solid rgba(0,100,180,0.35);color:#0a6acf;display:none" onclick="exportGarminJSON(${plan.id})">⌚ Garmin (.fit)</button>
-          <button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsExportFromSaved(${plan.id})">📅 intervals.icu</button>
-          <button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsWeeklyExportFromSaved(${plan.id})">🗓 Semanal (intervals.icu)</button>
+          <button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsExportFromSaved(${plan.id})">📅 Enviar planilha</button>
+          <button class="btn-exp" style="background:rgba(80,40,180,0.10);border:1px solid rgba(80,40,180,0.35);color:#6633cc" onclick="intervalsWeeklyExportFromSaved(${plan.id})">🗓 Semana a semana</button>
         </div>
         ${plan.intensityDist?buildIntensityBoxHTML(plan.intensityDist,plan.race==='42'):''}
         ${plan.weeks.map((wk,wIdx)=>{
@@ -5817,63 +5816,6 @@ function renderSavedList(){
   wrap.innerHTML=html;
 }
 
-/* ══════════════════════════════════════════════════════════
-   PRINT SAVED
-══════════════════════════════════════════════════════════ */
-function printSaved(id){
-  const plan=savedPlans.find(p=>p.id===id);if(!plan)return;
-  const is42=plan.race==='42';
-  const raceMin=Math.round((is42?42.195:21.0975)/plan.raceSpeed*60);const rh=Math.floor(raceMin/60),rm=raceMin%60;
-  let weeksHtml='';
-  plan.weeks.forEach((wk,wIdx)=>{
-    const weekDone=wk.days.filter((d,di)=>!d.rest&&plan.done[`${wIdx}-${di}`]).length;
-    const weekTotal=wk.days.filter(d=>!d.rest).length;
-    weeksHtml+=`<div style="margin-bottom:8px;border:1px solid #ddd;border-radius:6px;overflow:hidden;page-break-inside:avoid">
-      <div style="background:#f5f5f5;padding:6px 12px;display:flex;justify-content:space-between;border-bottom:1px solid #ddd">
-        <span style="font-size:11px;font-weight:700">Semana ${wk.w}${wk.isRace?' — PROVA':` — ~${wk.km}km`}</span>
-        <span style="font-size:10px;color:#999">${weekDone}/${weekTotal} concluídos</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(7,1fr)">
-        ${(()=>{return wk.days.map((dp,dIdx)=>{const isDone=!!plan.done[`${wIdx}-${dIdx}`];const col=typeColors[dp.type]||'#999';const infoHtml=dp.timeLabel?`<div style="font-size:8px;font-weight:700;color:#0099cc">⏱ ${dp.timeLabel}</div>${dp.pace&&!dp.rest?`<div style="font-size:8px;color:#aaa;font-family:monospace">${dp.pace}/km</div>`:''}`:(dp.dist?`<div style="font-size:9px;color:#666">${dp.dist}</div>${dp.pace&&!dp.rest?`<div style="font-size:9px;color:#888;font-family:monospace">${dp.pace}/km</div>`:''}`:(dp.pace&&!dp.rest?`<div style="font-size:9px;color:#666;font-family:monospace">${dp.pace}/km</div>`:''));return`<div style="padding:6px 3px;border-right:1px solid #eee;text-align:center;${dp.rest?'opacity:.3':''}${isDone?';background:#f0fff5':''}"><div style="font-size:8px;color:#aaa;margin-bottom:3px;text-transform:uppercase">${DAYS[dIdx]}</div><div style="font-size:9px;font-weight:700;color:${col};margin-bottom:2px">${dp.type}</div>${infoHtml}${isDone?`<div style="font-size:9px;font-weight:700;color:#16a34a;margin-top:2px">✓ Feito</div>`:''}</div>`;}).join('');})()}
-      </div>
-    </div>`;
-  });
-  const prog=calcProgress(plan);
-  const intDist=plan.intensityDist;
-  const intensityHtml=intDist?`
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;margin-bottom:1.2rem">
-      <div style="font-size:10px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:#16a34a;margin-bottom:8px">📊 Distribuição de Intensidade do Ciclo Completo — </div>
-      <div style="height:16px;border-radius:8px;overflow:hidden;display:flex;margin-bottom:6px">
-        <div style="width:${intDist.z12pct}%;background:linear-gradient(90deg,#00cc88,#00aacc);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#000">${intDist.z12pct>12?intDist.z12pct+'%':''}</div>
-        <div style="width:${intDist.z3pct}%;background:#f5a623;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#000">${intDist.z3pct>8?intDist.z3pct+'%':''}</div>
-        <div style="width:${intDist.z45pct}%;background:#e8304a;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff">${intDist.z45pct>5?intDist.z45pct+'%':''}</div>
-      </div>
-      <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:#555">
-        <span>🟢 Z1–Z2 (baixa): <strong style="color:#16a34a">${intDist.z12pct}%</strong> · ${intDist.z12km}km</span>
-        <span>🟠 Z3 (moderada): <strong style="color:#d97700">${intDist.z3pct}%</strong> · ${intDist.z3km}km</span>
-        <span>🔴 Z4–Z5 (alta): <strong style="color:#dc2626">${intDist.z45pct}%</strong> · ${intDist.z45km}km</span>
-      </div>
-      <div style="margin-top:7px;padding-top:7px;border-top:1px solid #bbf7d0;font-size:10px;color:#555;line-height:1.5">
-      </div>
-    </div>`:'';
-  const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${plan.name}</title><style>body{font-family:system-ui,sans-serif;background:#fff;color:#111;padding:2rem;font-size:12px}h2{font-size:18px;font-weight:800;margin-bottom:4px}@media print{body{padding:1rem}}</style></head><body>
-    <h2>${plan.name}</h2>
-    <p style="color:#666;margin-bottom:4px">VO2 Máx: ${plan.vo2} ml/kg/min · Pace de prova: ${s2p(plan.raceSpeed)}/km · Tempo estimado: ${rh}h${rm.toString().padStart(2,'0')} · Criado ${plan.createdAt}</p>
-    <p style="color:#16a34a;font-weight:700;margin-bottom:1rem">Progresso: ${prog.done}/${prog.total} treinos concluídos (${prog.pct}%)</p>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem">
-      <div style="border:1px solid #ddd;border-radius:6px;padding:8px 10px"><div style="font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Pace de prova</div><div style="font-size:18px;font-weight:800;color:${is42?'#7c5af5':'#00a855'}">${s2p(plan.raceSpeed)} <span style="font-size:10px;font-weight:400;color:#666">min/km</span></div></div>
-      <div style="border:1px solid #ddd;border-radius:6px;padding:8px 10px"><div style="font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Tempo estimado</div><div style="font-size:18px;font-weight:800">${rh}h${rm.toString().padStart(2,'0')} <span style="font-size:10px;font-weight:400;color:#666">min</span></div></div>
-      <div style="border:1px solid #ddd;border-radius:6px;padding:8px 10px"><div style="font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Pace longo</div><div style="font-size:18px;font-weight:800">${s2p(plan.ez)} <span style="font-size:10px;font-weight:400;color:#666">min/km</span></div></div>
-      <div style="border:1px solid #ddd;border-radius:6px;padding:8px 10px"><div style="font-size:8px;color:#aaa;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Longão máximo</div><div style="font-size:18px;font-weight:800;color:#d97700">${plan.lp?.peak||'—'} <span style="font-size:10px;font-weight:400;color:#666">km</span></div></div>
-    </div>
-    ${(()=>{const _prof=PROFILES[plan.profKey]||PROFILES['inter'];return`<div style="background:#f0f8ff;border:1px solid #bfdbfe;border-radius:6px;padding:9px 12px;margin-bottom:1rem;font-size:10px;color:#444;line-height:1.6"><strong style="color:#0066bb">Metodologia:</strong> ${_prof.method} — ${_prof.label.toLowerCase()}. Pico de <strong>${plan.lp?.peak||'—'}km</strong>. Fases: <strong>Base</strong> (aeróbico Z1-Z2) → <strong>Build</strong> (Fartlek + volume crescente) → <strong>Específica</strong> (Tempo run + Intervalados) → <strong>Afunilamento</strong>. Teto fisiológico do longão: <strong>${is42?'2h–3h15':'90–150min'}</strong>. ${is42?'<strong>Taper progressivo de 3 semanas</strong> (−40% → −50% → −60%).':'<strong>Taper de 2–3 semanas</strong> com intensidade mantida na 1ª semana.'}</div>`})()}}
-    ${intensityHtml}
-    ${weeksHtml}
-
-    <scr'+'ipt>window.onload=()=>window.print()<\/script>
-</body></html>`);win.document.close();
-}
 
 function exportSavedXLSX(id){
   const plan=savedPlans.find(p=>p.id===id);if(!plan)return;if(typeof XLSX==='undefined')return alert('XLSX não carregou.');
@@ -7195,98 +7137,6 @@ function exportXLSX(race){
   }
   XLSX.writeFile(wb,isEst?`planilha-estreante-${snapDist}km.xlsx`:`planilha-${race}km.xlsx`);
 }
-function printPlan(race){
-  if(vo2G===0)return alert('Calcule o VO2 primeiro.');
-  const is5k=race==='5k',is10k=race==='10k',isShort=is5k||is10k;
-  const profKey=race==='21'?profile21:race==='42'?profile42:race==='5k'?profile5k:profile10k;
-  const is42=race==='42';
-  const planWeeks=race==='21'?planWeeks21:race==='42'?planWeeks42:race==='5k'?planWeeks5k:planWeeks10k;
-  const prof=PROFILES[profKey];
-  let weeks;
-  if(profKey==='estreante'){
-    ({weeks}=buildDaysEstreante(planWeeks,distEstreante));
-  }else{
-    const raceSpeed=getRaceSpeed(race);
-    const pf=prof.paces;
-    const ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez;
-    const mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod;
-    const tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
-    const intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
-    const obj=is42?planObj42:race==='21'?planObj21:race==='5k'?planObj5k:planObj10k;
-    if(isShort){({weeks}=buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj));}
-    else{({weeks}=buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj));}
-  }
-  const isEst=profKey==='estreante';
-  const distKm=is42?42.195:is5k?5:is10k?10:21.0975;
-  const _rSpeed=isEst?0:getRaceSpeed(race);
-  const raceMin=isEst?0:Math.round(distKm/_rSpeed*60),rh=Math.floor(raceMin/60),rm=raceMin%60;
-  const distLabel=is5k?'5km':is10k?'10km':is42?'42km':'21km';
-  let weeksHtml='';
-  weeks.forEach(wk=>{
-    const wkLabel=wk.isRace?(isEst?`Sem ${wk.w} — Chegou a hora! 🏁`:`Sem ${wk.w} — PROVA 🏁`):(isEst?`Sem ${wk.w}${wk.longaoMin?` — Longão: ${wk.longaoMin} min`:''}`:`Sem ${wk.w} — ~${wk.km}km${wk.isCB?' [RECUO]':''}`);
-    weeksHtml+=`<div class="week-card${wk.isRace?' race':''}">
-      <div class="week-header">
-        <span class="week-lbl">${wkLabel}</span>
-        <span class="week-phase">${wk.phaseLabel} · ${wk.activeDays} treino${wk.activeDays!==1?'s':''}</span>
-      </div>
-      <div class="week-days">
-        ${wk.days.map((dp,d)=>{
-          const col=typeColors[dp.type]||'#334455';
-          return`<div class="day-cell${dp.rest?' rest':''}">
-            <div class="day-name">${DAYS[d]}</div>
-            <div class="day-type" style="color:${col}">${dp.type||'—'}</div>
-            ${dp.timeLabel
-              ?`<div class="day-info" style="color:${isEst?'#9b59b6':'#0099cc'};font-weight:700">⏱ ${dp.timeLabel}</div>${dp.pace&&!dp.rest&&!isEst?`<div class="day-info">${dp.pace}/km</div>`:''}`
-              :(dp.dist
-                ?`<div class="day-info">${dp.dist}</div>${dp.pace&&!dp.rest&&!isEst?`<div class="day-info">${dp.pace}/km</div>`:''}`
-                :(dp.pace&&!dp.rest&&!isEst?`<div class="day-info">${dp.pace}/km</div>`:''))
-            }
-            ${dp.detail?`<div class="day-detail">${dp.detail}</div>`:''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  });
-  const metaLine=isEst
-    ?`Perfil: 🌱 Estreante · Meta: ${distEstreante}km · Método: Galloway Run/Walk · ${planWeeks} semanas · Gerado ${new Date().toLocaleDateString('pt-BR')}`
-    :`VO2 Máx: ${Math.round(vo2G*10)/10} ml/kg/min · Pace de prova: ${s2p(_rSpeed)}/km · Tempo estimado: ${rh}h${String(rm).padStart(2,'0')} · ${prof.label} · ${planWeeks} semanas · Gerado ${new Date().toLocaleDateString('pt-BR')}`;
-  const legendHtml=isEst
-    ?`<div class="ld"><div class="ldot" style="background:#9b59b6"></div>Correr/Caminhar</div><div class="ld"><div class="ldot" style="background:#3498db"></div>Corrida base</div><div class="ld"><div class="ldot" style="background:#778899"></div>Caminhar</div>`
-    :`<div class="ld"><div class="ldot" style="background:#ffb830"></div>Longo</div><div class="ld"><div class="ldot" style="background:#00aaff"></div>Corrida leve</div><div class="ld"><div class="ldot" style="background:#00cc66"></div>Moderado Z3</div><div class="ld"><div class="ldot" style="background:#ff2244"></div>Intervalado</div><div class="ld"><div class="ldot" style="background:#ff6b00"></div>Tempo run</div><div class="ld"><div class="ldot" style="background:#cc4400"></div>Fartlek</div>`;
-  const win=window.open('','_blank');
-  const titleStr=isEst?(distEstreante==='5'?'Estreante 5km':'Estreante 10km'):is5k?'Corrida 5km':is10k?'Corrida 10km':is42?'Maratona 42km':'Meia-maratona 21km';
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Planilha ${titleStr}</title>
-  <style>
-    body{font-family:system-ui,sans-serif;background:#fff;color:#111;padding:2rem;font-size:12px}
-    h2{font-size:18px;font-weight:800;margin-bottom:4px}
-    .meta{color:#666;font-size:12px;margin-bottom:1.5rem}
-    .week-grid{display:flex;flex-direction:column;gap:8px}
-    .week-card{border:1px solid #ddd;border-radius:6px;overflow:hidden;page-break-inside:avoid}
-    .week-card.race{border-color:${isEst?'#9b59b6':'#00aaff'}}
-    .week-header{background:#f5f5f5;padding:6px 12px;display:flex;justify-content:space-between;border-bottom:1px solid #ddd}
-    .week-lbl{font-size:11px;font-weight:700}.week-phase{font-size:10px;color:#777}
-    .week-days{display:grid;grid-template-columns:repeat(7,1fr)}
-    .day-cell{padding:6px 3px;border-right:1px solid #eee;text-align:center}
-    .day-cell:last-child{border-right:none}
-    .day-cell.rest{opacity:.4;background:#fafafa}
-    .day-name{font-size:8px;color:#aaa;text-transform:uppercase;margin-bottom:3px}
-    .day-type{font-size:9px;font-weight:700;margin-bottom:2px}
-    .day-info{font-size:9px;color:#555;font-family:monospace}
-    .day-detail{font-size:8px;color:#888;margin-top:3px;border-top:1px solid #eee;padding-top:2px;text-align:left;line-height:1.4}
-    .legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1rem;font-size:10px;color:#666}
-    .ld{display:flex;align-items:center;gap:4px}
-    .ldot{width:8px;height:8px;border-radius:50%}
-    @media print{body{padding:1rem}.week-card{page-break-inside:avoid}}
-  </style></head><body>
-  <h2>${isEst?`🌱 Planilha Estreante — ${distEstreante==='5'?'Corrida 5km':'Corrida 10km'}`:`Planilha ${titleStr}`}</h2>
-  <p class="meta">${metaLine}</p>
-  <div class="legend">${legendHtml}</div>
-  <div class="week-grid">${weeksHtml}</div>
-
-  <scr'+'ipt>window.onload=()=>window.print()<\/script>
-</body></html>`);
-  win.document.close();
-}
 
 /* ══════════════════════════════════════════════════════════
    INIT
@@ -7326,11 +7176,9 @@ window.toggleWeeksPanel=toggleWeeksPanel;
 window.autoScrollToToday=autoScrollToToday;
 window.showRetestArea=showRetestArea;
 window.deletePlan=deletePlan;
-window.printSaved=printSaved;
 window.exportSavedXLSX=exportSavedXLSX;
 window.exportCSV=exportCSV;
 window.exportXLSX=exportXLSX;
-window.printPlan=printPlan;
 
 /* ── Wizard progressivo ── */
 window.wzBackToOptions=wzBackToOptions;
@@ -7914,6 +7762,11 @@ function showIntervalsConfigModal(onOk){
   modal.innerHTML=`
   <div style="background:var(--s1);border:1px solid var(--bdr2);border-radius:18px;width:100%;max-width:460px;overflow:hidden;margin:auto">
     ${headerHTML}
+
+    <!-- EXPLICAÇÃO -->
+    <div style="padding:1rem 1.4rem 0;font-size:12px;color:var(--t2);line-height:1.7">
+      Este app não fala diretamente com o relógio. Ele manda os treinos pro <strong>intervals.icu</strong>, um serviço gratuito que faz a ponte — e depois de conectar aqui, você também vincula sua conta Garmin, Amazfit (Zepp) ou outra compatível <strong>dentro do intervals.icu</strong> (uma vez só) em <a href="https://intervals.icu/settings" target="_blank" style="color:#6633cc;font-weight:700">Configurações → Connections</a>. A partir daí, os treinos chegam sozinhos no relógio.
+    </div>
 
     <!-- PASSO 1 -->
     <div id="icu-step1" style="padding:1.4rem">
@@ -8741,7 +8594,12 @@ function intervalsWeeklyExportFromRace(race){
   if(workouts.length===0){showToast('Nenhum treino para enviar.');return;}
   const raceLabel=race==='5k'?'5km':race==='10k'?'10km':race+'km';
   const planKey=`race_${race}_${profKey}_${planStart.toISOString().slice(0,10)}`;
-  icuShowWeeklyModal(workouts, planKey, `Planilha ${raceLabel} · início ${fmtDate(planStart)}`);
+  const label=`Planilha ${raceLabel} · início ${fmtDate(planStart)}`;
+  if(!icuGetApiKey()||!icuGetAthleteId()){
+    showIntervalsConfigModal(()=>icuShowWeeklyModal(workouts, planKey, label));
+    return;
+  }
+  icuShowWeeklyModal(workouts, planKey, label);
 }
 
 // De planilha salva — versão semanal
@@ -8777,7 +8635,12 @@ function intervalsWeeklyExportFromSaved(id){
 
   if(workouts.length===0){showToast('Nenhum treino para enviar.');return;}
   const planKey=`saved_${plan.id}`;
-  icuShowWeeklyModal(workouts, planKey, `${plan.name} · ${plan.createdAt}`);
+  const label=`${plan.name} · ${plan.createdAt}`;
+  if(!icuGetApiKey()||!icuGetAthleteId()){
+    showIntervalsConfigModal(()=>icuShowWeeklyModal(workouts, planKey, label));
+    return;
+  }
+  icuShowWeeklyModal(workouts, planKey, label);
 }
 
 function icuStartExport(workouts){
