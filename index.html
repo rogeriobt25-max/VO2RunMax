@@ -1517,19 +1517,18 @@ window.doRegister=doRegister;
 /* ── Logout ── */
 async function doLogout(){
   if(!confirm('Sair da conta?'))return;
-  await fbAuth.signOut();
-  // Limpa todo cache local ligado à conta (config do intervals.icu, último teste,
-  // token do Garmin) para não vazar pra outra conta que fizer login neste mesmo
-  // navegador em seguida.
-  localStorage.removeItem('icu_config');
-  localStorage.removeItem('icu_config_owner');
-  localStorage.removeItem('vo2_last_test');
-  if(typeof garminDisconnect==='function') garminDisconnect();
-  showToast('👋 Sessão encerrada.');
-  // Recarrega a página: garante que TUDO que só existia em memória nesta sessão
-  // (planilhas salvas, último teste, etc.) seja descartado, e o próximo login
-  // neste navegador comece 100% limpo, buscando os dados certos da nuvem.
-  setTimeout(()=>window.location.reload(), 500);
+  try{ await fbAuth.signOut(); }catch(e){ console.warn('signOut error',e); }
+  // Cada limpeza é blindada com try/catch: mesmo se uma falhar, as outras
+  // rodam e o reload no final SEMPRE acontece — é o que garante voltar pro
+  // início do site (e descartar qualquer planilha gerada e não salva na tela).
+  try{ localStorage.removeItem('icu_config'); }catch(e){}
+  try{ localStorage.removeItem('icu_config_owner'); }catch(e){}
+  try{ localStorage.removeItem('vo2_last_test'); }catch(e){}
+  try{ if(typeof garminDisconnect==='function') garminDisconnect(); }catch(e){}
+  // Recarrega imediatamente: reseta a tela pro início e garante que nenhum
+  // dado em memória (planilha gerada sem salvar, dados selecionados, etc.)
+  // sobreviva pro próximo login neste navegador.
+  window.location.reload();
 }
 window.doLogout=doLogout;
 
