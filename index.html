@@ -259,10 +259,7 @@ input::placeholder{color:var(--t3)}
 @media(max-width:480px){
   .zt th,.zt td{font-size:11px;padding:8px 8px;white-space:normal}
 }
-/* Export bar: stack vertically on small screens */
-@media(max-width:380px){
-  .exp-bar{flex-direction:column;align-items:flex-start}
-}
+/* Export bar: ver regra de grid responsivo definida junto com .exp-bar acima */
 /* Metric cards: minimum 2 per row */
 .mc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1rem}
 @media(max-width:360px){
@@ -346,11 +343,18 @@ input::placeholder{color:var(--t3)}
 
 .exp-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:1rem}
 .exp-bar span{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.12em;font-weight:700}
-.btn-exp{height:40px;padding:0 14px;cursor:pointer;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:16px;transition:all .2s;font-family:inherit;display:flex;align-items:center;gap:5px}
+.btn-exp{height:40px;padding:0 14px;cursor:pointer;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:16px;transition:all .2s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
 .btn-exp:hover{filter:brightness(1.15);transform:translateY(-1px)}
 .btn-exp-csv{background:var(--s3);border:1px solid var(--bdr2);color:var(--t1)}
 .btn-exp-xl{background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:var(--gr)}
 .btn-exp-pr{background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.25);color:var(--acc)}
+/* Em telas estreitas, os botões viram um grid organizado em vez de "sobrar"
+   uma linha torta quando não cabem ao lado do rótulo "Exportar". */
+@media(max-width:520px){
+  .exp-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px 8px;padding:10px 12px}
+  .exp-bar span{grid-column:1/-1;margin-bottom:-2px}
+  .btn-exp{width:100%;padding:0 6px;font-size:9.5px}
+}
 
 .legend-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1rem;padding:9px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);font-size:11px;color:var(--t2);align-items:center}
 .ldot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
@@ -474,8 +478,14 @@ details[open] summary::after{transform:rotate(90deg)}
 /* Detail oculto por padrão em TODOS os tamanhos; só aparece ao expandir */
 .sw-day-detail{display:block;font-size:8px;color:var(--t3);line-height:1.5;margin-top:4px;padding-top:3px;border-top:1px solid var(--bdr);text-align:left}
 /* TOAST */
-.toast{position:fixed;bottom:calc(var(--nav-safe) + 12px);left:50%;transform:translateX(-50%) translateY(80px);background:rgba(15,30,50,0.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:none;border-radius:24px;padding:12px 22px;font-size:14px;font-weight:700;color:#fff;z-index:999;transition:transform .35s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,0.22);white-space:nowrap}
-.toast.show{transform:translateX(-50%) translateY(0)}
+.toast{position:fixed;bottom:calc(var(--nav-safe) + 12px);left:50%;transform:translateX(-50%) translateY(80px);opacity:0;visibility:hidden;background:rgba(15,30,50,0.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:none;border-radius:24px;padding:12px 22px;font-size:14px;font-weight:700;color:#fff;z-index:999;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,0.22);white-space:nowrap}
+.toast.show{animation:toastLifecycle 2.8s cubic-bezier(0.34,1.56,0.64,1) forwards}
+@keyframes toastLifecycle{
+  0%{opacity:0;visibility:visible;transform:translateX(-50%) translateY(80px)}
+  10%{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  85%{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  100%{opacity:0;visibility:hidden;transform:translateX(-50%) translateY(80px)}
+}
 
 /* TREINO DE HOJE */
 .today-card{border:1.5px solid;border-radius:var(--r2);padding:1.1rem 1.2rem;background:var(--s2)}
@@ -978,6 +988,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .mt-bank-week-lbl{font-size:10px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--t3);padding:4px 2px 6px}
 .mt-card{display:flex;align-items:flex-start;gap:8px;background:var(--s2);border:1px solid var(--bdr);border-left:4px solid var(--acc);border-radius:10px;padding:8px 10px;margin-bottom:6px;cursor:grab;user-select:none;touch-action:none}
 .mt-card:active{cursor:grabbing}
+.mt-card.mt-card-selected{border-color:var(--pu);box-shadow:0 0 0 2px var(--pu);background:var(--pu2)}
 .mt-card-body{min-width:0;flex:1}
 .mt-card-day{font-size:9px;font-weight:800;color:var(--t3);text-transform:uppercase}
 .mt-card-type{font-size:11.5px;font-weight:800;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -985,6 +996,9 @@ details[open] summary::after{transform:rotate(90deg)}
 .mt-card-detail{font-size:9.5px;color:var(--t3);margin-top:2px;line-height:1.4}
 .mt-card.sortable-ghost{opacity:.35}
 .mt-card.sortable-drag{opacity:.9;box-shadow:0 6px 18px rgba(0,0,0,0.2)}
+.mt-tap-hint{display:none;align-items:center;justify-content:space-between;gap:8px;background:var(--pu2);border:1px solid var(--pu);border-radius:10px;padding:8px 12px;margin:8px 14px 0;font-size:11.5px;font-weight:700;color:var(--pu);flex-shrink:0}
+.mt-tap-hint.on{display:flex}
+.mt-tap-hint button{flex-shrink:0;height:26px;padding:0 10px;border-radius:12px;border:none;background:var(--pu);color:#fff;font-size:10.5px;font-weight:800;cursor:pointer;font-family:inherit}
 
 .mt-cal{flex:1;overflow-y:auto;padding:10px}
 .mt-cal-dow{display:grid;grid-template-columns:52px repeat(7,1fr);gap:6px;padding:0 0 6px;position:sticky;top:0;background:var(--bg);z-index:2}
@@ -993,6 +1007,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .mt-cal-wlbl{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--t2);background:var(--s2);border-radius:8px}
 .mt-day-cell{min-height:78px;background:var(--s1);border:1.5px dashed var(--bdr2);border-radius:10px;padding:4px;display:flex;flex-direction:column;gap:2px;position:relative}
 .mt-day-cell.mt-cell-over{border-color:var(--pu);background:var(--pu2)}
+.mt-body.mt-armed .mt-day-cell{cursor:pointer;border-color:var(--pu);border-style:solid}
 .mt-day-date{font-size:8.5px;color:var(--t3);font-weight:700;padding:1px 2px}
 .mt-chip{flex:1;border-radius:7px;border-left:4px solid var(--acc);background:var(--s2);padding:4px 16px 4px 6px;position:relative;font-size:9.5px;line-height:1.35;cursor:grab}
 .mt-chip-type{font-weight:800;color:var(--t1);font-size:10px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1406,7 +1421,11 @@ details[open] summary::after{transform:rotate(90deg)}
       <button onclick="montadorAddWeek(1)">+</button>
     </div>
   </div>
-  <div class="mt-body">
+  <div class="mt-tap-hint" id="mt-tap-hint">
+    <span>👉 Treino selecionado — toque num dia do calendário</span>
+    <button onclick="montadorClearSelection()">Cancelar</button>
+  </div>
+  <div class="mt-body" id="mt-body">
     <div class="mt-bank mt-active" id="mt-bank"></div>
     <div class="mt-cal" id="mt-cal"></div>
   </div>
@@ -1894,8 +1913,18 @@ function switchNav(p){
 ══════════════════════════════════════════════════════════ */
 var toastTimer=null;
 function showToast(msg){
-  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+  const t=document.getElementById('toast');
+  if(!t)return;
+  clearTimeout(toastTimer);
+  // Remove a classe e força reflow para poder reiniciar a animação
+  // mesmo que um toast anterior ainda esteja visível na tela.
+  t.classList.remove('show');
+  t.textContent=msg;
+  void t.offsetWidth; // força o navegador a "recalcular" antes de reativar a animação
+  t.classList.add('show');
+  // Timer em JS como reforço (a animação CSS já esconde sozinha em 2.8s,
+  // isso aqui garante que a classe some do DOM mesmo em casos extremos).
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2900);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -8931,7 +8960,8 @@ function abrirMontador(race){
     sourceWeeks:weeks,           // banco de treinos (origem, já com paces do atleta)
     weekCount:weeks.length,      // nº de semanas do calendário (editável)
     startDate:_mtMondaySnap(new Date()),
-    assigned:new Map()           // 'wIdx_dIdx' -> day object (clone)
+    assigned:new Map(),          // 'wIdx_dIdx' -> day object (clone)
+    tapSelected:null             // {wsrc,dsrc} treino selecionado por toque (fallback mobile)
   };
 
   const distLabel=is5k?'5km':is10k?'10km':is42?'Maratona':'Meia';
@@ -8995,7 +9025,7 @@ function montadorRenderBank(){
       if(day.rest||day.type==='Descanso'||day.type==='Caminhar')return'';
       const col=typeColors[day.type]||'#334455';
       const meta=[day.dist,day.pace?day.pace+'/km':''].filter(Boolean).join(' · ');
-      return`<div class="mt-card" draggable="true" style="border-left-color:${col}" data-wsrc="${wIdx}" data-dsrc="${dIdx}">
+      return`<div class="mt-card" draggable="true" style="border-left-color:${col}" data-wsrc="${wIdx}" data-dsrc="${dIdx}" onclick="montadorTapSelect(${wIdx},${dIdx},this)">
         <div class="mt-card-body">
           <div class="mt-card-day">${DAYS_BR_MT[dIdx]} · Sem ${wk.w}</div>
           <div class="mt-card-type" style="color:${col}">${day.type}</div>
@@ -9021,7 +9051,7 @@ function montadorRenderCalendar(){
     html+=`<div class="mt-cal-week"><div class="mt-cal-wlbl">S${wIdx+1}<span style="font-size:8px;font-weight:600;opacity:.75">${fmtDate(weekStart)}–${fmtDate(weekEnd)}</span></div>`;
     for(let dIdx=0;dIdx<7;dIdx++){
       const cellDate=new Date(weekStart);cellDate.setDate(cellDate.getDate()+dIdx);
-      html+=`<div class="mt-day-cell">
+      html+=`<div class="mt-day-cell" onclick="montadorTapAssign(${wIdx},${dIdx})">
         <div class="mt-day-date">${fmtDate(cellDate)}</div>
         <div class="mt-cell-dropzone" data-week="${wIdx}" data-day="${dIdx}" style="flex:1;display:flex">${montadorChipHTML(wIdx,dIdx)}</div>
       </div>`;
@@ -9038,7 +9068,7 @@ function montadorChipHTML(wIdx,dIdx){
   const col=typeColors[day.type]||'#334455';
   const meta=[day.dist,day.pace?day.pace+'/km':''].filter(Boolean).join(' · ');
   return`<div class="mt-chip" style="border-left-color:${col}">
-    <button class="mt-chip-x" onclick="montadorRemoveCell(${wIdx},${dIdx})" title="Remover">×</button>
+    <button class="mt-chip-x" onclick="event.stopPropagation();montadorRemoveCell(${wIdx},${dIdx})" title="Remover">×</button>
     <span class="mt-chip-type" style="color:${col}">${day.type}</span>
     ${meta?`<span class="mt-chip-meta">${meta}</span>`:''}
   </div>`;
@@ -9090,6 +9120,42 @@ function montadorRemoveCell(wIdx,dIdx){
   const zone=document.querySelector(`.mt-cell-dropzone[data-week="${wIdx}"][data-day="${dIdx}"]`);
   if(zone)zone.innerHTML='';
   montadorUpdateFooter();
+}
+
+// ── Toque para agendar (alternativa ao arrastar): útil no celular, onde
+//    Banco e Calendário ficam em abas separadas e não dá pra arrastar de
+//    uma aba pra outra. Fluxo: toca no treino do Banco → troca pra aba do
+//    Calendário automaticamente → toca no dia desejado → agenda.
+//    Não mexe em nada da integração com o intervals.icu.
+function montadorTapSelect(wsrc,dsrc,cardEl){
+  if(!montador)return;
+  const same=montador.tapSelected&&montador.tapSelected.wsrc===wsrc&&montador.tapSelected.dsrc===dsrc;
+  document.querySelectorAll('#mt-bank .mt-card.mt-card-selected').forEach(c=>c.classList.remove('mt-card-selected'));
+  if(same){ montadorClearSelection(); return; }
+  montador.tapSelected={wsrc,dsrc};
+  if(cardEl)cardEl.classList.add('mt-card-selected');
+  const hint=document.getElementById('mt-tap-hint');
+  if(hint)hint.classList.add('on');
+  document.getElementById('mt-body')?.classList.add('mt-armed');
+  // No celular (abas), leva o usuário direto pro calendário para tocar no dia.
+  const tabsVisible=getComputedStyle(document.querySelector('.mt-tabs')||document.body).display!=='none';
+  if(tabsVisible)montadorSwitchTab('cal');
+}
+function montadorClearSelection(){
+  if(montador)montador.tapSelected=null;
+  document.querySelectorAll('#mt-bank .mt-card.mt-card-selected').forEach(c=>c.classList.remove('mt-card-selected'));
+  const hint=document.getElementById('mt-tap-hint');
+  if(hint)hint.classList.remove('on');
+  document.getElementById('mt-body')?.classList.remove('mt-armed');
+}
+function montadorTapAssign(wIdx,dIdx){
+  if(!montador||!montador.tapSelected)return; // sem seleção ativa: toque na célula não faz nada (arrastar continua normal)
+  const{wsrc,dsrc}=montador.tapSelected;
+  montadorAssign(wIdx,dIdx,wsrc,dsrc);
+  montadorClearSelection();
+  showToast('✅ Treino agendado! Toque em outro do Banco para continuar.');
+  const tabsVisible=getComputedStyle(document.querySelector('.mt-tabs')||document.body).display!=='none';
+  if(tabsVisible)montadorSwitchTab('bank');
 }
 
 function montadorUpdateFooter(){
