@@ -1041,6 +1041,11 @@ details[open] summary::after{transform:rotate(90deg)}
 .mt-foot-count{font-size:11px;color:var(--t2);font-weight:700;flex:1;min-width:120px}
 .btn-mt-save{height:44px;padding:0 20px;border-radius:22px;border:none;background:linear-gradient(135deg,var(--pu),#9955ee);color:#fff;font-size:12.5px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:.03em;display:flex;align-items:center;gap:8px}
 .btn-mt-save:disabled{opacity:.4;cursor:not-allowed}
+.btn-mt-clear{height:44px;padding:0 16px;border-radius:22px;border:1.5px solid var(--bdr2);background:var(--s2);color:var(--t2);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+.btn-mt-clear:hover{border-color:#e5484d;color:#e5484d}
+.mt-info-banner{flex-shrink:0;display:flex;align-items:flex-start;gap:8px;background:var(--pu2);border:1px solid var(--pu);border-radius:10px;padding:8px 12px;margin:8px 14px 0;font-size:11px;line-height:1.45;font-weight:600;color:var(--t2)}
+.mt-info-banner strong{color:var(--t1)}
+.mt-info-banner span.mt-info-icon{flex-shrink:0;font-size:14px}
 
 @media (max-width:760px){
   .mt-tabs{display:flex}
@@ -1473,6 +1478,10 @@ details[open] summary::after{transform:rotate(90deg)}
       <button onclick="montadorAddWeek(1)">+</button>
     </div>
   </div>
+  <div class="mt-info-banner" id="mt-info-banner">
+    <span class="mt-info-icon">💡</span>
+    <span><strong>O calendário já vem com todos os treinos preenchidos</strong>, do jeito que foram gerados. Não gostou de algum dia? Toque no × do treino pra removê-lo, ou use "Excluir tudo" no rodapé pra esvaziar o calendário e montar do seu jeito, treino por treino, usando o Banco.</span>
+  </div>
   <div class="mt-tap-hint" id="mt-tap-hint">
     <span>👉 Treino selecionado — toque num dia do calendário</span>
     <button onclick="montadorClearSelection()">Cancelar</button>
@@ -1483,6 +1492,7 @@ details[open] summary::after{transform:rotate(90deg)}
   </div>
   <div class="mt-foot">
     <span class="mt-foot-count" id="mt-foot-count">0 dias agendados</span>
+    <button class="btn-mt-clear" id="mt-btn-clear" onclick="montadorClearAll()">🗑️ Excluir tudo</button>
     <button class="btn-mt-save" id="mt-btn-save" disabled onclick="montadorAbrirSaveModal()">💾 Salvar Planilha Montada</button>
   </div>
 </div>
@@ -9348,13 +9358,43 @@ function abrirMontador(race){
     tapSelected:null             // {wsrc,dsrc} treino selecionado por toque (fallback mobile)
   };
 
+  // Pré-preenche o calendário com todos os treinos já gerados (posição wIdx/dIdx
+  // idêntica à do Banco), pra pessoa ver o plano completo e decidir o que tirar,
+  // em vez de começar com o calendário vazio e precisar agendar dia por dia.
+  montadorPrefillAll();
+
   const distLabel=is5k?'5km':is10k?'10km':is42?'Maratona':'Meia';
-  document.getElementById('mt-subtitle').textContent=`${distLabel} · ${prof.label} · ${planWeeks} semanas geradas · toque em um treino do Banco e depois no dia do calendário`;
+  document.getElementById('mt-subtitle').textContent=`${distLabel} · ${prof.label} · ${planWeeks} semanas geradas · calendário já preenchido — remova ou ajuste como preferir`;
   document.getElementById('mt-start-date').value=_mtISO(montador.startDate);
   montadorSwitchTab('bank');
   montadorRenderAll();
   document.getElementById('montador-overlay').style.display='flex';
 }
+
+// ── Preenche o calendário inteiro com os treinos do Banco (1 treino por dia,
+//    na mesma semana/dia em que foram gerados). Não mexe na integração intervals.icu.
+function montadorPrefillAll(){
+  if(!montador)return;
+  montador.assigned.clear();
+  montador.sourceWeeks.forEach((wk,wIdx)=>{
+    wk.days.forEach((day,dIdx)=>{
+      if(day.rest||day.type==='Descanso'||day.type==='Caminhar')return;
+      montador.assigned.set(`${wIdx}_${dIdx}`,{...day});
+    });
+  });
+}
+
+// ── Excluir tudo: esvazia o calendário (mantém o Banco intacto) pra pessoa
+//    montar do zero, treino por treino, escolhendo cada dia.
+function montadorClearAll(){
+  if(!montador||montador.assigned.size===0)return;
+  if(!confirm('Excluir todos os treinos do calendário?\n\nO calendário fica vazio e você pode montar do zero, escolhendo cada treino no Banco. Isso não apaga nada em "Meus Treinos".'))return;
+  montador.assigned.clear();
+  montadorRenderCalendar();
+  montadorUpdateFooter();
+  showToast('🗑️ Calendário esvaziado. Toque num treino do Banco pra começar a montar.');
+}
+window.montadorClearAll=montadorClearAll;
 
 function fecharMontador(){
   document.getElementById('montador-overlay').style.display='none';
