@@ -192,10 +192,15 @@ body{
 .hero h1{font-size:clamp(20px,6vw,32px);font-weight:900;letter-spacing:-.03em;text-transform:uppercase;color:var(--t1);margin-bottom:10px;line-height:1.1;text-shadow:0 2px 8px rgba(0,153,204,0.18),0 1px 0 rgba(255,255,255,0.8);word-break:break-word}
 .hero h1 span{background:linear-gradient(90deg,var(--acc),var(--gr));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:var(--acc);display:inline-block;text-shadow:none}
 .hero p{font-size:12px;color:var(--t2);margin-bottom:0}
-.hero-stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.hero-stat{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--bdr);border-radius:10px;padding:5px 11px;font-size:10px;font-weight:700;color:var(--t2)}
+.hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.hero-stats .hero-stat:last-child{grid-column:1/-1}
+.hero-stat{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--s2);border:1px solid var(--bdr);border-radius:10px;padding:5px 11px;font-size:10px;font-weight:700;color:var(--t2)}
 .hero-stat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .hero-stat-dot.g{background:var(--gr)}.hero-stat-dot.b{background:var(--acc)}.hero-stat-dot.p{background:var(--pu)}
+.hero-feat-ico{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff}
+.hero-feat-ico.b{background:linear-gradient(135deg,var(--acc),var(--acc2))}
+.hero-feat-ico.p{background:var(--pu)}
+.hero-feat-ico.g{background:var(--gr)}
 
 /* METHOD TABS */
 .mtabs{display:flex;gap:6px;margin-bottom:1.4rem;flex-wrap:wrap}
@@ -548,6 +553,11 @@ details[open] summary::after{transform:rotate(90deg)}
   .race-tabs{gap:4px}
   .race-tab{font-size:11px;height:38px}
   .exp-bar{gap:6px}
+  /* Header: nome cede lugar ao avatar sozinho pra não disputar espaço com o logo e o "Sair" */
+  .app-nav::before{padding:0 10px;font-size:14px}
+  .auth-user-chip .auth-name{display:none}
+  .auth-user-chip{padding:4px 6px 4px 4px;gap:0}
+  .auth-btn.logout{padding:0 10px;font-size:11px}
   .btn-exp{font-size:9px;padding:0 10px}
   .dur-opts{gap:4px}
   .dopt{font-size:10px;padding:4px 10px}
@@ -1144,22 +1154,21 @@ details[open] summary::after{transform:rotate(90deg)}
 <!-- ── CALCULADORA ── -->
 <div id="page-calc" class="wrap">
   <div class="hero">
-    <div class="hero-eyebrow">⚡ PACESYNC</div>
     <h1 style="text-align:left"><span>Planilhas</span> Personalizadas</h1>
     <div class="hero-feature-list" style="margin:14px 0 4px;display:flex;flex-direction:column;gap:12px">
       <div style="display:flex;align-items:flex-start;gap:10px">
-        <span style="font-size:18px;height:20px;line-height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">📋</span>
+        <span class="hero-feat-ico b">1</span>
         <div style="font-size:13px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1)">Crie sua planilha personalizada</strong> com base no seu objetivo e perfil de corredor.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px">
-        <span style="font-size:18px;height:20px;line-height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">⚡</span>
+        <span class="hero-feat-ico p">2</span>
         <div style="font-size:13px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1)">Calcule seus ritmos com precisão</strong> utilizando seu VO₂ Máximo (opcional).</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px">
-        <span style="font-size:18px;height:20px;line-height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">🔄</span>
+        <span class="hero-feat-ico g">3</span>
         <div style="font-size:13px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1)">Sincronize os treinos via Intervals.icu</strong> direto para o seu relógio de corrida.</div>
       </div>
-      <div style="font-size:11px;font-style:italic;color:var(--t3);margin-top:2px">Nota: consulte a compatibilidade com seu relógio no site do Intervals.</div>
+      <div style="font-size:11px;font-style:italic;color:var(--t3);margin-top:2px">Nota: consulte a compatibilidade com seu relógio no site do intervals.icu</div>
     </div>
     <div class="hero-stats">
       <div class="hero-stat"><div class="hero-stat-dot b"></div>3 métodos de teste</div>
