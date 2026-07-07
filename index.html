@@ -1145,8 +1145,22 @@ details[open] summary::after{transform:rotate(90deg)}
 <div id="page-calc" class="wrap">
   <div class="hero">
     <div class="hero-eyebrow">⚡ PACESYNC</div>
-    <h1>📋 <span>Planilhas</span> Personalizadas</h1>
-    <p>Crie sua planilha personalizada com base no seu objetivo e perfil de corredor, com a opção de usar seu VO₂ Máximo para calcular ritmos ainda mais precisos.</p>
+    <h1 style="text-align:left"><span>Planilhas</span> Personalizadas</h1>
+    <div class="hero-feature-list" style="margin:14px 0 4px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px;height:20px;line-height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">📋</span>
+        <div style="font-size:13px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1)">Crie sua planilha personalizada</strong> com base no seu objetivo e perfil de corredor.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px;height:20px;line-height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">⚡</span>
+        <div style="font-size:13px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1)">Calcule seus ritmos com precisão</strong> utilizando seu VO₂ Máximo (opcional).</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px;height:20px;line-height:20px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">🔄</span>
+        <div style="font-size:13px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1)">Sincronize os treinos via Intervals.icu</strong> direto para o seu relógio de corrida.</div>
+      </div>
+      <div style="font-size:11px;font-style:italic;color:var(--t3);margin-top:2px">Nota: consulte a compatibilidade com seu relógio no site do Intervals.</div>
+    </div>
     <div class="hero-stats">
       <div class="hero-stat"><div class="hero-stat-dot b"></div>3 métodos de teste</div>
       <div class="hero-stat"><div class="hero-stat-dot g"></div>5 zonas de treino</div>
@@ -1165,13 +1179,13 @@ details[open] summary::after{transform:rotate(90deg)}
       </div>
       <div class="pr-opts" style="grid-template-columns:1fr 1fr 1fr">
         <div class="propt propt-calc" id="calc-prof-init" onclick="wzSelectProfile('init')">
-          <div class="propt-icon">🚶</div><div class="propt-title">Iniciante</div><div class="propt-desc">Base &lt; 30km/sem</div>
+          <div class="propt-icon">🚶</div><div class="propt-title">Iniciante</div>
         </div>
         <div class="propt propt-calc" id="calc-prof-inter" onclick="wzSelectProfile('inter')">
-          <div class="propt-icon">🏃</div><div class="propt-title">Intermediário</div><div class="propt-desc">Base 30–55km/sem</div>
+          <div class="propt-icon">🏃</div><div class="propt-title">Intermediário</div>
         </div>
         <div class="propt propt-calc" id="calc-prof-avance" onclick="wzSelectProfile('avance')">
-          <div class="propt-icon">⚡</div><div class="propt-title">Avançado</div><div class="propt-desc">Base &gt; 55km/sem</div>
+          <div class="propt-icon">⚡</div><div class="propt-title">Avançado</div>
         </div>
       </div>
     </div>
@@ -1872,20 +1886,20 @@ const PROFILES={
     weekBase21:{8:12,12:10,16:8},weekBase42:{},
     weekIncBase:2,weekIncBuild21:2,weekIncBuild42:0,weekTaper21:12,weekTaper42:0,
     paces:{ez:.52,mod:.60,tempo:.70,intv:.76},zoneRef:'Run/Walk · tudo por tempo (Z1-Z2)'},
-  init:{label:'Iniciante',icon:'🚶',desc:'Base < 30km/sem',method:'Hal Higdon Novice',
+  init:{label:'Iniciante',icon:'🚶',method:'Hal Higdon Novice',
     // 16sem: progressão conservadora 8→10→12→(desc)→14→16→(desc)→18→20km
     // 12sem: progressão moderada — não usada normalmente para iniciante
-    long21:{start:8,peak:20,taperKm:12,cutbackKm:8},long42:{start:14,peak:34,taperKm:22,taper2Km:13,cutbackKm:13},
-    weekBase21:{8:20,12:18,16:14},weekBase42:{12:30,16:28,20:25},
+    long21:{start:8,peak:20,taperKm:12,cutbackKm:8},long42:{start:14,peak:32,taperKm:22,taper2Km:13,cutbackKm:13},
+    weekBase21:{8:20,12:18,16:14},weekBase42:{12:32,16:30,20:27},
     weekIncBase:3,weekIncBuild21:3,weekIncBuild42:4,weekTaper21:18,weekTaper42:32,
     paces:{ez:.60,mod:.72,tempo:.82,intv:.88},zoneRef:'Longo Z1-Z2 (60%)'},
-  inter:{label:'Intermediário',icon:'🏃',desc:'Base 30–55km/sem',method:'Daniels + Pfitzinger 21km',
+  inter:{label:'Intermediário',icon:'🏃',method:'Daniels + Pfitzinger 21km',
     // 12sem: progressão específica 10→12→14→(desc)→16→18→(desc)→20km
     long21:{start:10,peak:20,taperKm:14,cutbackKm:11},long42:{start:18,peak:36,taperKm:26,taper2Km:22,cutbackKm:16},
-    weekBase21:{8:28,12:26,16:22},weekBase42:{12:38,16:35,20:32},
+    weekBase21:{8:28,12:26,16:22},weekBase42:{12:44,16:40,20:37},
     weekIncBase:4,weekIncBuild21:3.5,weekIncBuild42:4.5,weekTaper21:22,weekTaper42:38,
     paces:{ez:.67,mod:.77,tempo:.88,intv:.93},zoneRef:'Longo Z2 (67%) · Tempo Z4 (88%)'},
-  avance:{label:'Avançado',icon:'⚡',desc:'Base > 55km/sem',method:'Pfitzinger / Daniels Advanced',
+  avance:{label:'Avançado',icon:'⚡',method:'Pfitzinger / Daniels Advanced',
     long21:{start:16,peak:18,taperKm:16,cutbackKm:14},long42:{start:22,peak:38,taperKm:28,taper2Km:17,cutbackKm:20},
     weekBase21:{8:36,12:32,16:30},weekBase42:{12:50,16:48,20:45},
     weekIncBase:5,weekIncBuild21:4,weekIncBuild42:5,weekTaper21:30,weekTaper42:48,
@@ -2401,8 +2415,28 @@ function wzAdvanceTo3(){
   step3.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+/* ── AVISO PLANO 42KM ── */
+var marathon42WarnPending=null;
+function openMarathon42Warn(onConfirm){
+  marathon42WarnPending=onConfirm;
+  document.getElementById('marathon42-warn-modal').classList.add('open');
+}
+function marathon42WarnConfirm(){
+  document.getElementById('marathon42-warn-modal').classList.remove('open');
+  const cb=marathon42WarnPending;
+  marathon42WarnPending=null;
+  if(cb)cb();
+}
+
 /* ── ETAPA 3: Distância ── */
 function wzSelectDist(d){
+  if(d==='42'){
+    openMarathon42Warn(()=>wzSelectDistActual(d));
+    return;
+  }
+  wzSelectDistActual(d);
+}
+function wzSelectDistActual(d){
   wzState.dist=d;
   document.querySelectorAll('#wz-step-3 .wz-yn-btn').forEach(b=>b.style.background='');
   const btn=document.getElementById('wz-dist-'+d);
@@ -2573,7 +2607,7 @@ return;}
 
   // Muda para aba planilha (agora os elementos existem)
   setTab('plan');
-  setRaceTab(race);
+  setRaceTabActual(race);
 
   // Esconde abas não escolhidas
   const tab21=document.getElementById('rtab-21');
@@ -2826,6 +2860,15 @@ function calcularEstreante(){
 ══════════════════════════════════════════════════════════ */
 function setTab(t){['vo2','plan'].forEach(k=>{document.getElementById('tab-'+k).classList.toggle('on',k===t);document.getElementById('panel-'+k).style.display=k===t?'block':'none'})}
 function setRaceTab(r){
+  const tab42el=document.getElementById('rtab-42');
+  const already42=tab42el&&tab42el.classList.contains('on-42');
+  if(r==='42'&&!already42){
+    openMarathon42Warn(()=>setRaceTabActual(r));
+    return;
+  }
+  setRaceTabActual(r);
+}
+function setRaceTabActual(r){
   document.getElementById('rtab-21').className='race-tab'+(r==='21'?' on-21':'');
   document.getElementById('rtab-42').className='race-tab'+(r==='42'?' on-42':'');
   const rtab10k=document.getElementById('rtab-10k');if(rtab10k)rtab10k.className='race-tab'+(r==='10k'?' on-10k':'');
@@ -3324,12 +3367,19 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
   // 12sem inter: incremento ligeiramente maior para atingir pico em 10 semanas
   // 16sem init: incremento mais suave (5-7%) nas primeiras 10 semanas
   const adaptiveInc={
-    init:  {base:[1.04,1.07],build:[1.05,1.08]},  // +4–7% (mais conservador)
+    init:  {base:[1.04,1.07],build:[1.05,1.08]},  // +4–7% (mais conservador) — usado no 21km
     inter: {base:[1.06,1.09],build:[1.07,1.10]},  // +6–10%
     avance:{base:[1.08,1.11],build:[1.09,1.12]},  // +8–12%
   };
   const profKey=isAvance?'avance':isInit?'init':isInter?'inter':'init';
-  const aInc=adaptiveInc[profKey];
+  // No 42km, Iniciante e Intermediário recebem uma taxa de build mais alta — calibrado
+  // pra evitar que o longão vire quase 100% (init) ou mais da metade (inter) do volume
+  // semanal nas semanas de pico/específica. Checado contra benchmarks reais:
+  // Hal Higdon Novice (longão ~50% do total semanal) e Pfitzinger (~30-36%).
+  // Não afeta o 21km, que continua com a taxa original de cada perfil.
+  const aInc=is42&&isInit?{base:[1.04,1.07],build:[1.11,1.16]}
+    :is42&&isInter?{base:[1.06,1.09],build:[1.09,1.13]}
+    :adaptiveInc[profKey];
 
   // Micro-ondulação de volume intra-build (Pfitzinger ~5-8%)
   // Semanas pares do build recuam levemente antes de subir mais
@@ -3809,6 +3859,10 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
   // 42km phase-aware: MP Run na fase Specific (maioria dos sábados) + build tardio
   function isMPRunWeek(w){
     if(!is42)return false;
+    // Iniciante + objetivo "finish": sem MP Run. O foco é completar a prova com
+    // segurança (método Higdon Novice), não treinar ritmo específico de maratona —
+    // isso é uma técnica de Pfitzinger voltada a quem já busca performance.
+    if(isInit&&obj==='finish')return false;
     const pd=phaseDetail(w);
     if(isCutback(w))return false;
     // Fase SPECIFIC: MP Run é o padrão — estimulo marathon-specific em quase todos os longões
@@ -4775,9 +4829,26 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
         if(cb||pd==='base'){
           const baseDurQ=ph.base[1]-ph.base[0];
           const basePosQ=w-ph.base[0];
-          const hasFourthDay42=baseDurQ>0&&basePosQ>=Math.ceil(baseDurQ/2);
-          if(!hasFourthDay42||obj==='finish')return{type:'Descanso',rest:true};
-          // 2ª metade da base (target/improve): Fartlek leve de introdução
+          // Rampa de frequência calibrada por perfil: Avançado e Intermediário
+          // já têm base aeróbica consolidada (correm regularmente há tempo),
+          // então toleram um 4º treino/semana desde o início da fase Base.
+          // Iniciante mantém a progressão gradual (4º dia só a partir da
+          // metade da Base), reduzindo risco de lesão/overtraining precoce —
+          // essa é a rampa que faz sentido fisiologicamente pra quem
+          // está começando do zero.
+          const fourthDayThreshold=isAvance?0:isInter?Math.min(1,Math.ceil(baseDurQ/2)):Math.ceil(baseDurQ/2);
+          const hasFourthDay42=baseDurQ>0&&basePosQ>=fourthDayThreshold;
+          if(!hasFourthDay42)return{type:'Descanso',rest:true};
+          // Objetivo "finish": frequência sobe igual (perfil já definiu isso acima),
+          // mas sem estímulo de velocidade — 4º dia vira corrida leve extra,
+          // só somando volume aeróbico de forma segura.
+          if(obj==='finish'){
+            const d4=Math.max(6,Math.round(km*(is42?.14:.16)));
+            const{bandStr}=easyByTime(d4,ez);
+            return{type:'Corrida leve',pace:s2p(ez),dist:`${d4}km`,timeLabel:bandStr,
+              detail:`Z1-Z2 · ${bandStr} · 4º dia — volume aeróbico extra, sem intensidade (objetivo finalizar)`};
+          }
+          // target/improve: Fartlek leve de introdução
           return fartlekSession('base',km,isAvance,w);
         }
         // build/specific/peak: thursdaySession phase-aware
@@ -5384,6 +5455,7 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
   function dayPlan(w,d){
     const p=phaseName(w),km=weekKm(w),cb=isCutback(w);
     const isInit=prof.label==='Iniciante';
+    const isInter=prof.label==='Intermediário';
 
     if(d===0) return{type:'Descanso',rest:true}; // SEG
     if(d===4) return{type:'Descanso',rest:true}; // SEX
@@ -5423,6 +5495,15 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
       // Build: intervalado progressivo por bloco
       const buildPos=w-ph.build[0];
       const block=Math.floor(buildPos/cutbackCycle);
+      // Iniciante: só 1 sessão de qualidade por semana (alterna intervalado/tempo run
+      // entre blocos) — evita empilhar dois dias intensos seguidos (TER+QUA) numa
+      // faixa etária/nível que ainda está construindo base aeróbica.
+      if(isInit&&block%2===1){
+        const d2=Math.max(is10k?5:4,Math.round(km*.20));
+        const{bandStr}=easyByTime(d2,ez);
+        return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,
+          detail:`Z1-Z2 · ${bandStr} fácil — semana de foco no tempo run (QUA), sem acumular 2 dias intensos seguidos`};
+      }
       if(cb){
         return{type:'Intervalado',pace:s2p(intv),dist:`${is10k?6:5}km`,
           detail:`4×400m a ${s2p(intv)}/km · pausa 2min · semana de recuo — volume baixo, intensidade mantida`};
@@ -5444,13 +5525,9 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
       return{type:'Intervalado',pace:s2p(intv),dist:dists[idx],detail:intervSchemes[idx]};
     }
 
-    // QUA = Tempo Run (build/taper) ou leve (base)
+    // QUA = Tempo Run (build) ou descanso (base/cutback — sessão passa pra QUI)
     if(d===2){
-      if(p==='base'){
-        const d2=Math.max(is10k?5:4,Math.round(km*.18));
-        if(isInit){const{bandStr}=easyByTime(d2,ez);return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,detail:`Z1-Z2 · ${bandStr} fácil — construção aeróbica`};}
-        return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,detail:'Z1-Z2 · aeróbico fácil · base'};
-      }
+      if(p==='base') return{type:'Descanso',rest:true};
       if(p==='taper'){
         const d2=is10k?7:5;
         if(isInit){const{bandStr}=easyByTime(d2,ez);return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,detail:`Z1-Z2 · ${bandStr} no taper — pernas soltas`};}
@@ -5459,10 +5536,16 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
       // Build: Tempo Run
       const buildPos=w-ph.build[0];
       const block=Math.floor(buildPos/cutbackCycle);
-      if(cb){
+      // Semana de recuo: descanso na quarta — a corrida leve de recuperação
+      // passa pra quinta, dando um dia de folga real depois da terça.
+      if(cb) return{type:'Descanso',rest:true};
+      // Iniciante: espelha a alternância do TER — na semana em que o intervalado
+      // já rodou na terça (block%2===0), a quarta fica leve em vez de empilhar tempo run.
+      if(isInit&&block%2===0){
         const d2=is10k?7:5;
-        if(isInit){const{bandStr}=easyByTime(d2,ez);return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,detail:`Z1-Z2 · ${bandStr} recuo — recuperação ativa`};}
-        return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,detail:'Z1-Z2 · corrida leve de recuo'};
+        const{bandStr}=easyByTime(d2,ez);
+        return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,
+          detail:`Z1-Z2 · ${bandStr} fácil — semana de foco no intervalado (TER), sem acumular 2 dias intensos seguidos`};
       }
       const tempoKm=is10k?
         [8,10,12,14][Math.min(block,3)]:
@@ -5472,12 +5555,30 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
         detail:`aquec. 1,5km → ${seg}km a ${s2p(tempo)}/km → desaq. · Z4 — especificidade ${is10k?'10km':'5km'} · bloco ${block+1}`};
     }
 
-    // QUI = corrida leve ou moderado
+    // QUI = corrida leve (base/recuo, e sempre no iniciante) ou moderado (build inter/avançado)
     if(d===3){
-      if(p==='base'||cb) return{type:'Descanso',rest:true};
+      if(p==='base'){
+        // Sessão que antes ficava na quarta — agora aqui, deixando a quarta de descanso
+        // entre a terça (qualidade/fartlek) e a quinta (aeróbico leve).
+        const d2=Math.max(is10k?5:4,Math.round(km*.18));
+        if(isInit){const{bandStr}=easyByTime(d2,ez);return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,detail:`Z1-Z2 · ${bandStr} fácil — construção aeróbica`};}
+        return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,detail:'Z1-Z2 · aeróbico fácil · base'};
+      }
+      if(cb){
+        // Idem: recuperação da semana de recuo passa da quarta pra quinta.
+        const d2=is10k?7:5;
+        if(isInit){const{bandStr}=easyByTime(d2,ez);return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,detail:`Z1-Z2 · ${bandStr} recuo — recuperação ativa`};}
+        return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,detail:'Z1-Z2 · corrida leve de recuo'};
+      }
       const d2=Math.max(is10k?5:4,Math.round(km*.15));
+      if(isInit){
+        // Corrida leve de verdade — recuperação real antes do longão de sábado,
+        // já que o Iniciante roda só 1 dia de qualidade por semana (TER ou QUA).
+        const{bandStr}=easyByTime(d2,ez);
+        return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,
+          detail:`Z1-Z2 · ${bandStr} fácil — recuperação antes do longão`};
+      }
       const detail=`Z2-Z3 · ${d2}km moderado · consolidação entre intervalado e longão`;
-      if(isInit){const{bandStr}=easyByTime(d2,mod);return{type:'Moderado',pace:s2p(mod),dist:`${d2}km`,timeLabel:bandStr,detail};}
       return{type:'Moderado',pace:s2p(mod),dist:`${d2}km`,detail};
     }
     return{type:'Descanso',rest:true};
@@ -7839,6 +7940,21 @@ if(document.readyState==='loading'){
   </span>
 </div>
 
+
+<!-- MARATONA 42KM WARNING MODAL -->
+<div class="cooper-warn-bg" id="marathon42-warn-modal">
+  <div class="cooper-warn-box">
+    <div class="cooper-warn-icon">🏆⚠️</div>
+    <div class="cooper-warn-title">Antes de escolher o plano de 42 km</div>
+    <div class="cooper-warn-body">
+      <strong>Importante:</strong> este plano de 42 km é destinado a corredores que já conseguem completar longões de <strong>16–18 km</strong> e treinam regularmente.<br><br>
+      Caso ainda não atenda a esse pré-requisito, recomendamos concluir primeiro um ciclo de <strong>21 km</strong> antes de iniciar a preparação para a maratona.
+    </div>
+    <div class="cooper-warn-actions">
+      <button class="cooper-warn-btn-ok" onclick="marathon42WarnConfirm()">Ok, ciente ✓</button>
+    </div>
+  </div>
+</div>
 
 <!-- COOPER WARNING MODAL -->
 <div class="cooper-warn-bg" id="cooper-warn-modal">
