@@ -1268,8 +1268,8 @@ details[open] summary::after{transform:rotate(90deg)}
           <button class="wz-vo2-option-btn" id="wz-opt-est" onclick="wzVo2Choice('estimate')" style="display:flex;align-items:center;gap:14px;padding:1rem 1.2rem;border:1.5px solid var(--bdr2);border-radius:var(--r2);background:var(--s2);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;width:100%">
             <span style="font-size:26px;flex-shrink:0">📊</span>
             <div>
-              <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">Usar estimativa por idade e sexo</div>
-              <div style="font-size:11px;color:var(--t3);line-height:1.4">Cálculo automático — menos preciso, mas suficiente para começar</div>
+              <div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">Gerar sem informar</div>
+              <div style="font-size:11px;color:var(--t3);line-height:1.4">Usamos um VO₂ de referência para o seu nível — não precisa de idade nem sexo</div>
             </div>
           </button>
         </div>
@@ -1310,16 +1310,6 @@ details[open] summary::after{transform:rotate(90deg)}
 
       <!-- Confirmação pós-teste calculado (opção B, após calcular) -->
       <div id="wz-calc-confirm" style="display:none"></div>
-
-      <!-- Input idade+sexo (opção C) -->
-      <div id="wz-age-input" style="display:none">
-        <button onclick="wzBackToOptions()" style="background:none;border:none;color:var(--acc);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:.75rem;padding:0;display:flex;align-items:center;gap:5px">← Voltar</button>
-        <div class="igrow" style="grid-template-columns:1fr 160px;margin-top:.25rem">
-          <div class="ig"><label>Sua idade</label><input type="number" id="wz-age" placeholder="anos" min="10" max="90"/></div>
-          <div class="ig"><label>Sexo</label><div class="tg"><button class="tgb on" id="wz-btn-m" onclick="wzSetSexo('M')">Masc.</button><button class="tgb" id="wz-btn-f" onclick="wzSetSexo('F')">Fem.</button></div></div>
-        </div>
-        <button class="wz-next-btn" onclick="wzConfirmAge()">Continuar →</button>
-      </div>
     </div>
 
     <!-- ETAPA 3: Distância -->
@@ -1917,7 +1907,7 @@ function renderLastVo2Card(profKey){
     return;
   }
   const t=lastTestResult;
-  const fit=getFit(t.vo2);
+  const fit=getFit(t.vo2,t.methodType==='profileDefault'?'N':undefined);
   const isVdot=t.methodType==='vdot';
   area.style.display='block';
   area.innerHTML=`
@@ -1940,7 +1930,7 @@ function renderLastVo2Card(profKey){
   // Restaura resultado na tela se result-area estiver vazio
   const ra=document.getElementById('result-area');
   if(ra&&ra.innerHTML.indexOf('empty-state')>=0){
-    renderResults(t.vo2,null,t.methodLabel,t.methodType||'physiological');
+    renderResults(t.vo2,null,t.methodLabel,t.methodType||'physiological',t.methodType==='profileDefault'?'N':undefined);
   }
 }
 
@@ -1974,6 +1964,15 @@ const FIT_F=[
   {min:30,max:38,l:'Moderado',bg:'rgba(255,184,48,0.15)',c:'#ffb830'},
   {min:38,max:48,l:'Bom',bg:'rgba(0,255,136,0.15)',c:'#00ff88'},
   {min:48,max:999,l:'Excelente',bg:'rgba(0,229,255,0.15)',c:'#00e5ff'},
+];
+// Tabela neutra (média entre FIT_M e FIT_F) — usada quando o sexo não foi informado,
+// pra não exibir o selo "Bom/Excelente" enviesado por um sexo que não foi de fato coletado.
+const FIT_N=[
+  {min:0,max:26,l:'Muito abaixo da média',bg:'rgba(255,68,102,0.15)',c:'#ff4466'},
+  {min:26,max:32,l:'Abaixo da média',bg:'rgba(255,120,40,0.15)',c:'#ff7828'},
+  {min:32,max:40,l:'Moderado',bg:'rgba(255,184,48,0.15)',c:'#ffb830'},
+  {min:40,max:50,l:'Bom',bg:'rgba(0,255,136,0.15)',c:'#00ff88'},
+  {min:50,max:999,l:'Excelente',bg:'rgba(0,229,255,0.15)',c:'#00e5ff'},
 ];
 const PROFILES={
   estreante:{label:'Estreante',icon:'🌱',desc:'Nunca correu antes',method:'Galloway Run/Walk',
@@ -2065,14 +2064,14 @@ function resetCalcInputs(){
 /* ══════════════════════════════════════════════════════════
    WIZARD PROGRESSIVO
 ══════════════════════════════════════════════════════════ */
-var wzState={profile:null,vo2:null,usedRealVo2:false,dist:null,obj:null,dur:null,sexo:'M'};
+var wzState={profile:null,vo2:null,usedRealVo2:false,dist:null,obj:null,dur:null};
 
 /* ── Renderiza o histórico (etapas confirmadas acima) ── */
 function wzRenderHistory(){
   const labels={profile:'Perfil',vo2:'VO₂ Máx',dist:'Distância',obj:'Objetivo'};
   const vals={
     profile: wzState.profile?({'init':'🚶 Iniciante','inter':'🏃 Intermediário','avance':'⚡ Avançado'}[wzState.profile]):'',
-    vo2: wzState.usedRealVo2?`${wzState.vo2} ml/kg/min`:(wzState.vo2?`Estimativa — ${wzState.sexo==='M'?'Masculino':'Feminino'}`:'' ),
+    vo2: wzState.usedRealVo2?`${wzState.vo2} ml/kg/min`:(wzState.vo2?`${wzState.vo2} ml/kg/min · padrão do nível`:'' ),
     dist: wzState.dist?({'10k':'🎯 10 km','21':'🏅 Meia — 21 km','42':'🏆 Maratona — 42 km'}[wzState.dist]):'',
     obj: wzState.obj?({'finish':'🎯 Completar a prova','target':'⏱ Tempo alvo','improve':'📈 Melhorar tempo atual'}[wzState.obj]):''
   };
@@ -2105,7 +2104,7 @@ function wzEditStep(n){
   }
   // Limpa estado a partir desse passo
   if(n<=1)wzState.profile=null;
-  if(n<=2){wzState.vo2=null;wzState.usedRealVo2=false;document.getElementById('wz-vo2-question').style.display='';document.getElementById('wz-vo2-input').style.display='none';document.getElementById('wz-age-input').style.display='none';document.getElementById('wz-test-picker').style.display='none';const ift=document.getElementById('wz-inline-test-form');if(ift)ift.style.display='none';const cc=document.getElementById('wz-calc-confirm');if(cc){cc.style.display='none';cc.innerHTML='';}}
+  if(n<=2){wzState.vo2=null;wzState.usedRealVo2=false;document.getElementById('wz-vo2-question').style.display='';document.getElementById('wz-vo2-input').style.display='none';document.getElementById('wz-test-picker').style.display='none';const ift=document.getElementById('wz-inline-test-form');if(ift)ift.style.display='none';const cc=document.getElementById('wz-calc-confirm');if(cc){cc.style.display='none';cc.innerHTML='';}}
   if(n<=3)wzState.dist=null;
   if(n<=4){wzState.obj=null;}
   if(n<=5)wzState.dur=null;
@@ -2155,6 +2154,14 @@ function wzShowStep2(){
   step.style.display='';
   // Verifica se há VO2 salvo
   const saved=document.getElementById('wz-saved-vo2');
+  // Se o último VO2 veio do fluxo "Gerar sem informar" (padrão por perfil), não faz sentido
+  // oferecer "Manter" um valor preso ao perfil antigo — resincroniza direto com o perfil atual.
+  if(lastTestResult&&lastTestResult.methodType==='profileDefault'){
+    saved.style.display='none';
+    document.getElementById('wz-vo2-question').style.display='none';
+    wzUseProfileEstimate();
+    return;
+  }
   if(lastTestResult&&lastTestResult.vo2){
     const fit=getFit(lastTestResult.vo2);
     saved.style.display='';
@@ -2197,7 +2204,6 @@ function wzVo2Choice(choice){
   document.getElementById('wz-vo2-question').style.display='none';
   document.getElementById('wz-vo2-input').style.display='none';
   document.getElementById('wz-test-picker').style.display='none';
-  document.getElementById('wz-age-input').style.display='none';
 
   if(choice==='have'){
     document.getElementById('wz-vo2-input').style.display='';
@@ -2205,17 +2211,29 @@ function wzVo2Choice(choice){
   } else if(choice==='test'){
     document.getElementById('wz-test-picker').style.display='';
   } else {
-    // estimate
-    document.getElementById('wz-age-input').style.display='';
-    setTimeout(()=>document.getElementById('wz-age').focus(),100);
+    // estimate — gera direto com VO2 de referência do perfil, sem pedir idade/sexo
+    wzUseProfileEstimate();
   }
 }
 
 function wzBackToOptions(){
   document.getElementById('wz-vo2-input').style.display='none';
   document.getElementById('wz-test-picker').style.display='none';
-  document.getElementById('wz-age-input').style.display='none';
   document.getElementById('wz-vo2-question').style.display='';
+}
+
+/* VO2 de referência por perfil, usado quando o usuário opta por "Gerar sem informar" —
+   evita a estimativa por idade (que gerava ritmos muito lentos) e não exige idade/sexo. */
+var WZ_PROFILE_VO2={init:45,inter:47,avance:52};
+function wzUseProfileEstimate(){
+  const vo2=WZ_PROFILE_VO2[wzState.profile]||45;
+  wzState.vo2=vo2;wzState.usedRealVo2=false;
+  vo2G=vo2;vVO2G=vo2/3.5;
+  customPaces={};usingCustom=false;
+  const ra=document.getElementById('result-area');
+  if(ra){ra.style.visibility='hidden';ra.style.display='none';}
+  renderResults(vo2,null,'Padrão por nível (sem informar)','profileDefault','N');
+  wzAdvanceTo3();
 }
 
 function wzGoToTest(method){
@@ -2224,7 +2242,6 @@ function wzGoToTest(method){
   document.getElementById('wz-vo2-question').style.display='none';
   document.getElementById('wz-test-picker').style.display='none';
   document.getElementById('wz-vo2-input').style.display='none';
-  document.getElementById('wz-age-input').style.display='none';
   document.getElementById('wz-calc-confirm').style.display='none';
 
   // Garante que o container do formulário existe
@@ -2498,29 +2515,6 @@ function wzConfirmVo2(){
   wzAdvanceTo3();
 }
 
-var wzSexo='M';
-function wzSetSexo(s){
-  wzSexo=s;wzState.sexo=s;sexo=s;
-  document.getElementById('wz-btn-m').classList.toggle('on',s==='M');
-  document.getElementById('wz-btn-f').classList.toggle('on',s==='F');
-}
-function wzConfirmAge(){
-  const idade=parseFloat(document.getElementById('wz-age').value);
-  if(!idade||idade<10||idade>90){alert('Informe uma idade válida (10–90 anos).');return;}
-  sexo=wzSexo;
-  const vo2=wzSexo==='M'
-    ?Math.max(28,Math.min(55,56.363-0.413*idade))
-    :Math.max(22,Math.min(48,44.355-0.356*idade));
-  wzState.vo2=vo2;wzState.usedRealVo2=false;
-  vo2G=vo2;vVO2G=vo2/3.5;
-  customPaces={};usingCustom=false;
-  const fcmax=Math.round(208-0.7*idade);
-  const ra=document.getElementById('result-area');
-  if(ra){ra.style.visibility='hidden';ra.style.display='none';}
-  renderResults(vo2,fcmax,'Estimativa por idade','physiological');
-  wzAdvanceTo3();
-}
-
 function wzAdvanceTo3(){
   document.getElementById('wz-step-2').style.display='none';
   wzRenderHistory();
@@ -2695,7 +2689,7 @@ return;}
 
   // Reconstrói o result-area (tabs + zonas) — deve vir ANTES de copiar valores
   // de tempo alvo, pois renderResults recria o DOM do plan-body
-  if(vo2G>0) renderResults(vo2G, null, (lastTestResult&&lastTestResult.methodLabel)||'Calculado', (lastTestResult&&lastTestResult.methodType)||'physiological');
+  if(vo2G>0) renderResults(vo2G, null, (lastTestResult&&lastTestResult.methodLabel)||'Calculado', (lastTestResult&&lastTestResult.methodType)||'physiological', (lastTestResult&&lastTestResult.methodType==='profileDefault')?'N':undefined);
 
   // Copia tempo alvo/melhora para os inputs do motor DEPOIS do renderResults
   // (renderResults recria o DOM via buildPlanUI e destruiria valores copiados antes)
@@ -2771,7 +2765,7 @@ function setMethod(m){
 }
 function setSexo2400(s){sexo2400=s;setSexo(s);document.getElementById('btn2400-m').classList.toggle('on',s==='M');document.getElementById('btn2400-f').classList.toggle('on',s==='F')}
 function setVdotDist(d){vdotDist=d;['5','10','21','42'].forEach(k=>document.getElementById('vbtn-'+k).classList.toggle('on',parseFloat(k)===(d===21.1?21:d===42.2?42:d)))}
-function getFit(v){const t=sexo==='M'?FIT_M:FIT_F;return t.find(f=>v>=f.min&&v<f.max)||t[0]}
+function getFit(v,sexoOverride){const s=sexoOverride||sexo;const t=s==='N'?FIT_N:(s==='M'?FIT_M:FIT_F);return t.find(f=>v>=f.min&&v<f.max)||t[0]}
 function s2p(kmh){if(!kmh||kmh<=0)return'--:--';const m=60/kmh,mi=Math.floor(m),s=Math.round((m-mi)*60);return`${mi}:${s.toString().padStart(2,'0')}`}
 function p2m(kmh){return kmh<=0?0:60/kmh}
 function p2kmh(str){if(!str||!str.includes(':'))return null;const[mi,se]=str.split(':').map(Number);if(isNaN(mi)||isNaN(se))return null;return 60/(mi+se/60)}
@@ -3148,8 +3142,8 @@ function revealPlanControls(){
   });
 }
 
-function renderResults(vo2,fcmax,methodLabel,methodType){
-  const vo2r=Math.round(vo2*10)/10,fit=getFit(vo2);
+function renderResults(vo2,fcmax,methodLabel,methodType,fitSexo){
+  const vo2r=Math.round(vo2*10)/10,fit=getFit(vo2,fitSexo);
   const pMin=[],pMax=[];
 
   // Zonas — dados calculados
@@ -7842,8 +7836,6 @@ window.wzReplaceSavedVo2=wzReplaceSavedVo2;
 window.wzVo2Choice=wzVo2Choice;
 window.wzUpdateVo2Btn=wzUpdateVo2Btn;
 window.wzConfirmVo2=wzConfirmVo2;
-window.wzSetSexo=wzSetSexo;
-window.wzConfirmAge=wzConfirmAge;
 window.wzAdvanceTo3=wzAdvanceTo3;
 window.wzSelectDist=wzSelectDist;
 window.wzShowStep4=wzShowStep4;
