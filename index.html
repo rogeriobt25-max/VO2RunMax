@@ -6948,7 +6948,7 @@ function renderSavedList(){
     const raceKmLabel=is42?'42km':is10k?'10km':'21km';
     const titleLabel=is42?'Maratona':is10k?'10km':'Meia Maratona';
     const montadaName=plan.montada?(plan.name||'').replace(/<svg[\s\S]*?<\/svg>\s*/,'').trim():'';
-    const titleWithParens=`${titleLabel}${montadaName?` <span style="font-weight:400">(${montadaName})</span>`:''}`;
+    const titleWithParens=titleLabel;
     const profLabel=PROFILES[plan.profKey]?.label||'';
     const todayInfo=getTodayInfo(plan);
     const itemIconSvg=is42?trophyIconSvg(24):is10k?medalIconSvg('#2563EB','#1D4ED8',24):medalIconSvg('#F5C518','#B8860B',24);
@@ -6959,6 +6959,7 @@ function renderSavedList(){
         <div class="saved-item-info">
           <div class="saved-item-name" style="display:flex;align-items:center;gap:6px">${itemIconSvg}${titleWithParens}</div>
           <div class="saved-item-meta">
+            ${montadaName?`<span>(${montadaName})</span>`:''}
             <span>${raceKmLabel} · ${plan.planWeeks} semanas</span>
             <span>${profLabel}</span>
             <span>VO2: ${plan.vo2}</span>
