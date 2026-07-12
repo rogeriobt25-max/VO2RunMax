@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="VO2 RunMax"/>
 <meta name="theme-color" content="#0099cc"/>
+<meta name="color-scheme" content="light only"/>
+<meta name="supported-color-schemes" content="light"/>
+<style>html{color-scheme:light only!important;forced-color-adjust:none}</style>
 <title>VO2 RunMax</title>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon-192.png"/>
@@ -204,7 +207,7 @@ body{
 }
 .bnav-badge.show{display:block}
 
-@media(max-width:360px){.bnav-label{font-size:9px}.bnav-icon{font-size:18px}}
+@media(max-width:360px),(max-device-width:360px){.bnav-label{font-size:9px}.bnav-icon{font-size:18px}}
 
 /* HERO */
 .hero{margin-bottom:1.25rem;padding:1.4rem 1.25rem 1.6rem;background:var(--s1);border-radius:var(--rc);border:1px solid var(--bdr);position:relative;overflow:hidden;box-shadow:var(--shadow-card)}
@@ -281,13 +284,13 @@ input::placeholder{color:var(--t3)}
 /* Tables: prevent overflow on mobile */
 .zt{width:100%;border-collapse:collapse;table-layout:fixed}
 .zt th,.zt td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@media(max-width:480px){
+@media(max-width:480px),(max-device-width:480px){
   .zt th,.zt td{font-size:11px;padding:8px 8px;white-space:normal}
 }
 /* Export bar: ver regra de grid responsivo definida junto com .exp-bar acima */
 /* Metric cards: minimum 2 per row */
 .mc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1rem}
-@media(max-width:360px){
+@media(max-width:360px),(max-device-width:360px){
   .mc-grid{grid-template-columns:1fr 1fr}
   .mc-val{font-size:18px}
 }
@@ -300,7 +303,7 @@ input::placeholder{color:var(--t3)}
 .badge{display:inline-block;font-size:11.5px;padding:3px 10px;border-radius:6px;font-weight:700;margin-top:6px}
 
 .chart-wrap{position:relative;width:100%;height:200px}
-@media(max-width:480px){.chart-wrap{height:160px}}
+@media(max-width:480px),(max-device-width:480px){.chart-wrap{height:160px}}
 .zt{width:100%;border-collapse:collapse}
 .zt th{font-size:9px;color:var(--t3);font-weight:700;text-align:left;padding:8px 12px;border-bottom:1px solid var(--bdr);letter-spacing:.1em;text-transform:uppercase}
 .zt td{font-size:13px;padding:10px 12px;border-bottom:1px solid var(--bdr);vertical-align:middle}
@@ -309,7 +312,7 @@ input::placeholder{color:var(--t3)}
 .zdot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px;vertical-align:middle}
 
 .plan-opts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem}
-@media(max-width:480px){.plan-opts{grid-template-columns:1fr}}
+@media(max-width:480px),(max-device-width:480px){.plan-opts{grid-template-columns:1fr}}
 .popt{border:1px solid var(--bdr);border-radius:var(--r);padding:.85rem;cursor:pointer;transition:all .2s;background:var(--s2)}
 .popt:hover{border-color:var(--acc);background:var(--acc4)}
 .popt.on{border-color:var(--acc);background:var(--acc3);box-shadow:none;}
@@ -319,7 +322,7 @@ input::placeholder{color:var(--t3)}
 .popt-desc{font-size:12.5px;color:var(--t3)}
 
 .pr-opts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem}
-@media(max-width:480px){.pr-opts{grid-template-columns:1fr 1fr}.pr-opts .propt:last-child{grid-column:1/-1;width:calc(50% - 4px);max-width:none;margin:0 auto}}
+@media(max-width:480px),(max-device-width:480px){.pr-opts{grid-template-columns:1fr 1fr}.pr-opts .propt:last-child{grid-column:1/-1;width:calc(50% - 4px);max-width:none;margin:0 auto}}
 .propt{border:1px solid var(--bdr);border-radius:var(--r);padding:.85rem;cursor:pointer;transition:all .2s;background:var(--s2);text-align:center}
 .propt:hover{border-color:var(--acc);background:var(--acc4);box-shadow:var(--shadow-card-hover)}
 .propt.on{border-color:var(--acc);background:var(--acc3);box-shadow:none;}
@@ -380,7 +383,7 @@ input::placeholder{color:var(--t3)}
 .btn-exp-pr{background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.25);color:var(--acc)}
 /* Em telas estreitas, os botões viram um grid organizado em vez de "sobrar"
    uma linha torta quando não cabem. O texto explicativo do relógio fica sempre em cima. */
-@media(max-width:520px){
+@media(max-width:520px),(max-device-width:520px){
   .exp-bar{padding:0}
   .exp-bar-btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px}
   .btn-exp{width:100%;padding:0 6px;font-size:10px;min-width:0}
@@ -568,7 +571,7 @@ details[open] summary::after{transform:rotate(90deg)}
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:flex-start;justify-content:center;padding:1rem;overflow-y:auto}
 .modal-box{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--rc);padding:1.4rem;width:100%;max-width:380px;margin:auto;box-shadow:0 8px 30px rgba(20,30,45,0.14)}
-@media(max-width:420px){
+@media(max-width:420px),(max-device-width:420px){
   .modal-box{padding:1.1rem;border-radius:var(--r)}
   .auth-modal-box{padding:1.2rem;border-radius:var(--r)}
   .onb-scroll{padding:1.1rem 1.1rem 0}
@@ -582,7 +585,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .btn-modal-cancel{padding:8px 18px;border:1px solid var(--bdr2);border-radius:var(--rb);background:transparent;color:var(--t2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
 .btn-modal-ok{padding:8px 20px;border:none;border-radius:var(--rb);background:var(--acc);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
 
-@media(max-width:360px){
+@media(max-width:360px),(max-device-width:360px){
   .nav-tab{font-size:10.5px;gap:2px;padding:0 2px}
   .nav-label{display:none}
   .hero h1{font-size:17px}
@@ -595,7 +598,7 @@ details[open] summary::after{transform:rotate(90deg)}
   .wrap{padding:1rem .6rem}
   .card{padding:.85rem .75rem}
 }
-@media(max-width:580px){
+@media(max-width:580px),(max-device-width:580px){
   .igrow{grid-template-columns:1fr 1fr!important}
   .btn-cta-wrap{grid-column:1/-1}
   .plan-opts,.pr-opts{grid-template-columns:1fr 1fr}
@@ -624,7 +627,7 @@ details[open] summary::after{transform:rotate(90deg)}
 }
 
 /* ── MOBILE: grade semanal em lista ── */
-@media(max-width:480px){
+@media(max-width:480px),(max-device-width:480px){
   .long-tip-grid{grid-template-columns:1fr}
   .rec-grid{grid-template-columns:1fr}
   .wrap{padding:1rem .75rem}
@@ -881,7 +884,7 @@ details[open] summary::after{transform:rotate(90deg)}
 /* ── LGPD BANNER ── */
 .lgpd-banner{position:fixed;bottom:0;left:0;right:0;z-index:500;background:#fff;border-top:1px solid var(--bdr2);box-shadow:none;padding:.9rem 1.2rem;padding-bottom:calc(.9rem + env(safe-area-inset-bottom,0));display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between;transition:transform .4s}
 .lgpd-banner.hidden{transform:translateY(110%)}
-@media(max-width:400px){
+@media(max-width:400px),(max-device-width:400px){
   .lgpd-banner{flex-direction:column;align-items:flex-start;gap:10px}
   .lgpd-actions{width:100%;justify-content:flex-end}
 }
@@ -994,12 +997,12 @@ details[open] summary::after{transform:rotate(90deg)}
 
 /* Cooper inputs layout */
 .cooper-grid{grid-template-columns:1fr 90px 140px auto!important;align-items:flex-start}
-@media(max-width:580px){
+@media(max-width:580px),(max-device-width:580px){
   .cooper-grid{grid-template-columns:1fr 1fr!important;align-items:flex-end!important}
   .cooper-dist{grid-column:1/-1}
   .cooper-btn{grid-column:1/-1}
 }
-@media(max-width:480px){.long-tip-grid{grid-template-columns:1fr}.rec-grid{grid-template-columns:1fr}}
+@media(max-width:480px),(max-device-width:480px){.long-tip-grid{grid-template-columns:1fr}.rec-grid{grid-template-columns:1fr}}
 
 /* ══════════════════════════════════════════════════
    WIZARD PROGRESSIVO
@@ -1147,7 +1150,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .mt-info-banner strong{color:var(--t1)}
 .mt-info-banner span.mt-info-icon{flex-shrink:0;font-size:14px}
 
-@media (max-width:760px){
+@media(max-width:760px),(max-device-width:760px){
   .mt-tabs{display:flex}
   .mt-body{flex-direction:column}
   .mt-bank{width:100%;border-right:none;border-bottom:1px solid var(--bdr);display:none;flex:1;min-height:0}
