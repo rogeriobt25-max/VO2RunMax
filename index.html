@@ -169,8 +169,6 @@ body{
   object-fit:contain;
 }
 .app-logo.app-logo-hidden{display:none}
-/* logo.png tem mais margem interna (espaço vazio) que a logodark.png — compensa aumentando a caixa só da versão clara */
-img.app-logo[src$="logo.png"]{height:48px}
 
 /* ── APP LOGO in login/auth modal ── */
 .auth-modal-logo{
@@ -663,7 +661,6 @@ details[open] summary::after{transform:rotate(90deg)}
   .exp-bar{gap:6px}
   /* Header: nome cede lugar ao avatar sozinho pra não disputar espaço com o logo e o "Sair" */
   .app-logo{padding:0 10px;height:36px}
-  img.app-logo[src$="logo.png"]{height:39px}
   .auth-user-chip .auth-name{display:none}
   .auth-user-chip{padding:4px 6px 4px 4px;gap:0}
   .auth-btn.logout{padding:0 10px;font-size:11px}
@@ -1211,8 +1208,12 @@ details[open] summary::after{transform:rotate(90deg)}
   .mt-bank.mt-active{display:block}
   .mt-cal{display:none;flex:1;min-height:0}
   .mt-cal.mt-active{display:block}
-  .mt-cal-dow,.mt-cal-week{grid-template-columns:38px repeat(7,minmax(0,1fr))}
-  .mt-day-cell{min-height:64px}
+  .mt-cal{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .mt-cal-dow,.mt-cal-week{grid-template-columns:50px repeat(7,152px);min-width:max-content}
+  .mt-day-cell{min-height:76px}
+  .mt-chip{padding-right:21px}
+  .mt-chip-x{width:16px;height:16px;top:2px;right:2px;background:var(--s3);border:1px solid var(--bdr2)}
+  .mt-chip-type{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.2}
 }
 </style>
 </head>
@@ -1275,7 +1276,7 @@ details[open] summary::after{transform:rotate(90deg)}
 </svg>
 
 <div class="app-nav">
-  <img class="app-logo" id="app-logo" src="logo.png" data-src-light="logo.png" data-src-dark="logodark.png" alt="VO2 RunMax" onerror="logoImgError(this)"/>
+  <img class="app-logo" id="app-logo" src="logo.png" alt="VO2 RunMax" onerror="logoImgError(this)"/>
   <button class="nav-tab on" id="nav-calc" onclick="switchNav('calc')"><svg class="gi"><use href="#i-bolt"></use></svg> <span class="nav-label">Calculadora</span></button>
   <button class="nav-tab" id="nav-saved" onclick="switchNav('saved')"><svg class="gi"><use href="#i-list_alt"></use></svg> <span class="nav-label">Meus Treinos</span> <span class="nav-badge" id="saved-count">0</span></button>
   <div class="auth-bar" id="auth-bar">
@@ -1295,7 +1296,7 @@ details[open] summary::after{transform:rotate(90deg)}
 <div class="auth-modal-bg" id="auth-modal">
   <div class="auth-modal-box">
     <button class="auth-modal-close" onclick="closeAuthModal()"><svg class="gi"><use href="#i-close"></use></svg></button>
-    <img class="auth-modal-logo" id="auth-modal-logo" src="logologin.png" data-src-light="logologin.png" data-src-dark="logologindark.png" alt="VO2 RunMax" onerror="logoImgError(this)"/>
+    <img class="auth-modal-logo" id="auth-modal-logo" src="logologin.png" alt="VO2 RunMax" onerror="logoImgError(this)"/>
     <div class="auth-modal-title" id="auth-modal-title">Entrar na sua conta</div>
     <div class="auth-modal-sub" id="auth-modal-sub">Salve e acesse seus treinos em qualquer dispositivo.</div>
 
@@ -1461,7 +1462,7 @@ details[open] summary::after{transform:rotate(90deg)}
             <span style="font-size:26px;flex:0 0 auto"><svg class="gi"><use href="#i-science"></use></svg></span>
             <div style="flex:1 1 auto;min-width:0">
               <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:2px">Quero calcular por um teste</div>
-              <div style="font-size:12.5px;color:var(--t3);line-height:1.4">Cooper 12 min · Corrida 2,4 km · VDOT (tempo de prova recente)</div>
+              <div style="font-size:12.5px;color:var(--t3);line-height:1.4">Cooper 12 min · Corrida 1.600m · 2,4 km · 3 km</div>
             </div>
           </button>
 
@@ -1498,13 +1499,17 @@ details[open] summary::after{transform:rotate(90deg)}
             <span style="font-size:22px"><svg class="gi"><use href="#i-directions_run"></use></svg></span>
             <div><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste Cooper — 12 minutos</div><div style="font-size:12.5px;color:var(--t3)">Corra o máximo possível em 12 min e anote a distância</div></div>
           </button>
+          <button class="wz-test-opt-btn" onclick="wzGoToTest('1600')" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;width:100%">
+            <span style="font-size:22px"><svg class="gi"><use href="#i-directions_walk"></use></svg></span>
+            <div><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste 1.600m (1 milha)</div><div style="font-size:12.5px;color:var(--t3)">Corra 1.600m o mais rápido possível e anote o tempo</div><div style="margin-top:4px"><span style="display:inline-block;background:var(--s3);color:var(--t3);font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:6px;padding:2px 8px">Indicado para iniciantes</span></div></div>
+          </button>
           <button class="wz-test-opt-btn" onclick="wzGoToTest('2400')" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;width:100%">
             <span style="font-size:22px"><svg class="gi"><use href="#i-straighten"></use></svg></span>
             <div><div style="font-size:13px;font-weight:800;color:var(--t1)">Corrida 2,4 km</div><div style="font-size:12.5px;color:var(--t3)">Corra 2,4 km o mais rápido possível e anote o tempo</div></div>
           </button>
-          <button class="wz-test-opt-btn" onclick="wzGoToTest('vdot')" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;width:100%">
-            <span style="font-size:22px"><svg class="gi"><use href="#i-workspace_premium"></use></svg></span>
-            <div><div style="font-size:13px;font-weight:800;color:var(--t1)">VDOT — Tempo de prova recente</div><div style="font-size:12.5px;color:var(--t3)">Use o resultado de uma prova oficial de 5km, 10km, 21km ou 42km (só se for esforço máximo real)</div></div>
+          <button class="wz-test-opt-btn" onclick="wzGoToTest('3km')" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;width:100%">
+            <span style="font-size:22px"><svg class="gi"><use href="#i-sports_score"></use></svg></span>
+            <div><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste 3 km</div><div style="font-size:12.5px;color:var(--t3)">Corra 3 km o mais rápido possível e anote o tempo</div></div>
           </button>
         </div>
       </div>
@@ -1604,25 +1609,18 @@ details[open] summary::after{transform:rotate(90deg)}
   <div style="display:none">
     <input type="number" id="dist"/><input type="number" id="idade"/>
     <input type="number" id="t2400-m"/><input type="number" id="t2400-s"/><input type="number" id="t2400-peso"/><input type="number" id="t2400-idade"/>
-    <input type="number" id="vdot-h"/><input type="number" id="vdot-m"/><input type="number" id="vdot-s"/>
     <div id="last-vo2-area"></div>
     <div id="calc-test-area"><div class="mtabs">
       <button class="mtab" id="mtab-cooper" onclick="setMethod('cooper')"></button>
       <button class="mtab" id="mtab-2400" onclick="setMethod('2400')"></button>
-      <button class="mtab" id="mtab-vdot" onclick="setMethod('vdot')"></button>
     </div>
     <div id="input-cooper" style="display:none"></div>
     <div id="input-2400" style="display:none"></div>
-    <div id="input-vdot" style="display:none"></div>
     </div>
     <button id="btn-m" onclick="setSexo('M')"></button>
     <button id="btn-f" onclick="setSexo('F')"></button>
     <button id="btn2400-m" onclick="setSexo2400('M')"></button>
     <button id="btn2400-f" onclick="setSexo2400('F')"></button>
-    <button id="vbtn-5" onclick="setVdotDist(5)"></button>
-    <button id="vbtn-10" onclick="setVdotDist(10)"></button>
-    <button id="vbtn-21" onclick="setVdotDist(21.1)"></button>
-    <button id="vbtn-42" onclick="setVdotDist(42.2)"></button>
     <input type="number" id="estreante-idade"/>
   </div>
 
@@ -2060,30 +2058,10 @@ function isEffectiveDarkTheme(){
   try{return window.matchMedia('(prefers-color-scheme: dark)').matches;}catch(e){return false;}
 }
 function logoImgError(img){
-  // Se a imagem escura ainda não foi enviada ao GitHub, cai de volta pra imagem clara em vez de sumir
-  if(img.src.indexOf(img.dataset.srcDark)!==-1 && img.dataset.srcLight){
-    img.src=img.dataset.srcLight;
-  }else{
-    img.classList.add('app-logo-hidden');
-  }
+  // Se a imagem não carregar (ainda não subida ao GitHub, etc.), esconde em vez de mostrar ícone quebrado
+  img.classList.add('app-logo-hidden');
 }
 window.logoImgError=logoImgError;
-function updateLogoImages(){
-  const dark=isEffectiveDarkTheme();
-  document.querySelectorAll('#app-logo, #auth-modal-logo').forEach(img=>{
-    const wanted=dark?img.dataset.srcDark:img.dataset.srcLight;
-    if(wanted && img.getAttribute('src')!==wanted)img.setAttribute('src',wanted);
-  });
-}
-window.updateLogoImages=updateLogoImages;
-try{
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',updateLogoImages);
-}catch(e){}
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',updateLogoImages);
-}else{
-  updateLogoImages();
-}
 
 function updateThemeButtons(){
   let saved=null;
@@ -2111,7 +2089,6 @@ function setAppTheme(mode){
     document.documentElement.style.colorScheme='light dark';
   }
   updateThemeButtons();
-  updateLogoImages();
 }
 window.setAppTheme=setAppTheme;
 
@@ -2201,7 +2178,7 @@ function initAuth(){
 /* ══════════════════════════════════════════════════════════
    STATE
 ══════════════════════════════════════════════════════════ */
-var sexo='M',sexo2400='M',vdotDist=5,chartInst=null,inputMethod='cooper';
+var sexo='M',sexo2400='M',chartInst=null,inputMethod='cooper';
 var vo2G=0,vVO2G=0;
 var planObj21='finish',planObj42='finish',planObj10k='finish';
 var planWeeks21=16,planWeeks42=20,planWeeks10k=10;
@@ -2256,14 +2233,13 @@ function renderLastVo2Card(profKey){
   }
   const t=lastTestResult;
   const fit=getFit(t.vo2,t.methodType==='profileDefault'?'N':undefined);
-  const isVdot=t.methodType==='vdot';
   area.style.display='block';
   area.innerHTML=`
     <div class="divider" style="margin:.85rem 0"></div>
     <div class="last-vo2-card">
       <div class="last-vo2-icon"><svg class="gi"><use href="#i-track_changes"></use></svg></div>
       <div class="last-vo2-info">
-        <div class="last-vo2-label">${isVdot?'Último VDOT':'Último VO₂ Máx'} registrado</div>
+        <div class="last-vo2-label">Último VO₂ Máx registrado</div>
         <div class="last-vo2-value">${Math.round(t.vo2*10)/10} <span>ml/kg/min</span>
           <span class="last-vo2-badge" style="background:${fit.bg};color:${fit.c}">${fit.l}</span>
         </div>
@@ -2401,7 +2377,7 @@ function setSexo(s){sexo=s;document.getElementById('btn-m').classList.toggle('on
 
 function resetCalcInputs(){
   // Zera todos os campos numéricos de todos os formulários de teste
-  ['dist','idade','t2400-m','t2400-s','t2400-peso','t2400-idade','vdot-h','vdot-m','vdot-s','estreante-idade'].forEach(id=>{
+  ['dist','idade','t2400-m','t2400-s','t2400-peso','t2400-idade','estreante-idade'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   // Limpa resultado
@@ -2658,10 +2634,10 @@ function buildVo2ZonesContent(vo2,isReal,method){
     </div>`;
   }).join('');
   return`
-    <div class="mc-grid" style="margin-bottom:1.1rem">
+    <div class="mc-grid" style="margin-bottom:1.1rem;grid-template-columns:1fr 1fr">
       <div class="mc"><p class="mc-lbl">VO₂ máx estimado</p><p class="mc-val" style="color:var(--acc)">${vo2r} <span class="mc-unit">ml/kg/min</span></p><span class="badge" style="background:${fit.bg};color:${fit.c}">${fit.l}</span><div style="margin-top:5px;font-size:10.5px;color:var(--t3);font-weight:700;letter-spacing:.12em;text-transform:uppercase">${methodLabel}</div></div>
-      <div class="mc"><p class="mc-lbl">Velocidade VO₂ máx</p><p class="mc-val">${(Math.round(vVO2*10)/10).toFixed(1)} <span class="mc-unit">km/h</span></p></div>
       <div class="mc"><p class="mc-lbl">Pace no VO₂ máx</p><p class="mc-val">${s2p(vVO2)} <span class="mc-unit">min/km</span></p></div>
+      <div class="mc" style="grid-column:1/-1;text-align:center"><p class="mc-lbl">Velocidade VO₂ máx</p><p class="mc-val">${(Math.round(vVO2*10)/10).toFixed(1)} <span class="mc-unit">km/h</span></p></div>
     </div>
     <div style="font-size:11.5px;font-weight:800;color:var(--t3);letter-spacing:.03em;margin-bottom:2px">ZONAS DE TREINO</div>
     ${rows}`;
@@ -2818,16 +2794,12 @@ function wzEditStep(n){
     document.getElementById('wz-test-picker').style.display='none';
     const ift=document.getElementById('wz-inline-test-form');if(ift)ift.style.display='none';
     const cc=document.getElementById('wz-calc-confirm');if(cc){cc.style.display='none';cc.innerHTML='';}
-    // Se já existe um VO2 salvo, reexibe o card "Manter/Novo teste" recolhido
-    // (em vez de forçar as opções expandidas) — igual ao comportamento da 1ª vez.
-    const savedEdit=document.getElementById('wz-saved-vo2');
-    if(lastTestResult&&lastTestResult.vo2){
-      savedEdit.style.display='';
-      document.getElementById('wz-vo2-question').style.display='none';
-    }else{
-      savedEdit.style.display='none';
-      document.getElementById('wz-vo2-question').style.display='';
-    }
+    // Reconstrói o conteúdo do passo 2 do zero (banner "Manter/Novo teste" ou
+    // as opções de cálculo) — nunca apenas alterna o display, porque na
+    // primeira vez que isso é editado o innerHTML pode nunca ter sido
+    // montado ainda (ex: quando o teste de VO2 só foi calculado DEPOIS que
+    // o wizard passou pela etapa 2 a primeira vez).
+    wzShowStep2();
   }
   if(n<=3)wzState.dist=null;
   if(n<=4){wzState.obj=null;}
@@ -3012,13 +2984,33 @@ function wzGoToTest(method){
     window._wzSexoCooper=sexo||'M';
     setTimeout(()=>document.getElementById('wz-cooper-dist').focus(),100);
 
+  } else if(method==='1600'){
+    formArea.innerHTML=`${backBtn}
+      <div style="background:rgba(0,121,179,0.06);border:1px solid rgba(0,121,179,0.2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.85rem;font-size:13px;color:var(--t2);line-height:1.6">
+        <svg class="gi"><use href="#i-directions_walk"></use></svg> <strong style="color:var(--acc)">Teste 1.600m (1 milha)</strong><br>Corra 1.600m o mais rápido possível em percurso plano e anote o tempo exato. Ótimo ponto de partida para quem está começando.
+        <button onclick="open1600HowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid rgba(0,121,179,0.3);border-radius:6px;color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
+      </div>
+      <div class="igrow" style="grid-template-columns:1fr 1fr;align-items:flex-end;gap:12px">
+        <div class="ig">
+          <label>Minutos</label>
+          <input type="number" id="wz-1600-m" placeholder="mm" min="4" max="25" oninput="wzUpdate1600Btn()"/>
+        </div>
+        <div class="ig">
+          <label>Segundos</label>
+          <input type="number" id="wz-1600-s" placeholder="ss" min="0" max="59" oninput="wzUpdate1600Btn()"/>
+        </div>
+      </div>
+      <div class="cooper-hint" id="wz-1600-hint" style="display:none"><svg class="gi"><use href="#i-warning"></use></svg> <span>Tempo válido: entre 4:00 e 25:00 min.</span></div>
+      <button class="wz-next-btn" id="wz-1600-calc-btn" onclick="wzCalc1600()" disabled style="opacity:.4;cursor:not-allowed;margin-top:1rem">Calcular VO₂ Máx →</button>`;
+    setTimeout(()=>document.getElementById('wz-1600-m').focus(),100);
+
   } else if(method==='2400'){
     formArea.innerHTML=`${backBtn}
       <div style="background:rgba(0,121,179,0.06);border:1px solid rgba(0,121,179,0.2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.85rem;font-size:13px;color:var(--t2);line-height:1.6">
         <svg class="gi"><use href="#i-straighten"></use></svg> <strong style="color:var(--acc)">Corrida 2,4 km</strong><br>Corra 2,4 km o mais rápido possível em percurso plano e anote o tempo exato.
         <button onclick="open2400HowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid rgba(0,121,179,0.3);border-radius:6px;color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
       </div>
-      <div class="igrow" style="grid-template-columns:1fr 1fr 1fr 1fr;align-items:flex-end;gap:12px">
+      <div class="igrow" style="grid-template-columns:1fr 1fr 1fr;align-items:flex-end;gap:12px">
         <div class="ig">
           <label>Minutos</label>
           <input type="number" id="wz-2400-m" placeholder="mm" min="6" max="30" oninput="wzUpdate2400Btn()"/>
@@ -3031,10 +3023,6 @@ function wzGoToTest(method){
           <label>Peso <span style="font-size:11.5px;color:var(--t3)">(kg)</span></label>
           <input type="number" id="wz-2400-peso" placeholder="kg" min="35" max="150" oninput="wzUpdate2400Btn()"/>
         </div>
-        <div class="ig">
-          <label>Idade</label>
-          <input type="number" id="wz-2400-idade" placeholder="anos" min="10" max="90" oninput="wzUpdate2400Btn()"/>
-        </div>
       </div>
       <div class="ig" style="margin-top:12px">
         <label>Sexo</label>
@@ -3043,36 +3031,31 @@ function wzGoToTest(method){
           <button class="tgb" id="wz-2400-btnF" onclick="wzSetSexo2400('F')">Feminino</button>
         </div>
       </div>
+      <div class="cooper-hint" id="wz-2400-hint" style="display:none"><svg class="gi"><use href="#i-warning"></use></svg> <span>Tempo válido: 6:00 a 30:00 min · Peso válido: 35 a 150 kg.</span></div>
       <button class="wz-next-btn" id="wz-2400-calc-btn" onclick="wzCalc2400()" disabled style="opacity:.4;cursor:not-allowed;margin-top:1rem">Calcular VO₂ Máx →</button>`;
     window._wzSexo2400=sexo2400||'M';
     setTimeout(()=>document.getElementById('wz-2400-m').focus(),100);
 
-  } else if(method==='vdot'){
+  } else if(method==='3km'){
     formArea.innerHTML=`${backBtn}
       <div style="background:rgba(0,121,179,0.06);border:1px solid rgba(0,121,179,0.2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.85rem;font-size:13px;color:var(--t2);line-height:1.6">
-        <svg class="gi"><use href="#i-workspace_premium"></use></svg> <strong style="color:var(--acc)">VDOT — Tempo de prova recente</strong><br>Use o resultado oficial de uma prova (5km, 10km, 21km ou 42km) corrida em esforço máximo.
-        <button onclick="openVdotHowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid rgba(0,121,179,0.3);border-radius:6px;color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> O que é VDOT?</button>
+        <svg class="gi"><use href="#i-sports_score"></use></svg> <strong style="color:var(--acc)">Teste 3 km</strong><br>Corra 3 km o mais rápido possível em percurso plano e anote o tempo exato.
+        <button onclick="open3kmHowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid rgba(0,121,179,0.3);border-radius:6px;color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
       </div>
-      <div style="background:rgba(217,119,0,0.07);border:1px solid rgba(217,119,0,0.25);border-radius:var(--r);padding:.7rem .9rem;margin-bottom:.85rem;font-size:12.5px;color:var(--t2);line-height:1.55">
-        <svg class="gi"><use href="#i-warning"></use></svg> <strong style="color:var(--am)">Só use esse método se tiver um tempo recente de prova em esforço máximo real</strong> (últimos 2-3 meses). Se o tempo informado não for de uma prova a sério — for de um treino tranquilo, ritmo controlado ou muito antigo — o VDOT sai desregulado (geralmente mais baixo que sua capacidade real) e os ritmos de treino gerados ficam mais lentos do que deveriam.
-      </div>
-      <div style="margin-bottom:.85rem">
-        <p style="font-size:12.5px;color:var(--t2);margin-bottom:8px;font-weight:600">Distância da prova:</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="race-tab on-5k" id="wz-vbtn-5" onclick="wzSetVdotDist(5)">5 km</button>
-          <button class="race-tab" id="wz-vbtn-10" onclick="wzSetVdotDist(10)">10 km</button>
-          <button class="race-tab" id="wz-vbtn-21" onclick="wzSetVdotDist(21.1)">21 km</button>
-          <button class="race-tab" id="wz-vbtn-42" onclick="wzSetVdotDist(42.2)">42 km</button>
+      <div class="igrow" style="grid-template-columns:1fr 1fr;align-items:flex-end;gap:12px">
+        <div class="ig">
+          <label>Minutos</label>
+          <input type="number" id="wz-3km-m" placeholder="mm" min="7" max="40" oninput="wzUpdate3kmBtn()"/>
+        </div>
+        <div class="ig">
+          <label>Segundos</label>
+          <input type="number" id="wz-3km-s" placeholder="ss" min="0" max="59" oninput="wzUpdate3kmBtn()"/>
         </div>
       </div>
-      <div class="igrow" style="grid-template-columns:1fr 1fr 1fr;align-items:flex-end;gap:12px">
-        <div class="ig"><label>Horas</label><input type="number" id="wz-vdot-h" placeholder="0" min="0" max="9" style="width:100%" oninput="wzUpdateVdotBtn()"/></div>
-        <div class="ig"><label>Minutos</label><input type="number" id="wz-vdot-m" placeholder="00" min="0" max="59" style="width:100%" oninput="wzUpdateVdotBtn()"/></div>
-        <div class="ig"><label>Segundos</label><input type="number" id="wz-vdot-s" placeholder="00" min="0" max="59" style="width:100%" oninput="wzUpdateVdotBtn()"/></div>
-      </div>
-      <button class="wz-next-btn" id="wz-vdot-calc-btn" onclick="wzCalcVdot()" disabled style="opacity:.4;cursor:not-allowed;margin-top:1rem">Calcular VO₂ Máx →</button>`;
-    window._wzVdotDist=5;
-    setTimeout(()=>document.getElementById('wz-vdot-m').focus(),100);
+      <div class="cooper-hint" id="wz-3km-hint" style="display:none"><svg class="gi"><use href="#i-warning"></use></svg> <span>Tempo válido: entre 7:00 e 40:00 min.</span></div>
+      <button class="wz-next-btn" id="wz-3km-calc-btn" onclick="wzCalc3km()" disabled style="opacity:.4;cursor:not-allowed;margin-top:1rem">Calcular VO₂ Máx →</button>`;
+    setTimeout(()=>document.getElementById('wz-3km-m').focus(),100);
+
   }
 
   document.getElementById('wz-step-2').scrollIntoView({behavior:'smooth',block:'start'});
@@ -3090,15 +3073,6 @@ function wzSetSexo2400(s){
   document.getElementById('wz-2400-btnM').classList.toggle('on',s==='M');
   document.getElementById('wz-2400-btnF').classList.toggle('on',s==='F');
 }
-function wzSetVdotDist(d){
-  window._wzVdotDist=d;vdotDist=d;
-  const selK=(d===21.1?'21':d===42.2?'42':String(d));
-  const clsMap={'5':'on-5k','10':'on-10k','21':'on-21','42':'on-42'};
-  ['5','10','21','42'].forEach(k=>{
-    const btn=document.getElementById('wz-vbtn-'+k);
-    if(btn)btn.classList.toggle(clsMap[k],k===selK);
-  });
-}
 function wzUpdateCooperBtn(){
   const dist=parseFloat(document.getElementById('wz-cooper-dist')?.value)||0;
   const idade=parseFloat(document.getElementById('wz-cooper-idade')?.value)||0;
@@ -3113,16 +3087,31 @@ function wzUpdate2400Btn(){
   const s=parseFloat(document.getElementById('wz-2400-s')?.value)||0;
   const p=parseFloat(document.getElementById('wz-2400-peso')?.value)||0;
   const btn=document.getElementById('wz-2400-calc-btn');
-  const ok=(m+s/60)>=6&&(m+s/60)<=30&&p>=35&&p<=150;
+  const hint=document.getElementById('wz-2400-hint');
+  const totalMin=m+s/60;
+  const ok=totalMin>=6&&totalMin<=30&&p>=35&&p<=150;
   if(btn){btn.disabled=!ok;btn.style.opacity=ok?'1':'.4';btn.style.cursor=ok?'pointer':'not-allowed';}
+  if(hint)hint.style.display=((totalMin>0||p>0)&&!ok)?'flex':'none';
 }
-function wzUpdateVdotBtn(){
-  const h=parseFloat(document.getElementById('wz-vdot-h')?.value)||0;
-  const m=parseFloat(document.getElementById('wz-vdot-m')?.value)||0;
-  const s=parseFloat(document.getElementById('wz-vdot-s')?.value)||0;
-  const btn=document.getElementById('wz-vdot-calc-btn');
-  const ok=(h*60+m+s/60)>0;
+function wzUpdate1600Btn(){
+  const m=parseFloat(document.getElementById('wz-1600-m')?.value)||0;
+  const s=parseFloat(document.getElementById('wz-1600-s')?.value)||0;
+  const btn=document.getElementById('wz-1600-calc-btn');
+  const hint=document.getElementById('wz-1600-hint');
+  const totalMin=m+s/60;
+  const ok=totalMin>=4&&totalMin<=25;
   if(btn){btn.disabled=!ok;btn.style.opacity=ok?'1':'.4';btn.style.cursor=ok?'pointer':'not-allowed';}
+  if(hint)hint.style.display=(totalMin>0&&!ok)?'flex':'none';
+}
+function wzUpdate3kmBtn(){
+  const m=parseFloat(document.getElementById('wz-3km-m')?.value)||0;
+  const s=parseFloat(document.getElementById('wz-3km-s')?.value)||0;
+  const btn=document.getElementById('wz-3km-calc-btn');
+  const hint=document.getElementById('wz-3km-hint');
+  const totalMin=m+s/60;
+  const ok=totalMin>=7&&totalMin<=40;
+  if(btn){btn.disabled=!ok;btn.style.opacity=ok?'1':'.4';btn.style.cursor=ok?'pointer':'not-allowed';}
+  if(hint)hint.style.display=(totalMin>0&&!ok)?'flex':'none';
 }
 
 function wzCalcCooper(){
@@ -3149,7 +3138,6 @@ function wzCalc2400(){
   const min=parseFloat(document.getElementById('wz-2400-m')?.value)||0;
   const sec=parseFloat(document.getElementById('wz-2400-s')?.value)||0;
   const peso=parseFloat(document.getElementById('wz-2400-peso')?.value);
-  const idade=parseFloat(document.getElementById('wz-2400-idade')?.value)||0;
   const totalMin=min+sec/60;
   if(!totalMin||totalMin<6||totalMin>30){showToast('Tempo válido: entre 6:00 e 30:00 min.');return;}
   if(!peso||peso<35||peso>150){showToast('Peso válido: 35 a 150 kg.');return;}
@@ -3158,21 +3146,28 @@ function wzCalc2400(){
   if(vo2<15||vo2>95){showToast('Valores fora do esperado. Revise os dados.');return;}
   wzFinishTest(vo2,vo2/3.5,`2,4km — ${min}:${String(Math.round(sec)).padStart(2,'0')} · ${peso}kg`,'physiological');
 }
-function wzCalcVdot(){
-  const h=parseFloat(document.getElementById('wz-vdot-h')?.value)||0;
-  const m=parseFloat(document.getElementById('wz-vdot-m')?.value)||0;
-  const s=parseFloat(document.getElementById('wz-vdot-s')?.value)||0;
-  const totalMin=h*60+m+s/60;
-  if(!totalMin||totalMin<=0){showToast('Informe o tempo da prova.');return;}
-  const d=window._wzVdotDist||vdotDist||5;
-  const distM=d*1000,v=distM/totalMin;
-  const vo2atPace=-4.60+0.182258*v+0.000104*v*v;
-  const pctVO2=0.8+0.1894393*Math.exp(-0.012778*totalMin)+0.2989558*Math.exp(-0.1932605*totalMin);
-  const vo2=vo2atPace/pctVO2;
-  if(vo2<20||vo2>90){showToast('Tempo inválido para essa distância. Revise os dados.');return;}
-  const vMmin=distM/totalMin;
-  const vVO2=(vMmin/1000)*60;
-  wzFinishTest(vo2,vVO2,'VDOT · Jack Daniels','vdot');
+function wzCalc1600(){
+  const min=parseFloat(document.getElementById('wz-1600-m')?.value)||0;
+  const sec=parseFloat(document.getElementById('wz-1600-s')?.value)||0;
+  const totalMin=min+sec/60;
+  if(!totalMin||totalMin<4||totalMin>25){showToast('Tempo válido: entre 4:00 e 25:00 min.');return;}
+  // Equação metabólica ACSM (corrida/caminhada) aplicada aos 1.600m — mesma família de fórmula usada no teste de 3km,
+  // com o corte de velocidade caminhada/corrida (134 m/min) para cobrir também esforços mais lentos de iniciantes
+  const speedMmin=1600/totalMin;
+  const vo2=speedMmin<134?(0.1*speedMmin+3.5):(0.2*speedMmin+3.5);
+  if(vo2<15||vo2>90){showToast('Resultado fora do esperado. Revise os dados.');return;}
+  wzFinishTest(vo2,vo2/3.5,`1.600m — ${min}:${String(Math.round(sec)).padStart(2,'0')}`,'physiological');
+}
+function wzCalc3km(){
+  const min=parseFloat(document.getElementById('wz-3km-m')?.value)||0;
+  const sec=parseFloat(document.getElementById('wz-3km-s')?.value)||0;
+  const totalMin=min+sec/60;
+  if(!totalMin||totalMin<7||totalMin>40){showToast('Tempo válido: entre 7:00 e 40:00 min.');return;}
+  // Fórmula metabólica da ACSM pra corrida: VO2 = 0,2 × velocidade (m/min) + 3,5
+  const speedMmin=3000/totalMin;
+  const vo2=0.2*speedMmin+3.5;
+  if(vo2<15||vo2>90){showToast('Resultado fora do esperado. Revise os dados.');return;}
+  wzFinishTest(vo2,vo2/3.5,`3km — ${min}:${String(Math.round(sec)).padStart(2,'0')}`,'physiological');
 }
 
 function wzFinishTest(vo2,vVO2calc,label,type){
@@ -3213,13 +3208,12 @@ function wzBackToTestPicker(){
 }
 window.wzSetSexoCooper=wzSetSexoCooper;
 window.wzSetSexo2400=wzSetSexo2400;
-window.wzSetVdotDist=wzSetVdotDist;
 window.wzUpdateCooperBtn=wzUpdateCooperBtn;
+window.wzUpdate1600Btn=wzUpdate1600Btn;
+window.wzCalc1600=wzCalc1600;
 window.wzUpdate2400Btn=wzUpdate2400Btn;
-window.wzUpdateVdotBtn=wzUpdateVdotBtn;
 window.wzCalcCooper=wzCalcCooper;
 window.wzCalc2400=wzCalc2400;
-window.wzCalcVdot=wzCalcVdot;
 window.wzFinishTest=wzFinishTest;
 window.wzBackToTestPicker=wzBackToTestPicker;
 
@@ -3481,19 +3475,18 @@ return;}
 
 function setMethod(m){
   inputMethod=m;
-  ['input-cooper','input-2400','input-vdot'].forEach(id=>{
+  ['input-cooper','input-2400'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.style.display='none';
   });
-  const map={cooper:'input-cooper','2400':'input-2400',vdot:'input-vdot'};
+  const map={cooper:'input-cooper','2400':'input-2400'};
   if(map[m]){document.getElementById(map[m]).style.display='block';}
-  ['cooper','2400','vdot'].forEach(k=>{
+  ['cooper','2400'].forEach(k=>{
     const el=document.getElementById('mtab-'+k);if(el)el.classList.toggle('on',k===m);
   });
   // Zera campos e resultado ao trocar de teste
   resetCalcInputs();
 }
 function setSexo2400(s){sexo2400=s;setSexo(s);document.getElementById('btn2400-m').classList.toggle('on',s==='M');document.getElementById('btn2400-f').classList.toggle('on',s==='F')}
-function setVdotDist(d){vdotDist=d;['5','10','21','42'].forEach(k=>document.getElementById('vbtn-'+k).classList.toggle('on',parseFloat(k)===(d===21.1?21:d===42.2?42:d)))}
 function getFit(v,sexoOverride){const s=sexoOverride||sexo;const t=s==='N'?FIT_N:(s==='M'?FIT_M:FIT_F);return t.find(f=>v>=f.min&&v<f.max)||t[0]}
 function s2p(kmh){if(!kmh||kmh<=0)return'--:--';const m=60/kmh,mi=Math.floor(m),s=Math.round((m-mi)*60);return`${mi}:${s.toString().padStart(2,'0')}`}
 function p2m(kmh){return kmh<=0?0:60/kmh}
@@ -3580,18 +3573,6 @@ function calcular2400(){
   vVO2G=vo2/3.5;
   customPaces={};usingCustom=false;
   renderResults(vo2,calcFCmax(idade),`2,4km — ${min}:${String(Math.round(sec)).padStart(2,'0')} · ${peso}kg`,'physiological');
-}
-function calcularVdot(){
-  const h=parseFloat(document.getElementById('vdot-h').value)||0,m=parseFloat(document.getElementById('vdot-m').value)||0,s=parseFloat(document.getElementById('vdot-s').value)||0,totalMin=h*60+m+s/60;
-  if(!totalMin||totalMin<=0){document.getElementById('result-area').innerHTML='<div class="card"><div class="error-msg">Informe o tempo da prova.</div></div>';return}
-  const distM=vdotDist*1000,v=distM/totalMin,vo2atPace=-4.60+0.182258*v+0.000104*v*v,pctVO2=0.8+0.1894393*Math.exp(-0.012778*totalMin)+0.2989558*Math.exp(-0.1932605*totalMin),vo2=vo2atPace/pctVO2;
-  if(vo2<20||vo2>90){document.getElementById('result-area').innerHTML='<div class="card"><div class="error-msg">Tempo inválido para essa distância.</div></div>';return}
-  vo2G=vo2;
-  // VDOT: vVO2máx = pace real da prova → ritmos mais precisos para prescrição
-  const vMmin=distM/totalMin;
-  vVO2G=(vMmin/1000)*60;
-  customPaces={};usingCustom=false;
-  renderResults(vo2,null,'VDOT · Jack Daniels','vdot');
 }
 
 var sexoEstreante='M';
@@ -3904,7 +3885,6 @@ function renderResults(vo2,fcmax,methodLabel,methodType,fitSexo){
 
   const cpRows=ZONES.map((z,i)=>`<div class="zpr"><div style="display:flex;align-items:center;gap:7px"><span class="zdot" style="background:${ZCOL[i]}"></span><strong style="font-family:monospace;font-size:13px">${z.id}</strong></div><div>${z.label}<br><span style="font-size:11px;color:var(--t3)">${ZONES[i].desc}</span></div><div style="display:flex;align-items:center;gap:6px"><input type="text" class="zpi" id="cp-${z.id}" placeholder="${s2p(vVO2G*z.pctVO2[1])}" oninput="readCustomPaces()"/><span style="font-size:11px;color:var(--t3);white-space:nowrap">min/km</span></div></div>`).join('');
 
-  const isVdot=methodType==='vdot';
   const fcNote=fcmax?`<div class="mc"><p class="mc-lbl">FC máx estimada</p><p class="mc-val">${fcmax} <span class="mc-unit">bpm</span></p><div style="margin-top:4px;font-size:10.5px;color:var(--t3);font-weight:700;letter-spacing:.1em">TANAKA et al.</div></div>`:'';
 
   // Aviso visível quando o VO2 foi gerado sem informar (padrão por nível) —
@@ -3912,15 +3892,13 @@ function renderResults(vo2,fcmax,methodLabel,methodType,fitSexo){
   const profileEstimateNotice=methodType==='profileDefault'
     ?`<div class="info-box" style="margin-bottom:1rem;background:rgba(255,184,48,0.08);border-color:rgba(255,184,48,0.35)">
         <strong style="color:var(--am)"><svg class="gi"><use href="#i-warning"></use></svg> VO₂ estimado por nível, sem teste.</strong>
-        Usamos um valor de referência pro seu perfil pra você já começar a treinar. Assim que possível, recomendamos fazer um teste (Cooper, 2,4&nbsp;km ou um tempo de prova recente) pra calibrar as planilhas com mais precisão pro seu condicionamento real.
+        Usamos um valor de referência pro seu perfil pra você já começar a treinar. Assim que possível, recomendamos fazer um teste (Cooper, 1.600&nbsp;m, 2,4&nbsp;km ou um tempo de prova recente) pra calibrar as planilhas com mais precisão pro seu condicionamento real.
         <div style="margin-top:8px"><button onclick="wzEditStep(2)" style="background:none;border:none;padding:0;font-size:12.5px;font-weight:700;color:var(--am);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular VO₂ real →</button></div>
       </div>`
     :'';
 
   // Nota técnica — fica colapsada
-  const techNote=isVdot
-    ?`<p style="margin-bottom:.5rem"><strong>VDOT vs VO₂ laboratorial:</strong> O VDOT representa a capacidade funcional de performance — considera economia de corrida e tolerância ao esforço. Não necessariamente equivale ao VO₂ máx medido em laboratório, mas é a referência mais precisa para prescrição de ritmos.</p>`
-    :`<p style="margin-bottom:.5rem"><strong>Classificação normativa ACSM/Cooper:</strong> O VO₂ estimado é comparado com tabelas populacionais (ACSM/Cooper). Para prescrição mais precisa de ritmos de treino, use o método <strong>VDOT com tempo de prova real</strong>.</p>`;
+  const techNote=`<p style="margin-bottom:.5rem"><strong>Classificação normativa ACSM/Cooper:</strong> O VO₂ estimado é comparado com tabelas populacionais (ACSM/Cooper).</p>`;
 
   document.getElementById('result-area').innerHTML=`
     <div class="rtabs"><button class="rtab on" id="tab-vo2" onclick="setTab('vo2')">VO₂ Máx e Zonas</button><button class="rtab" id="tab-plan" onclick="setTab('plan')">Planilhas de Treino</button></div>
@@ -3928,7 +3906,7 @@ function renderResults(vo2,fcmax,methodLabel,methodType,fitSexo){
 
       <!-- Cards principais -->
       <div class="mc-grid">
-        <div class="mc"><p class="mc-lbl">${isVdot?'VDOT estimado':'VO₂ máx estimado'}</p><p class="mc-val" style="color:var(--acc)">${vo2r} <span class="mc-unit">ml/kg/min</span></p><span class="badge" style="background:${fit.bg};color:${fit.c}">${fit.l}</span><div style="margin-top:5px;font-size:10.5px;color:var(--t3);font-weight:700;letter-spacing:.12em;text-transform:uppercase">${methodLabel}</div></div>
+        <div class="mc"><p class="mc-lbl">VO₂ máx estimado</p><p class="mc-val" style="color:var(--acc)">${vo2r} <span class="mc-unit">ml/kg/min</span></p><span class="badge" style="background:${fit.bg};color:${fit.c}">${fit.l}</span><div style="margin-top:5px;font-size:10.5px;color:var(--t3);font-weight:700;letter-spacing:.12em;text-transform:uppercase">${methodLabel}</div></div>
         <div class="mc"><p class="mc-lbl">Velocidade VO₂ máx</p><p class="mc-val">${(Math.round(vVO2G*10)/10).toFixed(1)} <span class="mc-unit">km/h</span></p></div>
         <div class="mc"><p class="mc-lbl">Pace no VO₂ máx</p><p class="mc-val">${s2p(vVO2G)} <span class="mc-unit">min/km</span></p></div>
         ${fcNote}
@@ -3953,7 +3931,7 @@ function renderResults(vo2,fcmax,methodLabel,methodType,fitSexo){
         <div style="padding-top:1rem">
           <div class="info-box" style="margin-bottom:1rem;font-size:13px;line-height:1.7">${techNote}
             <strong>FCmáx:</strong> Tanaka et al. — 208 − 0,7 × idade (mais precisa que 220 − idade para adultos).<br>
-            <strong>vVO₂máx:</strong> ${isVdot?'Calculada pelo pace real da prova (método Jack Daniels / VDOT).':'VO₂ ÷ 3,5 — padrão compatível com Garmin, Coros e apps do mercado.'}
+            <strong>vVO₂máx:</strong> VO₂ ÷ 3,5 — padrão compatível com Garmin, Coros e apps do mercado.
           </div>
           <div style="overflow-x:auto">
             <table class="zt"><thead><tr><th>Zona</th><th>Tipo</th><th>Pace</th><th>km/h</th><th>FC alvo</th></tr></thead><tbody>${zRows}</tbody></table>
@@ -8670,10 +8648,8 @@ window.setMethod=setMethod;
 window.resetCalcInputs=resetCalcInputs;
 window.setSexo=setSexo;
 window.setSexo2400=setSexo2400;
-window.setVdotDist=setVdotDist;
 window.calcular=calcular;
 window.calcular2400=calcular2400;
-window.calcularVdot=calcularVdot;
 window.readCustomPaces=readCustomPaces;
 window.setRaceTab=setRaceTab;
 window.setPlanObj=setPlanObj;
@@ -8796,9 +8772,10 @@ window.dismissInstallBanner=dismissInstallBanner;
 window.closeOnboarding=closeOnboarding;
 
 function open2400HowModal(){document.getElementById('how2400-modal').classList.add('open');}
-function openVdotHowModal(){document.getElementById('howvdot-modal').classList.add('open');}
+function open3kmHowModal(){document.getElementById('how3km-modal').classList.add('open');}
+function open1600HowModal(){document.getElementById('how1600-modal').classList.add('open');}
 window.open2400HowModal=open2400HowModal;
-window.openVdotHowModal=openVdotHowModal;
+window.open1600HowModal=open1600HowModal;
 
 
 /* ── LGPD ── */
@@ -8855,7 +8832,7 @@ if(document.readyState==='loading'){
           <div class="onb-step-num">2</div>
           <div class="onb-step-text">
             <div class="onb-step-title">Informe os dados do teste</div>
-            <div class="onb-step-desc">Cooper 12 min, Corrida 2,4km ou VDOT a partir de um tempo de prova recente.</div>
+            <div class="onb-step-desc">Cooper 12 min, Teste 1.600m, Corrida 2,4km ou Teste 3km.</div>
           </div>
         </div>
         <div class="onb-step">
@@ -8917,38 +8894,78 @@ if(document.readyState==='loading'){
   </div>
 </div>
 
-<!-- VDOT HOW-TO MODAL -->
-<div class="cooper-warn-bg" id="howvdot-modal">
+<!-- 3KM HOW-TO MODAL -->
+<div class="cooper-warn-bg" id="how3km-modal">
   <div class="cooper-warn-box" style="max-width:480px;text-align:left">
-    <div style="text-align:center;font-size:32px;margin-bottom:.6rem"><svg class="gi"><use href="#i-list_alt"></use></svg></div>
-    <div class="cooper-warn-title" style="text-align:center">Como usar o VDOT</div>
-    <div style="font-size:12.5px;color:var(--t3);text-align:center;margin-bottom:1.2rem">Use o tempo de uma prova recente (5km, 10km, 21km ou 42km)</div>
+    <div style="text-align:center;font-size:32px;margin-bottom:.6rem"><svg class="gi"><use href="#i-sports_score"></use></svg></div>
+    <div class="cooper-warn-title" style="text-align:center">Como fazer o Teste de 3 km</div>
+    <div style="font-size:12.5px;color:var(--t3);text-align:center;margin-bottom:1.2rem">Corra 3 km o mais rápido possível e anote seu tempo</div>
 
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.2rem">
       <div style="display:flex;gap:10px;align-items:flex-start;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);padding:.7rem .9rem">
         <div style="width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--t1);font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</div>
-        <div><div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">O que é o VDOT?</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">Criado por Jack Daniels, o VDOT é um índice de aptidão aeróbica calculado a partir do seu tempo real em uma prova. Quanto melhor seu tempo, maior o VDOT e mais preciso o cálculo do VO2máx.</div></div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">Escolha o local</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">Pista de atletismo (7,5 voltas de 400m) ou rua plana de 3km medida com GPS. Evite subidas — o percurso deve ser o mais plano possível.</div></div>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);padding:.7rem .9rem">
         <div style="width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--t1);font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</div>
-        <div><div style="font-size:12px;font-weight:800;color:var(--t1);margin-bottom:2px">Use uma prova recente e oficial</div><div style="font-size:11px;color:var(--t2);line-height:1.5">Idealmente uma corrida de rua com chip (cronometragem oficial) realizada nos últimos 3–6 meses, em percurso plano e bem preparada. Distâncias válidas: 5km, 10km, 21km ou 42km.</div></div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">Aqueça por 5–10 minutos</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">Caminhada leve e trote suave antes de iniciar. Não comece o teste "frio".</div></div>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;background:rgba(214,44,80,0.06);border:1px solid rgba(214,44,80,0.2);border-radius:var(--r);padding:.7rem .9rem">
         <div style="width:24px;height:24px;border-radius:50%;background:var(--rd);color:#fff;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">3</div>
-        <div><div style="font-size:13px;font-weight:800;color:var(--rd);margin-bottom:2px">O tempo deve ser de esforço máximo</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5"><strong>Não use tempos de treinos ou provas onde você não correu a plena capacidade</strong>. Um tempo muito conservador vai subestimar seu VO2máx e gerar zonas abaixo do real.</div></div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--rd);margin-bottom:2px">Corra 3 km no máximo esforço</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">O resultado é válido <strong>somente se você correr com esforço máximo ou próximo disso</strong>. Tente manter um ritmo forte e constante do início ao fim. Ao cruzar os 3 km, pare o cronômetro.</div></div>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);padding:.7rem .9rem">
         <div style="width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--t1);font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">4</div>
-        <div><div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">Insira o tempo exato</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">Selecione a distância da prova, depois preencha Horas, Minutos e Segundos com o tempo de chegada oficial. Clique em Calcular para obter suas zonas.</div></div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">Anote o tempo e insira aqui</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">Volte ao app e insira os minutos e segundos nos campos <em>Min</em> e <em>Seg</em>. Um GPS no celular ou relógio garante a distância exata.</div></div>
       </div>
     </div>
 
-    <div style="background:rgba(0,121,179,0.07);border:1px solid rgba(0,121,179,0.2);border-radius:var(--r);padding:.65rem .9rem;font-size:11.5px;color:var(--acc2);line-height:1.6;margin-bottom:1.2rem">
-      <svg class="gi"><use href="#i-lightbulb"></use></svg> <strong>Dica:</strong> provas de 10km tendem a gerar estimativas de VDOT mais precisas do que provas muito curtas (5km) ou muito longas (42km), pois equilibram bem esforço e duração.
+    <div style="background:rgba(217,119,0,0.07);border:1px solid rgba(217,119,0,0.2);border-radius:var(--r);padding:.65rem .9rem;font-size:11.5px;color:var(--am);line-height:1.6;margin-bottom:1.2rem">
+      <svg class="gi"><use href="#i-stethoscope"></use></svg> <strong>Atenção:</strong> o teste é de alta intensidade. Se você tem alguma condição de saúde ou ficou muito tempo sem se exercitar, consulte um médico antes de realizá-lo.
     </div>
 
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-      <button class="cooper-warn-btn-ok" onclick="document.getElementById('howvdot-modal').classList.remove('open')">Entendido — vou inserir! <svg class="gi"><use href="#i-fitness_center"></use></svg></button>
+      <button class="cooper-warn-btn-ok" onclick="document.getElementById('how3km-modal').classList.remove('open')">Entendido — vou fazer! <svg class="gi"><use href="#i-fitness_center"></use></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- 1600M HOW-TO MODAL -->
+<div class="cooper-warn-bg" id="how1600-modal">
+  <div class="cooper-warn-box" style="max-width:480px;text-align:left">
+    <div style="text-align:center;font-size:32px;margin-bottom:.6rem"><svg class="gi"><use href="#i-directions_walk"></use></svg></div>
+    <div class="cooper-warn-title" style="text-align:center">Como fazer o Teste de 1.600m</div>
+    <div style="font-size:12.5px;color:var(--t3);text-align:center;margin-bottom:1.2rem">Corra 1.600m (1 milha) o mais rápido possível e anote seu tempo</div>
+
+    <div style="background:var(--dgr2);border:1px solid rgba(63,196,106,0.3);border-radius:var(--r);padding:.6rem .9rem;font-size:12px;color:var(--dgr);line-height:1.5;margin-bottom:1rem;text-align:center;font-weight:700">
+      <svg class="gi"><use href="#i-check_circle"></use></svg> Indicado para iniciantes — distância curta e fácil de administrar
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.2rem">
+      <div style="display:flex;gap:10px;align-items:flex-start;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);padding:.7rem .9rem">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--t1);font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">Escolha o local</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">Pista de atletismo (4 voltas de 400m) ou rua plana de 1.600m medida com GPS. Evite subidas — o percurso deve ser o mais plano possível.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);padding:.7rem .9rem">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--t1);font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">Aqueça por 5–10 minutos</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">Caminhada leve e trote suave antes de iniciar. Não comece o teste "frio".</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;background:rgba(214,44,80,0.06);border:1px solid rgba(214,44,80,0.2);border-radius:var(--r);padding:.7rem .9rem">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--rd);color:#fff;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">3</div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--rd);margin-bottom:2px">Corra 1.600m no máximo esforço possível</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">O resultado é válido <strong>somente se você correr com esforço máximo ou próximo disso</strong>. Se estiver começando agora, vale alternar caminhada rápida e corrida leve — o importante é ir no seu limite. Ao cruzar os 1.600m, pare o cronômetro.</div></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r);padding:.7rem .9rem">
+        <div style="width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--t1);font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">4</div>
+        <div><div style="font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px">Anote o tempo e insira aqui</div><div style="font-size:12.5px;color:var(--t2);line-height:1.5">Volte ao app e insira os minutos e segundos nos campos <em>Min</em> e <em>Seg</em>. Um GPS no celular ou relógio garante a distância exata.</div></div>
+      </div>
+    </div>
+
+    <div style="background:rgba(217,119,0,0.07);border:1px solid rgba(217,119,0,0.2);border-radius:var(--r);padding:.65rem .9rem;font-size:11.5px;color:var(--am);line-height:1.6;margin-bottom:1.2rem">
+      <svg class="gi"><use href="#i-stethoscope"></use></svg> <strong>Atenção:</strong> o teste é de alta intensidade. Se você tem alguma condição de saúde ou ficou muito tempo sem se exercitar, consulte um médico antes de realizá-lo.
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="cooper-warn-btn-ok" onclick="document.getElementById('how1600-modal').classList.remove('open')">Entendido — vou fazer! <svg class="gi"><use href="#i-fitness_center"></use></svg></button>
     </div>
   </div>
 </div>
@@ -9537,7 +9554,7 @@ function icuPaceTab(which){
   document.getElementById('icu-config-modal').dataset.paceMode=which;
 }
 
-// ── Estima o ritmo de limiar a partir do tempo de prova (mesma matemática VDOT do app) ──
+// ── Estima o ritmo de limiar a partir do tempo de prova (fórmula de Jack Daniels) ──
 // Limiar anaeróbico (LT) é classicamente ~85-88% da vVO2máx; usamos 85% (meio da Z4 do app).
 function icuEstimateThresholdFromRace(distKm, totalMin){
   if(!totalMin||totalMin<=0) return null;
@@ -9547,7 +9564,7 @@ function icuEstimateThresholdFromRace(distKm, totalMin){
   const vo2=vo2atPace/pctVO2;
   if(vo2<20||vo2>90) return null;
   const vVO2_kmh=(v/1000)*60; // velocidade na prova, km/h
-  const vVO2_calc=vVO2_kmh; // vVO2máx ~ velocidade da prova nesse modelo (consistente com wzCalcVdot)
+  const vVO2_calc=vVO2_kmh; // vVO2máx ~ velocidade da prova nesse modelo
   const thresholdKmh=vVO2_calc*0.85; // 85% da vVO2máx ≈ ritmo de limiar
   return thresholdKmh;
 }
