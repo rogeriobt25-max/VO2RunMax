@@ -7132,10 +7132,9 @@ function renderSavedList(){
   // aparece primeiro na lista (independente da ordem de criação em savedPlans).
   const orderedPlans=[...savedPlans].sort((a,b)=>b.id-a.id);
   const latestPlanId=orderedPlans[0]?orderedPlans[0].id:null;
-  // Card treino de hoje — primeiro plano ativo, ou futuro, ou o mais recente gerado
-  const activePlan=savedPlans.find(p=>{const i=getTodayInfo(p);return i&&i.status==='active';})
-    ||savedPlans.find(p=>{const i=getTodayInfo(p);return i&&i.status==='future';})
-    ||orderedPlans[0];
+  // Card treino de hoje — sempre assume da planilha mais recente gerada
+  // (mesma regra do selo "Planilha atual" logo abaixo: a última é sempre a atual).
+  const activePlan=orderedPlans[0]||null;
   const todayHtml=activePlan?buildTodayCard(activePlan):'';
   let html=(todayHtml?`<div style="margin-bottom:1.2rem">${todayHtml}</div>`:'')+`<div class="saved-list">`;
   orderedPlans.forEach(plan=>{
