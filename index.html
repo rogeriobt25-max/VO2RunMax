@@ -170,7 +170,7 @@ body{
 }
 .app-logo.app-logo-hidden{display:none}
 /* logo.png tem mais margem interna (espaço vazio) que a logodark.png — compensa aumentando a caixa só da versão clara */
-img.app-logo[src$="logo.png"]{height:56px}
+img.app-logo[src$="logo.png"]{height:48px}
 
 /* ── APP LOGO in login/auth modal ── */
 .auth-modal-logo{
@@ -663,7 +663,7 @@ details[open] summary::after{transform:rotate(90deg)}
   .exp-bar{gap:6px}
   /* Header: nome cede lugar ao avatar sozinho pra não disputar espaço com o logo e o "Sair" */
   .app-logo{padding:0 10px;height:36px}
-  img.app-logo[src$="logo.png"]{height:46px}
+  img.app-logo[src$="logo.png"]{height:39px}
   .auth-user-chip .auth-name{display:none}
   .auth-user-chip{padding:4px 6px 4px 4px;gap:0}
   .auth-btn.logout{padding:0 10px;font-size:11px}
@@ -1093,6 +1093,11 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-greeting{font-size:17px;font-weight:800;color:var(--t1);margin-bottom:12px}
 .cs-actions-discrete{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:1.1rem;padding-top:.9rem;border-top:1px solid var(--bdr)}
 .cs-link{background:none;border:none;color:var(--t2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;padding:4px 2px;display:flex;align-items:center;gap:5px;transition:color .2s}
+.cs-vo2zones-btn{width:100%;margin-top:.7rem;padding:.75rem 1rem;border:1px solid var(--bdr2);border-radius:var(--r2);background:var(--s2);color:var(--t1);font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.cs-vo2zones-btn:active{background:var(--s3)}
+.cs-vo2zones-btn.on{background:var(--acc3);border-color:var(--acc);color:var(--acc)}
+.cs-vo2zones-btn .cs-vo2zones-arrow{font-size:11px;transition:transform .2s}
+.vo2zones-panel{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r2);padding:1.1rem 1.2rem;margin-bottom:1.1rem;box-shadow:var(--shadow-card);margin-top:-.4rem}
 .cs-link:hover{color:var(--acc)}
 .cs-divider{width:1px;height:14px;background:var(--bdr2);flex-shrink:0}
 .wz-step{background:var(--s1);border:1px solid var(--bdr);border-radius:var(--r2);padding:1.2rem 1.3rem;margin-bottom:.75rem;animation:wzFadeIn .28s ease;box-shadow:var(--shadow-card)}
@@ -1382,6 +1387,7 @@ details[open] summary::after{transform:rotate(90deg)}
 <!-- ── CALCULADORA ── -->
 <div id="page-calc" class="wrap">
   <div id="calc-summary" class="calc-summary" style="display:none"></div>
+  <div id="vo2zones-panel" class="vo2zones-panel" style="display:none"></div>
   <div class="hero">
     <h1 style="text-align:left"><span>Planilhas</span> Personalizadas</h1>
     <div class="hero-feature-list" style="margin:14px 0 4px;display:flex;flex-direction:column;gap:12px">
@@ -2461,7 +2467,7 @@ function wzRenderHistory(){
 ══════════════════════════════════════════════════════════ */
 function wzSaveSummaryState(planId){
   wzSummaryPlanId=planId;
-  wzSummarySnapshot={profile:wzState.profile,vo2:wzState.vo2,usedRealVo2:wzState.usedRealVo2,dist:wzState.dist,obj:wzState.obj};
+  wzSummarySnapshot={profile:wzState.profile,vo2:wzState.vo2,usedRealVo2:wzState.usedRealVo2,vo2Method:(wzState.usedRealVo2&&lastTestResult&&lastTestResult.methodLabel)?lastTestResult.methodLabel:null,dist:wzState.dist,obj:wzState.obj};
   wzBuildingNew=false;
   wzStaleAfterDelete=false;
   try{lsSet('wz_summary_state',JSON.stringify({planId:planId,snap:wzSummarySnapshot}));}catch(e){}
@@ -2507,7 +2513,7 @@ function wzAutoRestoreFromSavedPlans(){
   const chosen=wzPickBestPlan();
   if(!chosen)return;
   wzSummaryPlanId=chosen.id;
-  wzSummarySnapshot={profile:chosen.profKey,vo2:chosen.vo2,usedRealVo2:!!chosen.vo2IsReal,dist:chosen.race,obj:null};
+  wzSummarySnapshot={profile:chosen.profKey,vo2:chosen.vo2,usedRealVo2:!!chosen.vo2IsReal,vo2Method:chosen.vo2Method||null,dist:chosen.race,obj:null};
   wzBuildingNew=false;
   wzStaleAfterDelete=false;
   try{lsSet('wz_summary_state',JSON.stringify({planId:chosen.id,snap:wzSummarySnapshot}));}catch(e){}
@@ -2562,6 +2568,7 @@ function renderCalcSummary(){
   const wzWrap=document.getElementById('wz-wrap');
   const ra=document.getElementById('result-area');
   if(!wzSummaryPlanId){
+    closeVo2ZonesPanel();
     box.style.display='none';box.innerHTML='';
     if(!wzBuildingNew&&wzWrap)wzWrap.style.display='';
     return;
@@ -2608,8 +2615,13 @@ function renderCalcSummary(){
       <button class="cs-link" onclick="goToSavedPlan(${wzSummaryPlanId})"><svg class="gi"><use href="#i-menu_book"></use></svg> Abrir planilha</button>
       <span class="cs-divider"></span>
       <button class="cs-link" onclick="wzStartNewPlan()">＋ Nova planilha</button>
-    </div>`;
+    </div>
+    <button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()">
+      <span class="cs-vo2zones-lbl">VO₂ Máx e Zonas</span>
+      <span class="cs-vo2zones-arrow">▼</span>
+    </button>`;
   box.style.display='';
+  closeVo2ZonesPanel();
   if(!wzBuildingNew){
     if(wzWrap)wzWrap.style.display='none';
     if(ra){ra.style.display='none';ra.style.visibility='hidden';}
@@ -2619,7 +2631,92 @@ function renderCalcSummary(){
    objetivo já escolhidos (vindos do snapshot salvo) e abre o wizard direto na
    etapa do VO₂, pronta pra fazer um teste real. */
 var wzVo2OnlyMode=false;
+
+/* ══════════════════════════════════════════════════════════
+   PAINEL "VO₂ MÁX E ZONAS" — seção expansível abaixo do card
+   "Planilha atual". Sempre mostra os dados do último VO₂
+   calculado E salvo (nunca do estado ao vivo do wizard), e
+   nunca fica aberto ao mesmo tempo que um fluxo de criação.
+══════════════════════════════════════════════════════════ */
+function buildVo2ZonesContent(vo2,isReal,method){
+  const vo2r=Math.round(vo2*10)/10;
+  const fit=getFit(vo2,'N');
+  const vVO2=vo2/3.5;
+  const methodLabel=method?method.toUpperCase():(isReal?'TESTE REAL':'ESTIMATIVA POR NÍVEL');
+  const rows=ZONES.map((z,i)=>{
+    const v1=vVO2*z.pctVO2[0],v2=vVO2*z.pctVO2[1];
+    return`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <span style="width:28px;height:28px;border-radius:8px;background:${ZCOL[i]}22;border:1px solid ${ZCOL[i]}55;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:900;color:${ZCOL[i]};flex-shrink:0">${z.id}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--t1)">${z.label}</div>
+        <div style="font-size:11.5px;color:var(--t3)">${z.desc}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:14px;font-weight:800;font-family:monospace;color:${ZCOL[i]}">${s2p(v2)} – ${s2p(v1)}</div>
+        <div style="font-size:11.5px;color:var(--t3);font-family:monospace">${z.fcPct[0]}–${z.fcPct[1]}% FC máx</div>
+      </div>
+    </div>`;
+  }).join('');
+  return`
+    <div class="mc-grid" style="margin-bottom:1.1rem">
+      <div class="mc"><p class="mc-lbl">VO₂ máx estimado</p><p class="mc-val" style="color:var(--acc)">${vo2r} <span class="mc-unit">ml/kg/min</span></p><span class="badge" style="background:${fit.bg};color:${fit.c}">${fit.l}</span><div style="margin-top:5px;font-size:10.5px;color:var(--t3);font-weight:700;letter-spacing:.12em;text-transform:uppercase">${methodLabel}</div></div>
+      <div class="mc"><p class="mc-lbl">Velocidade VO₂ máx</p><p class="mc-val">${(Math.round(vVO2*10)/10).toFixed(1)} <span class="mc-unit">km/h</span></p></div>
+      <div class="mc"><p class="mc-lbl">Pace no VO₂ máx</p><p class="mc-val">${s2p(vVO2)} <span class="mc-unit">min/km</span></p></div>
+    </div>
+    <div style="font-size:11.5px;font-weight:800;color:var(--t3);letter-spacing:.03em;margin-bottom:2px">ZONAS DE TREINO</div>
+    ${rows}`;
+}
+/* Pega o VO2 do resumo/planilha atual — sempre o último calculado e salvo,
+   nunca o estado ao vivo do wizard (que pode estar no meio de outra edição). */
+function getCurrentSummaryVo2(){
+  const plan=savedPlans.find(p=>p.id===wzSummaryPlanId);
+  if(plan&&plan.vo2)return{vo2:plan.vo2,isReal:!!plan.vo2IsReal,method:plan.vo2Method||null};
+  if(wzSummarySnapshot&&wzSummarySnapshot.vo2)return{vo2:wzSummarySnapshot.vo2,isReal:!!wzSummarySnapshot.usedRealVo2,method:wzSummarySnapshot.vo2Method||null};
+  return null;
+}
+/* Fecha qualquer fluxo de criação/edição aberto (wizard) — chamado ao abrir
+   o painel VO₂/Zonas, pra nunca deixar os dois abertos ao mesmo tempo. */
+function closeCreationFlowIfOpen(){
+  if(wzBuildingNew){
+    wzBuildingNew=false;
+    const wzWrap=document.getElementById('wz-wrap');if(wzWrap)wzWrap.style.display='none';
+    const ra=document.getElementById('result-area');if(ra){ra.style.display='none';ra.style.visibility='hidden';}
+  }
+}
+function closeVo2ZonesPanel(){
+  const panel=document.getElementById('vo2zones-panel');
+  const btn=document.getElementById('vo2zones-toggle-btn');
+  if(panel){panel.style.display='none';panel.innerHTML='';}
+  if(btn){
+    btn.classList.remove('on');
+    const arrow=btn.querySelector('.cs-vo2zones-arrow');if(arrow)arrow.textContent='▼';
+    const lbl=btn.querySelector('.cs-vo2zones-lbl');if(lbl)lbl.textContent='VO₂ Máx e Zonas';
+  }
+}
+window.closeVo2ZonesPanel=closeVo2ZonesPanel;
+function toggleVo2ZonesPanel(){
+  const panel=document.getElementById('vo2zones-panel');
+  const btn=document.getElementById('vo2zones-toggle-btn');
+  if(!panel||!btn)return;
+  const isOpen=panel.style.display!=='none';
+  if(isOpen){
+    closeVo2ZonesPanel();
+    return;
+  }
+  // Abrir VO₂/Zonas sempre fecha qualquer fluxo de criação em andamento
+  closeCreationFlowIfOpen();
+  const data=getCurrentSummaryVo2();
+  panel.innerHTML=data?buildVo2ZonesContent(data.vo2,data.isReal,data.method):`<div style="text-align:center;color:var(--t3);font-size:14px;padding:.5rem 0">Calcule seu VO₂ Máx pra ver suas zonas de treino.</div>`;
+  panel.style.display='';
+  btn.classList.add('on');
+  const arrow=btn.querySelector('.cs-vo2zones-arrow');if(arrow)arrow.textContent='▲';
+  const lbl=btn.querySelector('.cs-vo2zones-lbl');if(lbl)lbl.textContent='Ocultar';
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+window.toggleVo2ZonesPanel=toggleVo2ZonesPanel;
+
 function wzCalcRealVo2(){
+  closeVo2ZonesPanel();
   const snap=wzSummarySnapshot||{};
   wzBuildingNew=true;
   wzVo2OnlyMode=true;
@@ -2677,6 +2774,7 @@ function wzFinishVo2OnlyUpdate(){
    SEM apagar o resumo da planilha atual — ela só é substituída quando a nova
    for de fato gerada e salva (ver wzSaveSummaryState). */
 function wzStartNewPlan(){
+  closeVo2ZonesPanel();
   wzBuildingNew=true;
   wzVo2OnlyMode=false;
   const optEst=document.getElementById('wz-opt-est');if(optEst)optEst.style.display='flex';
@@ -6678,7 +6776,7 @@ function confirmSave(){
   else{({weeks,lp}=buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj));}
   const totalWorkouts=weeks.reduce((acc,wk)=>acc+wk.days.filter(d=>!d.rest).length,0);
   const intensityDist=calcIntensityDist(weeks);
-  const startTimestamp=Date.now();const plan={id:startTimestamp,name,race,planWeeks,profKey,vo2:Math.round(vo2G*10)/10,vo2IsReal:!!wzState.usedRealVo2,raceSpeed,ez,mod,tempo,intv,lp,createdAt:new Date().toLocaleDateString('pt-BR'),startTimestamp,weeks,done:{},totalWorkouts,intensityDist};
+  const startTimestamp=Date.now();const plan={id:startTimestamp,name,race,planWeeks,profKey,vo2:Math.round(vo2G*10)/10,vo2IsReal:!!wzState.usedRealVo2,vo2Method:(wzState.usedRealVo2&&lastTestResult&&lastTestResult.methodLabel)?lastTestResult.methodLabel:null,raceSpeed,ez,mod,tempo,intv,lp,createdAt:new Date().toLocaleDateString('pt-BR'),startTimestamp,weeks,done:{},totalWorkouts,intensityDist};
   savedPlans.push(plan);
   updateSavedBadge();
   persistAccountPlans();
@@ -10492,6 +10590,7 @@ function montadorConfirmSave(){
     profKey:montador.profKey,
     vo2:Math.round(vo2G*10)/10,
     vo2IsReal:!!wzState.usedRealVo2,
+    vo2Method:(wzState.usedRealVo2&&lastTestResult&&lastTestResult.methodLabel)?lastTestResult.methodLabel:null,
     raceSpeed:montador.raceSpeed,
     ez:montador.ez,mod:montador.mod,tempo:montador.tempo,intv:montador.intv,
     lp:null,
