@@ -2678,15 +2678,16 @@ function buildTodayMini(plan){
   }
   const realInfo=(isDone&&plan.done[`${wIdx}-${dIdx}`]&&typeof plan.done[`${wIdx}-${dIdx}`]==='object')?plan.done[`${wIdx}-${dIdx}`]:null;
   return`<div class="cs-today">
-    <div class="cs-today-eyebrow">${isDone?'<svg class="gi"><use href="#i-check_circle"></use></svg> TREINO CONCLUÍDO':'TREINO DE HOJE'} · ${todayStr}</div>
+    <div class="cs-today-eyebrow"${isDone?' style="color:var(--gr)"':''}>${isDone?'<svg class="gi"><use href="#i-check_circle"></use></svg> TREINO CONCLUÍDO':'TREINO DE HOJE'} · ${todayStr}</div>
     <div class="cs-today-meta">Semana ${week.w} de ${plan.planWeeks}${week.phaseLabel?` · ${week.phaseLabel}`:''} · ${weekRange}</div>
     <div class="cs-today-workout">
       <div class="cs-today-type" style="color:${col}">${day.type}${day.subtypeBadge||''}${day.dist?` · ${day.dist}`:''}</div>
       ${day.pace&&!day.rest?`<div class="cs-today-pace">${compactPaceDisplay(day)}</div>`:''}
       ${day.detail?`<div class="cs-today-detail">${day.detail}</div>`:''}
       ${realInfo?`<div style="margin-top:10px;padding:10px 12px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px">${formatRealInfoBlock(realInfo)}</div>`:''}
+      ${isDone?`<button onclick="openShareModal(${plan.id},${wIdx},${dIdx})" style="margin-top:12px;background:none;border:1px solid var(--bdr2);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--t2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-share"></use></svg> Compartilhar</button>`:''}
     </div>
-    ${!isDone?`<button class="cs-today-done" onclick="toggleDone(${plan.id},${wIdx},${dIdx}).then(renderCalcSummary)"><svg class="gi"><use href="#i-check"></use></svg> Concluir treino</button>`:`<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><div class="cs-today-done-lbl"><svg class="gi"><use href="#i-check_circle"></use></svg> Treino concluído!</div><button onclick="openShareModal(${plan.id},${wIdx},${dIdx})" style="background:none;border:1px solid var(--bdr2);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--t2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-share"></use></svg> Compartilhar</button></div>`}
+    ${!isDone?`<button class="cs-today-done" onclick="toggleDone(${plan.id},${wIdx},${dIdx}).then(renderCalcSummary)"><svg class="gi"><use href="#i-check"></use></svg> Concluir treino</button>`:''}
   </div>`;
 }
 function renderCalcSummary(){
@@ -7871,7 +7872,7 @@ function buildTodayCard(plan){
 
   const realInfoTC=(isDone&&plan.done[`${wIdx}-${dIdx}`]&&typeof plan.done[`${wIdx}-${dIdx}`]==='object')?plan.done[`${wIdx}-${dIdx}`]:null;
   return`<div class="today-card">
-    <div class="today-card-eyebrow">${isDone?'<svg class="gi"><use href="#i-check_circle"></use></svg> TREINO CONCLUÍDO':'TREINO DE HOJE'} · ${todayStr}</div>
+    <div class="today-card-eyebrow"${isDone?' style="color:var(--gr)"':''}>${isDone?'<svg class="gi"><use href="#i-check_circle"></use></svg> TREINO CONCLUÍDO':'TREINO DE HOJE'} · ${todayStr}</div>
     <div class="today-card-title" style="color:${accent}">${plan.name}</div>
     <div class="today-card-meta">Semana ${week.w} de ${plan.planWeeks}${week.phaseLabel?` · ${week.phaseLabel}`:''} · ${weekRange}</div>
     <div class="today-card-workout">
@@ -7879,8 +7880,9 @@ function buildTodayCard(plan){
       ${day.pace&&!day.rest?`<div class="today-wk-pace">${compactPaceDisplay(day)}</div>`:''}
       ${day.detail?`<div class="today-wk-detail">${day.detail}</div>`:''}
       ${realInfoTC?`<div style="margin-top:10px;padding:10px 12px;background:var(--acc3);border:1px solid var(--acc);border-radius:8px">${formatRealInfoBlock(realInfoTC)}</div>`:''}
+      ${isDone?`<button onclick="openShareModal(${plan.id},${wIdx},${dIdx})" style="margin-top:12px;background:none;border:1px solid var(--bdr2);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--t2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-share"></use></svg> Compartilhar</button>`:''}
     </div>
-    ${!isDone?`<button class="today-done-btn" onclick="toggleDone(${plan.id},${wIdx},${dIdx}).then(renderSavedList)"><svg class="gi"><use href="#i-check"></use></svg> Concluir treino</button>`:`<div class="today-done-label"><svg class="gi"><use href="#i-check_circle"></use></svg> Treino concluído!</div>`}
+    ${!isDone?`<button class="today-done-btn" onclick="toggleDone(${plan.id},${wIdx},${dIdx}).then(renderSavedList)"><svg class="gi"><use href="#i-check"></use></svg> Concluir treino</button>`:''}
   </div>`;
 }
 
