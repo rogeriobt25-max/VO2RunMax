@@ -1351,7 +1351,7 @@ details[open] summary::after{transform:rotate(90deg)}
   <img class="app-logo" id="app-logo" src="logo.png" alt="VO2 RunMax" onerror="this.classList.add('app-logo-hidden')"/>
   <button class="nav-tab on" id="nav-calc" onclick="switchNav('calc')"><svg class="gi"><use href="#i-bolt"></use></svg> <span class="nav-label">Calculadora</span></button>
   <button class="nav-tab" id="nav-saved" onclick="switchNav('saved')"><svg class="gi"><use href="#i-list_alt"></use></svg> <span class="nav-label">Meus Treinos</span> <span class="nav-badge" id="saved-count">0</span></button>
-  <button id="icu-header-sync-btn" onclick="icuHeaderSyncTap(this)" style="display:none;background:rgba(0,229,255,0.10);border:1px solid rgba(0,229,255,0.25);border-radius:20px;color:var(--acc);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:6px 12px;white-space:nowrap;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-refresh"></use></svg> Sincronizar</button>
+  <button id="icu-header-sync-btn" onclick="icuHeaderSyncTap(this)" title="Sincronizar com o relógio" style="display:none;background:none;border:none;color:var(--t2);cursor:pointer;font-family:inherit;padding:0;width:36px;height:36px;border-radius:50%;align-items:center;justify-content:center"><svg class="gi" style="font-size:20px"><use href="#i-refresh"></use></svg></button>
   <div class="auth-bar" id="auth-bar">
     <button class="auth-btn primary" onclick="openAuthModal('login')" id="auth-login-btn"><svg class="gi"><use href="#i-key"></use></svg> Entrar</button>
     <button class="auth-btn" onclick="openAuthModal('register')" id="auth-reg-btn">Criar conta</button>
@@ -1911,6 +1911,16 @@ function openAuthModal(tab){
   document.getElementById('auth-modal').classList.add('open');
   switchAuthTab(tab||'login');
 }
+// Bloqueia ações que exigem conta (marcar treino como feito, enviar pro
+// relógio, sincronizar com intervals.icu) — sem login, o app serve só pra
+// gerar/testar uma planilha; nada disso é salvo ou sincronizado com a nuvem
+// de qualquer forma sem conta, então nem deixamos começar a ação.
+function requireLoginFor(message){
+  if(currentUser)return true;
+  showToast(message||'Crie uma conta grátis pra usar isso.');
+  openAuthModal('register');
+  return false;
+}
 function closeAuthModal(){document.getElementById('auth-modal').classList.remove('open')}
 function updateRegisterBtn(){
   const checked=document.getElementById('reg-terms').checked;
@@ -2249,12 +2259,14 @@ function saveCompletedLogLocalCache(){
   try{ lsSet('vo2_completed_log', JSON.stringify(completedLog)); }catch(e){}
 }
 async function persistCompletedEntry(entry){
+  if(!currentUser)return; // sem login: nada é salvo, nem localmente
   saveCompletedLogLocalCache();
-  if(currentUser)await saveCompletedEntryToCloud(currentUser.uid,entry);
+  await saveCompletedEntryToCloud(currentUser.uid,entry);
 }
 async function persistCompletedRemoval(id){
+  if(!currentUser)return;
   saveCompletedLogLocalCache();
-  if(currentUser)await deleteCompletedEntryFromCloud(currentUser.uid,id);
+  await deleteCompletedEntryFromCloud(currentUser.uid,id);
 }
 function loadCompletedLogLocal(){
   try{ return JSON.parse(lsGet('vo2_completed_log')||'[]'); }catch(e){ return []; }
@@ -3794,6 +3806,16 @@ function setMethod(m){
 function setSexo2400(s){sexo2400=s;setSexo(s);document.getElementById('btn2400-m').classList.toggle('on',s==='M');document.getElementById('btn2400-f').classList.toggle('on',s==='F')}
 function getFit(v,sexoOverride){const s=sexoOverride||sexo;const t=s==='N'?FIT_N:(s==='M'?FIT_M:FIT_F);return t.find(f=>v>=f.min&&v<f.max)||t[0]}
 function s2p(kmh){if(!kmh||kmh<=0)return'--:--';const m=60/kmh,mi=Math.floor(m),s=Math.round((m-mi)*60);return`${mi}:${s.toString().padStart(2,'0')}`}
+// Segundos → "H:MM:SS" (se passar de 1h) ou "M:SS" — usado ao converter
+// durações que vêm em segundos (ex: sincronização com o relógio), pra nunca
+// mostrar "61 min" quando deveria ser "1:01:00".
+function fmtDurationHMS(totalSec){
+  if(!totalSec)return null;
+  const s=Math.round(totalSec);
+  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+  if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return`${m}:${String(sec).padStart(2,'0')}`;
+}
 // Faixa de ritmo "M:SS/km-M:SS/km" a partir de uma velocidade (km/h) e uma
 // tolerância em segundos por km — a MESMA conta usada em paceTarget() pra
 // montar os steps exportados pro intervals.icu/relógio. Usada pra exibir no
@@ -7347,6 +7369,7 @@ function deletePlan(id){
 function calcProgress(plan){const done=Object.values(plan.done).filter(Boolean).length;return{done,total:plan.totalWorkouts,pct:Math.round(done/Math.max(1,plan.totalWorkouts)*100)}}
 
 async function toggleDone(planId,wIdx,dIdx){
+  if(!requireLoginFor('Crie uma conta grátis pra marcar treinos como concluídos e acompanhar seu histórico.'))return;
   const plan=savedPlans.find(p=>p.id===planId);if(!plan)return;
   const key=`${wIdx}-${dIdx}`;
   const wasDone=!!plan.done[key];
@@ -7403,6 +7426,7 @@ function finishToggleDoneUI(planId,wIdx,dIdx){
 // apagada depois (é justamente o ponto: virar um histórico permanente).
 function completedLogId(planId,wIdx,dIdx){ return `${planId}-${wIdx}-${dIdx}`; }
 function logCompletion(plan,wIdx,dIdx){
+  if(!currentUser)return; // sem conta, não registra em Realizados
   const day=plan.weeks[wIdx]&&plan.weeks[wIdx].days[dIdx];
   if(!day||day.rest)return;
   const doneVal=plan.done[`${wIdx}-${dIdx}`];
@@ -8144,6 +8168,7 @@ function toggleWeeksPanel(planId,forceOpen){
 }
 
 function openWatchExportModal(planId){
+  if(!requireLoginFor('Crie uma conta grátis pra enviar treinos pro relógio.'))return;
   const old=document.getElementById('watch-export-modal');
   if(old)old.remove();
   const plan=savedPlans.find(p=>p.id===planId);
@@ -10177,9 +10202,82 @@ function shareRedrawIfOpen(){
   }
 }
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='visible')shareRedrawIfOpen();
+  if(document.visibilityState==='visible'){
+    shareRedrawIfOpen();
+    icuAutoCheckOnResume();
+  }
 });
-window.addEventListener('pageshow',function(){ shareRedrawIfOpen(); });
+window.addEventListener('pageshow',function(){ shareRedrawIfOpen(); icuAutoCheckOnResume(); });
+
+// ── Sincronização automática com o relógio ao voltar do segundo plano ──
+// Antes, a checagem automática só rodava uma vez, no login — se a pessoa
+// minimizasse (ou até fechasse) o app e voltasse depois de treinar, o
+// treino feito só aparecia clicando manualmente em "sincronizar". Agora,
+// toda vez que o app volta a ficar visível, checa de novo sozinho (com um
+// intervalo mínimo entre checagens, pra não ficar batendo na API à toa).
+let _icuLastResumeCheck=0;
+function icuAutoCheckOnResume(){
+  if(!currentUser)return; // sincronizar exige login
+  const now=Date.now();
+  if(now-_icuLastResumeCheck<60000)return; // no máximo 1x por minuto
+  _icuLastResumeCheck=now;
+  icuUpdateHeaderSyncVisibility();
+  icuAutoCheckAllPlans();
+}
+
+// ── Puxar pra atualizar (pull-to-refresh) manual ────────────────────────
+// Instalado como app (adicionar à tela inicial), o gesto nativo do
+// navegador de "puxar pra atualizar" não funciona: no iOS esse modo nunca
+// suportou o gesto, e no Android o `overscroll-behavior:none` (usado pra
+// tirar aquele "elástico" feio ao rolar) acaba desativando ele também.
+// Essa implementação faz o gesto na mão: só ativa quando já está no topo
+// da tela, com um indicador visual, e solta recarregando a página.
+(function(){
+  let startY=null, dragging=false, readyToRelease=false;
+  const TRIGGER=80, MAXH=64;
+  const indicator=document.createElement('div');
+  indicator.id='ptr-indicator';
+  indicator.style.cssText='position:fixed;top:0;left:0;right:0;height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:height .18s ease;z-index:9999;pointer-events:none;background:transparent';
+  indicator.innerHTML='<svg viewBox="0 -960 960 960" style="width:22px;height:22px;fill:var(--acc);opacity:0"><path d="M480-160q-133 0-226.5-93.5T160-480q0-133 93.5-226.5T480-800q85 0 149 34.5T740-671v-99q0-13 8.5-21.5T770-800q13 0 21.5 8.5T800-770v194q0 13-8.5 21.5T770-546H576q-13 0-21.5-8.5T546-576q0-13 8.5-21.5T576-606h138q-38-60-97-97t-137-37q-109 0-184.5 75.5T220-480q0 109 75.5 184.5T480-220q75 0 140-39.5T717-366q5-11 16.5-16.5t22.5-.5q12 5 16 16.5t-1 23.5q-39 84-117.5 133.5T480-160Z"/></svg>';
+  document.body.appendChild(indicator);
+  const arrow=indicator.querySelector('svg');
+
+  function ptrModalOpen(){
+    return document.querySelector('.modal-bg.open')
+      || document.getElementById('share-modal')
+      || document.getElementById('watch-export-modal')
+      || document.getElementById('realizado-detail-modal')
+      || document.getElementById('icu-config-modal');
+  }
+
+  document.addEventListener('touchstart',function(e){
+    if(window.scrollY<=0 && !ptrModalOpen()){
+      startY=e.touches[0].clientY; dragging=true;
+    }else{ startY=null; dragging=false; }
+  },{passive:true});
+
+  document.addEventListener('touchmove',function(e){
+    if(!dragging||startY==null)return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy>0 && window.scrollY<=0){
+      indicator.style.height=Math.min(dy*0.45,MAXH)+'px';
+      arrow.style.opacity=Math.min(dy/40,1);
+      arrow.style.transform='rotate('+Math.min(dy*1.8,180)+'deg)';
+      readyToRelease=dy>=TRIGGER;
+    }
+  },{passive:true});
+
+  document.addEventListener('touchend',function(){
+    if(!dragging)return;
+    if(readyToRelease){
+      indicator.style.height=MAXH+'px';
+      location.reload();
+    }else{
+      indicator.style.height='0px';
+    }
+    dragging=false;startY=null;readyToRelease=false;
+  },{passive:true});
+})();
 }else{
   initAuth();initLGPD();showOnboardingIfNeeded();initInstallBanner();
 }
@@ -10619,6 +10717,7 @@ function icuUpdateHeaderSyncVisibility(){
   btn.style.display=(icuGetApiKey()&&icuGetAthleteId())?'flex':'none';
 }
 async function icuHeaderSyncTap(btn){
+  if(!requireLoginFor('Crie uma conta grátis pra sincronizar com o relógio.'))return;
   if(!wzSummaryPlanId){showToast('Nenhuma planilha atual pra sincronizar.');return;}
   if(btn)btn.classList.add('spinning');
   try{
@@ -10743,7 +10842,9 @@ async function icuCheckPlanCompletions(plan,apiKey,athleteId,usedActivityIds){
       usedActivityIds.add(act.id);
       const distKm=act.distance?Math.round(act.distance/10)/100:null;
       const totalSec=act.moving_time||act.elapsed_time||null;
-      const durLabel=totalSec?`${Math.floor(totalSec/60)}:${String(Math.round(totalSec%60)).padStart(2,'0')}`:null;
+      // Formata em H:MM:SS quando passa de 1h (ex: 61min vira "1:01:00"),
+      // senão M:SS — mesmo padrão de tempo usado no resto do app.
+      const durLabel=totalSec?fmtDurationHMS(totalSec):null;
       // Ritmo médio calculado a partir de distância+tempo reais (não vem
       // pronto da API) — mesmo formato M:SS/km usado no resto do app.
       const paceLabel=(act.distance&&totalSec)?s2p((act.distance/1000)/(totalSec/3600)):null;
@@ -10765,6 +10866,10 @@ async function icuCheckPlanCompletions(plan,apiKey,athleteId,usedActivityIds){
 // inicial) — usado ao abrir o app. Planilhas antigas/outras salvas em "Meus
 // Treinos" nunca são tocadas automaticamente; só via o botão manual de
 // sincronizar de cada uma. Silencioso — só re-renderiza se achar algo novo.
+// A própria icuCheckPlanCompletions já pula a chamada à API quando não há
+// nenhum dia pendente (nem chega a fazer fetch) — não precisa de mais
+// nenhuma checagem de "hoje é descanso" aqui em cima, isso só faria perder
+// pendência atrasada sem economizar chamada de verdade.
 async function icuAutoCheckAllPlans(){
   const apiKey=icuGetApiKey(),athleteId=icuGetAthleteId();
   if(!apiKey||!athleteId)return 0;
@@ -10784,6 +10889,7 @@ async function icuAutoCheckAllPlans(){
 // Botão manual "Sincronizar com intervals.icu" de uma planilha específica —
 // dá feedback visual (ícone girando) e um toast com o resultado.
 async function icuManualSyncPlan(planId,btn){
+  if(!requireLoginFor('Crie uma conta grátis pra sincronizar com o relógio.'))return;
   const plan=savedPlans.find(p=>p.id===planId);if(!plan)return;
   const apiKey=icuGetApiKey(),athleteId=icuGetAthleteId();
   if(!apiKey||!athleteId){showToast('Configure a integração com o relógio primeiro.');return;}
