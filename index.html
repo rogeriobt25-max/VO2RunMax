@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="VO2 RunMax"/>
 <meta name="theme-color" content="#0099cc"/>
 <meta name="color-scheme" content="light dark"/>
+<script>(function(){try{if('scrollRestoration' in history)history.scrollRestoration='manual';}catch(e){}})();</script>
 <script>(function(){try{var t=localStorage.getItem('vo2-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');document.documentElement.style.colorScheme='dark';}else if(t==='light'){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.colorScheme='light';}else{document.documentElement.style.colorScheme='light dark';}}catch(e){}})();</script>
 <title>VO2 RunMax</title>
 <link rel="manifest" href="manifest.json"/>
@@ -245,20 +246,6 @@ body{
   min-width:0;
   /* Keep auth bar but hide nav tabs */
 }
-/* Nav tabs in top header become hidden; they're replaced by bottom bar */
-.nav-tab{display:none!important}
-.nav-badge{
-  background:var(--acc);
-  color:#fff;
-  font-size:10.5px;
-  font-weight:900;
-  padding:2px 6px;
-  border-radius:6px;
-  min-width:18px;
-  text-align:center;
-  line-height:1.4;
-}
-.nav-label{overflow:hidden;text-overflow:ellipsis}
 
 /* ── APP LOGO in header ── */
 .app-logo{
@@ -359,7 +346,6 @@ body{
 .hero{margin-bottom:1.25rem;padding:1.4rem 1.25rem 1.6rem;background:var(--bg);border-radius:0;border:none;border-bottom:1px solid var(--bdr);position:relative;overflow:hidden;box-shadow:none}
 .hero::before{content:'';display:none}
 .hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--acc);opacity:.9;border-radius:0 0 var(--rc) var(--rc);pointer-events:none}
-.hero-eyebrow{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--acc);font-weight:800;margin-bottom:12px;display:inline-flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--bdr2);border-radius:8px;padding:4px 12px}
 .hero h1{font-size:clamp(20px,6vw,32px);font-weight:900;letter-spacing:-.03em;text-transform:uppercase;color:var(--t1);margin-bottom:10px;line-height:1.1;text-shadow:none;word-break:break-word}
 .hero h1 span{background:var(--acc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:var(--acc);display:inline-block;text-shadow:none}
 .hero p{font-size:13px;color:var(--t2);margin-bottom:0}
@@ -424,7 +410,6 @@ input::placeholder{color:var(--t3)}
 .race-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
 .race-tab.on-21{background:var(--s3);color:var(--gr);border-color:var(--bdr-day)}
 .race-tab.on-42{background:var(--s3);color:var(--pu);border-color:var(--bdr-day)}
-.race-tab.on-5k{background:var(--s3);color:var(--acc);border-color:var(--bdr-day)}
 .race-tab.on-10k{background:var(--s3);color:var(--am);border-color:var(--bdr-day)}
 
 /* Tables: prevent overflow on mobile */
@@ -479,7 +464,6 @@ input::placeholder{color:var(--t3)}
 .propt-title{font-size:13px;font-weight:800;color:var(--t1);margin-bottom:2px}
 .propt.on .propt-title{color:var(--acc);font-weight:900}
 .propt.on .propt-icon{color:var(--acc)}
-.propt-desc{font-size:11.5px;color:var(--t3)}
 
 .dur-opts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
 .dopt{padding:5px 14px;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--t2);background:var(--s2);transition:all .2s}
@@ -493,9 +477,6 @@ input::placeholder{color:var(--t3)}
 
 .week-grid{display:flex;flex-direction:column;gap:8px}
 .week-card{border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);overflow:hidden}
-.week-card.r21{border-color:var(--bdr-day)}
-.week-card.r42{border-color:var(--bdr-day)}
-.week-card.cb{border-color:var(--bdr-day)}
 .week-header{background:var(--s2);padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bdr)}
 .week-card.r21 .week-header{background:var(--s2)}
 .week-card.r42 .week-header{background:var(--s2)}
@@ -522,14 +503,10 @@ input::placeholder{color:var(--t3)}
 
 .exp-bar{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:0;background:transparent;border:none;border-radius:0;margin-bottom:1rem}
 .exp-bar-title{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--t2);line-height:1.45}
-.exp-bar-title-icon{font-size:17px;flex-shrink:0;line-height:1.3}
 .exp-bar-title strong{color:var(--t1);font-weight:800;display:block;font-size:13px;letter-spacing:.01em}
 .exp-bar-btns{display:flex;gap:8px;flex-wrap:wrap}
 .btn-exp{height:40px;padding:0 14px;cursor:pointer;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:var(--rb);transition:all .2s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;flex:1;min-width:128px}
 .btn-exp:hover{filter:brightness(1.15);filter:brightness(0.97)}
-.btn-exp-csv{background:var(--s3);border:1px solid var(--bdr2);color:var(--t1)}
-.btn-exp-xl{background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);color:var(--gr)}
-.btn-exp-pr{background:var(--s3);border:1px solid var(--bdr2);color:var(--acc)}
 /* Em telas estreitas, os botões viram um grid organizado em vez de "sobrar"
    uma linha torta quando não cabem. O texto explicativo do relógio fica sempre em cima. */
 @media(max-width:520px),(max-device-width:520px){
@@ -559,7 +536,6 @@ input::placeholder{color:var(--t3)}
 .intensity-lbl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .intensity-rule{font-size:12.5px;color:var(--t2);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--bdr)}
 .intensity-rule strong{color:var(--t2)}
-.intensity-alert{display:flex;align-items:flex-start;gap:7px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:7px 10px;margin-top:8px;font-size:12.5px;color:var(--am);line-height:1.5}
 
 /* ── TAPER PROGRESSIVO ── */
 .taper-prog-box{background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:.9rem 1rem;margin-bottom:1rem}
@@ -573,9 +549,6 @@ input::placeholder{color:var(--t3)}
 .taper-wk-intv{font-size:10.5px;font-weight:700;margin-top:4px}
 .taper-wk-intv.maintained{color:var(--gr)}
 .taper-wk-intv.partial{color:var(--am)}
-.week-card.taper-1{border-color:var(--bdr-day)}
-.week-card.taper-2{border-color:var(--bdr-day)}
-.week-card.taper-3{border-color:var(--bdr-day)}
 .week-header.taper-1{background:var(--s2)}
 .week-header.taper-2{background:var(--s2)}
 .week-header.taper-3{background:var(--s2)}
@@ -631,10 +604,8 @@ details[open] summary::after{transform:rotate(90deg)}
 .saved-item-badge.current{background:none;border:none;padding:0;color:var(--acc);font-size:14.5px;display:block;text-align:center}
 .saved-item-badge.completed{background:var(--gr2);color:var(--gr);border:1px solid rgba(0,168,85,0.35)}
 .saved-item.is-completed{opacity:.7}
-.saved-item.is-completed .saved-item-icon{filter:grayscale(.4)}
 .btn-open-plan:disabled,.btn-watch:disabled{opacity:.4;cursor:not-allowed;pointer-events:none;filter:none;transform:none;box-shadow:none}
 .saved-item-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;border-bottom:1px solid var(--bdr)}
-.saved-item-icon{width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .saved-item-info{flex:1;min-width:0}
 .saved-item-name{font-size:18px;font-weight:800;color:var(--t1);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .saved-item-meta{font-size:12.5px;color:var(--t3);display:flex;flex-direction:column;gap:3px}
@@ -645,8 +616,6 @@ details[open] summary::after{transform:rotate(90deg)}
 .btn-watch{height:36px;padding:0 14px;min-width:170px;border-radius:var(--rb);border:1px solid var(--bdr2);background:var(--s3);color:var(--t1);cursor:pointer;font-size:11.5px;font-weight:800;letter-spacing:.02em;font-family:inherit;display:flex;align-items:center;justify-content:center;text-align:center;gap:5px;white-space:nowrap;transition:all .2s}
 .btn-watch:hover{filter:brightness(0.97)}
 .btn-watch.active{background:var(--s2);border-color:var(--acc)}
-.watch-export-panel{display:none;margin:0 16px 12px}
-.watch-export-panel.open{display:block}
 .btn-open-plan{height:36px;padding:0 16px;min-width:170px;border-radius:var(--rb);border:none;background:var(--acc);color:var(--on-acc);cursor:pointer;font-size:11.5px;font-weight:800;letter-spacing:.02em;font-family:inherit;display:flex;align-items:center;justify-content:center;text-align:center;gap:5px;white-space:nowrap;transition:all .2s;box-shadow:none}
 .btn-open-plan:hover{filter:brightness(1.08);box-shadow:var(--shadow-card-hover)}
 .btn-open-plan:active{filter:brightness(0.93);transform:scale(0.97);box-shadow:none}
@@ -655,14 +624,12 @@ details[open] summary::after{transform:rotate(90deg)}
 .btn-icon.expand:hover{border-color:var(--acc);color:var(--acc)}
 
 /* PROGRESS BAR */
-.prog-segbar{width:186px;height:10px;background-color:var(--bdr2);flex:0 0 auto;position:relative;overflow:hidden;border-radius:2px}
-.prog-seg-fill{height:100%;transition:width .4s,background-color .3s}
+.prog-segbar{width:186px;height:16px;background-color:var(--bdr2);flex:0 0 auto;position:relative;overflow:hidden;border-radius:8px}
+.prog-seg-fill{height:100%;position:relative;transition:width .4s,background-color .3s}
+.prog-seg-sheen{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.25),transparent 55%)}
+.prog-seg-knob{position:absolute;top:calc(50% - 4.5px);width:9px;height:9px;border-radius:50%;background:#fff;transition:left .4s}
 .prog-seg-ticks{position:absolute;inset:0;pointer-events:none}
-.prog-wrap{padding:10px 16px;background:var(--s2);border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:12px}
-.prog-bar-bg{flex:1;height:6px;background:var(--bdr2);border-radius:3px;overflow:hidden}
-.prog-bar-fill{height:100%;border-radius:3px;background:var(--t1);transition:width .4s}
 .prog-pct{font-size:12.5px;font-weight:800;color:var(--t1);min-width:35px;text-align:right}
-.prog-label{font-size:12.5px;color:var(--t3)}
 
 /* TRAINING WEEK IN SAVED */
 .saved-weeks-panel{display:none;padding:12px}
@@ -686,7 +653,6 @@ details[open] summary::after{transform:rotate(90deg)}
 .sw-check{position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;border:1.5px solid var(--bdr2);background:transparent;color:transparent;transition:all .2s}
 .sw-day.done .sw-check{background:var(--gr);border-color:var(--gr);color:var(--t1)}
 /* Detail oculto por padrão em TODOS os tamanhos; só aparece ao expandir */
-.sw-day-detail{display:block;font-size:8px;color:var(--t3);line-height:1.5;margin-top:4px;padding-top:3px;border-top:1px solid var(--bdr);text-align:left}
 /* "Meus Treinos": em vez do detalhe completo do treino, mostra só um aviso
    pra abrir o modal com os detalhes — deixa a planilha salva mais limpa */
 .sw-day-hint{display:block;font-size:8px;color:var(--acc);font-weight:700;line-height:1.4;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;margin-left:11px}
@@ -722,10 +688,10 @@ details[open] summary::after{transform:rotate(90deg)}
 .today-wk-detail{font-size:14px;color:var(--t2);line-height:1.65}
 .today-done-btn{min-height:44px;height:36px;padding:0 1.2rem;border:none;border-radius:var(--rb);background:var(--gr);color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.05em;transition:all .2s}
 .today-done-btn:hover{filter:brightness(1.1);filter:brightness(0.97)}
-.today-done-label{font-size:13px;font-weight:800;color:var(--gr)}
 /* SEMANA ATUAL e DIA DE HOJE na grade */
 .sw-week-today .sw-week-header{background:var(--s3)!important}
 .sw-day.today{background:var(--s3);outline:2px solid var(--acc);outline-offset:-2px;border-radius:4px}
+.sw-day-today-badge{display:inline-block;font-size:7px;font-weight:800;letter-spacing:.04em;color:var(--acc);background:var(--acc3);padding:1px 5px;border-radius:8px;margin-bottom:2px}
 .sw-day.today .sw-day-date{color:var(--acc)}
 .sw-day.today.done{background:var(--s3)!important}
 .sw-day-date{font-size:7px;color:var(--t3);margin-bottom:2px;font-family:monospace;font-weight:700}
@@ -748,8 +714,6 @@ details[open] summary::after{transform:rotate(90deg)}
 .btn-modal-ok{padding:8px 20px;border:none;border-radius:var(--rb);background:var(--acc);color:var(--on-acc);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
 
 @media(max-width:360px),(max-device-width:360px){
-  .nav-tab{font-size:10.5px;gap:2px;padding:0 2px}
-  .nav-label{display:none}
   .hero h1{font-size:17px}
   .hero-stats{display:none}
   .auth-btn .auth-name,.auth-btn span:not(.nav-badge){display:none}
@@ -762,12 +726,9 @@ details[open] summary::after{transform:rotate(90deg)}
 }
 @media(max-width:580px),(max-device-width:580px){
   .igrow{grid-template-columns:1fr 1fr!important}
-  .btn-cta-wrap{grid-column:1/-1}
   .plan-opts,.pr-opts{grid-template-columns:1fr 1fr}
   .pr-opts .propt:last-child{grid-column:1/-1;width:calc(50% - 4px);max-width:none;margin:0 auto}
   .mc-grid{grid-template-columns:1fr 1fr}
-  .nav-tab{font-size:11.5px;gap:4px;height:46px}
-  .nav-badge{font-size:8px;padding:1px 5px}
   .auth-btn{font-size:10px;padding:0 10px}
   .auth-name{max-width:70px}
   .hero h1{font-size:clamp(18px,5vw,26px)}
@@ -925,15 +886,6 @@ details[open] summary::after{transform:rotate(90deg)}
   .sw-day{
     position:relative;
     padding-right:40px; /* espaço para o check à direita */
-  }
-  .sw-day-detail{
-    font-size:14px;color:var(--t3);line-height:1.55;
-    display:block;
-    width:100%;
-    flex-basis:100%;
-    padding:5px 12px 0 calc(34px + 10px);
-    border-top:none;
-    margin-top:3px;
   }
   .sw-day-hint{
     font-size:12px;color:var(--acc);font-weight:700;
@@ -1097,7 +1049,6 @@ details[open] summary::after{transform:rotate(90deg)}
 .auth-modal-box{background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--rc);padding:2rem;width:100%;max-width:400px;position:relative;margin:auto}
 .auth-modal-close{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:50%;border:1px solid var(--bdr2);background:var(--s2);color:var(--t3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;font-family:inherit}
 .auth-modal-close:hover{color:var(--t1);border-color:var(--bdr)}
-.auth-modal-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--acc);margin-bottom:8px}
 .auth-modal-title{font-size:20px;font-weight:800;color:var(--t1);margin-bottom:6px;letter-spacing:-.03em}
 .auth-modal-sub{font-size:13px;color:var(--t3);margin-bottom:1.5rem;line-height:1.6}
 .auth-modal-sub strong{color:var(--t2)}
@@ -1147,13 +1098,9 @@ details[open] summary::after{transform:rotate(90deg)}
 .long-tip-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .long-tip{background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:6px 8px;font-size:11.5px;color:var(--t2);line-height:1.5}
 .long-tip strong{display:block;font-size:10.5px;color:var(--am);margin-bottom:2px;text-transform:uppercase;letter-spacing:.08em}
-.day-cell.long{position:relative}
-.day-cell.long::after{content:'ⓘ';position:absolute;top:3px;right:3px;font-size:11px;line-height:1;color:var(--am);opacity:.6}
-.day-cell.long:hover::after{opacity:1}
 
 /* ── SEÇÃO RECUPERAÇÃO ── */
 .rec-section{background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);padding:.9rem 1rem;margin-bottom:1rem}
-.rec-section-title{font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--acc);margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .rec-card{background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:8px 10px}
 .rec-card-icon{font-size:16px;margin-bottom:4px}
@@ -1198,7 +1145,6 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-note{display:flex;align-items:flex-start;gap:6px;font-size:14px;color:var(--t3);line-height:1.45;padding:.75rem 0 0;margin:.75rem 0 0;border-top:1px solid var(--bdr)}
 .cs-today{padding:.95rem 1.2rem 0;margin:1rem -1.2rem 0;background:var(--bg);border-top:1px solid var(--bdr)}
 .cs-today-eyebrow{font-size:14.5px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--t1);margin-bottom:6px}
-.cs-today-label{font-size:14px;font-weight:700;color:var(--t3);margin-bottom:2px}
 .cs-today-meta{font-size:13px;color:var(--t3);margin-bottom:9px}
 .cs-today-body{font-size:14.5px;color:var(--t2);line-height:1.55}
 .cs-today-workout{padding:0;margin-bottom:.65rem}
@@ -1206,7 +1152,6 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-today-pace{font-size:15px;color:var(--t2);font-family:monospace;margin-bottom:4px;font-weight:700}
 .cs-today-detail{font-size:13.5px;color:var(--t2);line-height:1.55}
 .cs-today-done{min-height:38px;padding:0 1.1rem;border:none;border-radius:6px;background:var(--gr);color:#fff;font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.03em}
-.cs-today-done-lbl{font-size:14.5px;font-weight:800;color:var(--gr)}
 .cs-eyebrow{font-size:13px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin-bottom:6px}
 .cs-greeting{font-size:17px;font-weight:800;color:var(--t1);margin-bottom:12px}
 .cs-actions-discrete{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:1.1rem;padding-top:.9rem;border-top:1px solid var(--bdr)}
@@ -1225,7 +1170,6 @@ details[open] summary::after{transform:rotate(90deg)}
    classe, ficava um cartão branco por baixo, sobrepondo o título. */
 .vo2zones-panel.records-panel-flat{background:none;border:none;box-shadow:none;padding:0;margin-top:.6rem}
 .cs-link:hover{color:var(--acc)}
-.cs-divider{width:1px;height:14px;background:var(--bdr2);flex-shrink:0}
 .wz-step{background:var(--bg);border:none;border-bottom:1px solid var(--bdr);border-radius:0;padding:1.2rem 0;margin-bottom:.75rem;animation:wzFadeIn .28s ease;box-shadow:none}
 @keyframes wzFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes authLoadingPulse{0%,100%{opacity:.35}50%{opacity:.65}}
@@ -1239,8 +1183,6 @@ details[open] summary::after{transform:rotate(90deg)}
 .wz-yn-btn:active{transform:scale(0.98)}
 .wz-vo2-info{background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);padding:.85rem 1rem;margin-bottom:.85rem;font-size:13px;color:var(--t2);line-height:1.65}
 .wz-vo2-info strong{color:var(--acc)}
-.wz-vo2-methods{display:flex;flex-wrap:wrap;gap:5px;margin-top:.5rem}
-.wz-vo2-method-chip{font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;background:var(--s3);border:1px solid var(--bdr2);color:var(--t2)}
 .wz-vo2-input-row{display:flex;gap:10px;align-items:flex-end;margin-top:.5rem}
 .wz-vo2-input-row .ig{flex:1}
 .wz-vo2-input-row input{font-size:22px;font-weight:800;text-align:center;color:var(--acc)}
@@ -1285,6 +1227,9 @@ details[open] summary::after{transform:rotate(90deg)}
 .mt-toolbar input[type=date]{height:30px;border-radius:8px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t1);font-family:inherit;font-size:12.5px;padding:0 8px}
 .mt-wkstep{display:flex;align-items:center;gap:4px}
 .mt-wkstep button{width:26px;height:26px;border-radius:8px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);font-weight:900;cursor:pointer}
+.mt-skip-first{height:26px;padding:0 10px;border-radius:8px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;font-family:inherit}
+.mt-skip-first:hover{border-color:var(--acc);color:var(--acc)}
+.mt-skip-first .gi{font-size:13px}
 .mt-tabs{display:none;gap:6px}
 .mt-tab-btn{height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);font-size:12.5px;font-weight:800;cursor:pointer}
 .mt-tab-btn.on{background:var(--pu);border-color:var(--pu);color:#fff}
@@ -1313,7 +1258,6 @@ details[open] summary::after{transform:rotate(90deg)}
 .mt-cal-week{display:grid;grid-template-columns:52px repeat(7,1fr);gap:6px;margin-bottom:6px;align-items:stretch}
 .mt-cal-wlbl{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;color:var(--t2);background:var(--s2);border-radius:8px}
 .mt-day-cell{min-height:78px;background:var(--s1);border:1.5px dashed var(--bdr2);border-radius:6px;padding:4px;display:flex;flex-direction:column;gap:2px;position:relative}
-.mt-day-cell.mt-cell-over{border-color:var(--pu);background:var(--pu2)}
 .mt-body.mt-armed .mt-day-cell{cursor:pointer;border-color:var(--pu);border-style:solid}
 .mt-day-date{font-size:10px;color:var(--t3);font-weight:700;padding:1px 2px}
 .mt-chip{flex:1;border-radius:7px;border-left:4px solid var(--acc);background:var(--s2);padding:4px 16px 4px 6px;position:relative;font-size:9.5px;line-height:1.35}
@@ -1366,7 +1310,7 @@ details[open] summary::after{transform:rotate(90deg)}
 <symbol id="i-refresh" viewBox="0 -960 960 960"><path d="M480-160q-133 0-226.5-93.5T160-480q0-133 93.5-226.5T480-800q85 0 149 34.5T740-671v-99q0-13 8.5-21.5T770-800q13 0 21.5 8.5T800-770v194q0 13-8.5 21.5T770-546H576q-13 0-21.5-8.5T546-576q0-13 8.5-21.5T576-606h138q-38-60-97-97t-137-37q-109 0-184.5 75.5T220-480q0 109 75.5 184.5T480-220q75 0 140-39.5T717-366q5-11 16.5-16.5t22.5-.5q12 5 16 16.5t-1 23.5q-39 84-117.5 133.5T480-160Z"/></symbol>
 <symbol id="i-sync" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></symbol>
 <symbol id="i-content_copy" viewBox="0 0 24 24"><path d="M7.5 17V3h11v14zm1-1h9V4h-9zm-4 4V6.616h1V19h9.385v1zm4-4V4z"/></symbol>
-<symbol id="i-share" viewBox="0 -960 960 960"><path d="M480-80q-33 0-56.5-23.5T400-160q0-5 1-10.5t2-9.5L195-373q-14 12-31.5 19t-35.5 7q-33 0-56.5-23.5T48-427q0-33 23.5-56.5T128-507q19 0 36 7.5t31 20.5l208-193q-1-5-2-10.5t-1-9.5q0-33 23.5-56.5T480-772q33 0 56.5 23.5T560-692q0 5-1 10.5t-2 9.5l208 193q14-13 31-20.5t36-7.5q33 0 56.5 23.5T912-427q0 33-23.5 56.5T832-347q-18 0-35.5-7T765-373L557-180q1 4 2 9.5t1 10.5q0 33-23.5 56.5T480-80Zm0-80q6 0 10.5-4.5T495-175l-14-30 14-30q-4.5-4.5-10.5-4.5t-10 4.5L465-235l15 30q4.5 4.5 10 4.5Zm-352-267q7 0 11-4.5t4-10.5q0-6-4-10.5t-11-4.5q-6 0-10.5 4.5T113-442q0 6 4.5 10.5T128-427Zm704 0q6 0 10.5-4.5T847-442q0-6-4.5-10.5T832-457q-7 0-11 4.5t-4 10.5q0 6 4 10.5t11 4.5ZM480-652q6 0 10.5-4.5T495-667q0-6-4.5-10.5T480-682q-6 0-10.5 4.5T465-667q0 6 4.5 10.5T480-652Z"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><path fill="currentColor" d="M18,16.08c-0.76,0-1.44,0.3-1.96,0.77L8.91,12.7c0.05-0.23,0.09-0.46,0.09-0.7s-0.04-0.47-0.09-0.7l7.05-4.11c0.54,0.5,1.25,0.81,2.04,0.81c1.66,0,3-1.34,3-3c0-1.66-1.34-3-3-3s-3,1.34-3,3c0,0.24,0.04,0.47,0.09,0.7L8.04,9.81C7.5,9.31,6.79,9,6,9c-1.66,0-3,1.34-3,3s1.34,3,3,3c0.79,0,1.5-0.31,2.04-0.81l7.12,4.16c-0.05,0.21-0.08,0.43-0.08,0.65c0,1.61,1.31,2.92,2.92,2.92s2.92-1.31,2.92-2.92C20.92,17.39,19.61,16.08,18,16.08z"/></symbol>
 <symbol id="i-add_a_photo" viewBox="0 -960 960 960"><path d="M480-260q75 0 127.5-52.5T660-440q0-75-52.5-127.5T480-620q-75 0-127.5 52.5T300-440q0 75 52.5 127.5T480-260Zm0-80q-42 0-71-29t-29-71q0-42 29-71t71-29q42 0 71 29t29 71q0 42-29 71t-71 29ZM160-120q-33 0-56.5-23.5T80-200v-440q0-33 23.5-56.5T160-720h126l74-80h240v80H392l-73 80H160v440h640v-280h80v280q0 33-23.5 56.5T800-120H160Zm640-480v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80ZM480-440Z"/></symbol>
 <symbol id="i-download" viewBox="0 -960 960 960"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></symbol>
 <symbol id="i-lightbulb" viewBox="0 -960 960 960"><path d="M422.5-103.5Q399-127 399-161h162q0 34-23.5 57.5T480-80q-34 0-57.5-23.5ZM348-223q-13 0-21.5-8.5T318-253q0-13 8.5-21.5T348-283h264q13 0 21.5 8.5T642-253q0 13-8.5 21.5T612-223H348Zm-25-121q-66-43-104.5-107.5T180-597q0-122 89-211t211-89q122 0 211 89t89 211q0 81-38 145.5T637-344H323Z"/></symbol>
@@ -1413,8 +1357,6 @@ details[open] summary::after{transform:rotate(90deg)}
 
 <div class="app-nav">
   <img class="app-logo" id="app-logo" src="logo.png" alt="VO2 RunMax" onerror="this.classList.add('app-logo-hidden')"/>
-  <button class="nav-tab on" id="nav-calc" onclick="switchNav('calc')"><svg class="gi"><use href="#i-bolt"></use></svg> <span class="nav-label">Calculadora</span></button>
-  <button class="nav-tab" id="nav-saved" onclick="switchNav('saved')"><svg class="gi"><use href="#i-list_alt"></use></svg> <span class="nav-label">Meus Treinos</span> <span class="nav-badge" id="saved-count">0</span></button>
   <div class="auth-bar" id="auth-loading-bar" style="gap:8px;align-items:center">
     <div style="width:100px;height:34px;border-radius:8px;background:var(--s2);opacity:.5;animation:authLoadingPulse 1.1s ease-in-out infinite"></div>
   </div>
@@ -1895,7 +1837,7 @@ details[open] summary::after{transform:rotate(90deg)}
     </div>
     <div style="text-align:left;margin-bottom:1.2rem">
       <label style="font-size:12px;font-weight:700;color:var(--t3);display:block;margin-bottom:6px">Pra confirmar, digite EXCLUIR abaixo:</label>
-      <input type="text" id="delete-account-confirm-input" placeholder="EXCLUIR" autocomplete="off" oninput="document.getElementById('delete-account-btn').disabled=(this.value.trim().toUpperCase()!=='EXCLUIR')" style="width:100%">
+      <input type="text" id="delete-account-confirm-input" placeholder="EXCLUIR" autocomplete="off" oninput="const ok=(this.value.trim().toUpperCase()==='EXCLUIR');const b=document.getElementById('delete-account-btn');b.disabled=!ok;b.style.opacity=ok?'1':'.4';b.style.cursor=ok?'pointer':'not-allowed';" style="width:100%">
     </div>
     <div style="display:flex;gap:8px">
       <button class="wz-yn-btn" style="flex:1;height:44px" onclick="closeDeleteAccountModal()">Cancelar</button>
@@ -1950,6 +1892,7 @@ details[open] summary::after{transform:rotate(90deg)}
       <span id="mt-week-count" style="min-width:16px;text-align:center;font-weight:800">0</span>
       <button onclick="montadorAddWeek(1)">+</button>
     </div>
+    <button class="mt-skip-first" onclick="montadorRemoveFirstWeek()" title="Descarta os treinos da 1ª semana e avança as demais um lugar — útil se você já treinou essas semanas ou quer começar mais pra frente no plano">Pular 1ª semana <svg class="gi"><use href="#i-arrow_forward"></use></svg></button>
   </div>
   <div class="mt-info-banner" id="mt-info-banner">
     <span class="mt-info-icon"><svg class="gi"><use href="#i-lightbulb"></use></svg></span>
@@ -2210,6 +2153,7 @@ async function doLogin(){
     // (ou estava com outra conta), garante que a tela volte pro início
     // limpa, e os dados corretos da conta que acabou de entrar sejam
     // carregados do zero.
+    window.scrollTo(0,0);
     window.location.reload();
   }catch(e){
     const msg={
@@ -2284,6 +2228,7 @@ async function doRegister(){
     showToast('Conta criada com sucesso! Bem-vindo(a), '+name+'!');
     // Mesmo motivo do login: se havia uma planilha gerada como visitante,
     // a tela deve voltar limpa pro início.
+    window.scrollTo(0,0);
     setTimeout(()=>window.location.reload(), 900);
   }catch(e){
     const msg={
@@ -2330,6 +2275,7 @@ async function doLogout(){
   // Recarrega imediatamente: reseta a tela pro início e garante que nenhum
   // dado em memória (planilha gerada sem salvar, dados selecionados, etc.)
   // sobreviva pro próximo login neste navegador.
+  window.scrollTo(0,0);
   window.location.reload();
 }
 window.doLogout=doLogout;
@@ -3384,20 +3330,18 @@ function renderCalcSummary(){
   const nomeUsuario=(typeof currentUser!=='undefined'&&currentUser)?(currentUser.displayName||currentUser.email||'').split(' ')[0]:'';
   box.innerHTML=`
     ${nomeUsuario?`<div class="cs-greeting">Olá, ${nomeUsuario}!</div>`:''}
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:nowrap">
-      <div class="cs-eyebrow" style="margin-bottom:0;flex-shrink:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><svg class="gi"><use href="#i-list_alt"></use></svg> Planilha atual</div>
-      ${progHome?`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;margin-top:5px">
-        ${streakHome>=1?`<div onclick="openStreakInfoModal()" style="cursor:pointer;width:186px;text-align:center;font-size:11px;font-weight:800;color:var(--on-warm);white-space:nowrap;background:var(--warm);padding:3px 10px;border-radius:20px;box-sizing:border-box">🔥 ${streakHome} semana${streakHome>1?'s':''} seguida${streakHome>1?'s':''} <svg class="gi" style="font-size:11px;vertical-align:-1px"><use href="#i-info"></use></svg></div>`:''}
-        <div class="prog-segbar" id="home-prog-fill-${plan.id}">${buildProgSegments(progHome.pct,plan.weeks?plan.weeks.length:0)}</div>
-        <span style="font-size:11px;font-weight:700;color:var(--t3);white-space:nowrap"><span id="home-prog-lbl-${plan.id}">${progHome.done}/${progHome.total} treinos</span> <span style="font-size:7px;vertical-align:middle">●</span> <span id="home-prog-pct-${plan.id}">${progHome.pct}%</span></span>
-      </div>`:''}
-    </div>
+    <div class="cs-eyebrow"><svg class="gi"><use href="#i-list_alt"></use></svg> Planilha atual</div>
     <div class="cs-rows">
       ${profVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${profVal}</span></div>`:''}
       ${vo2Row}
       ${distVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${distVal}</span></div>`:''}
       ${objVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${objVal}</span></div>`:''}
     </div>
+    ${progHome?`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;margin-top:12px">
+      ${streakHome>=1?`<div onclick="openStreakInfoModal()" style="cursor:pointer;width:186px;text-align:center;font-size:11px;font-weight:800;color:var(--t1);white-space:nowrap;background:var(--s1);border:1.5px solid var(--warm);padding:2.5px 10px;border-radius:20px;box-sizing:border-box">🔥 ${streakHome} semana${streakHome>1?'s':''} seguida${streakHome>1?'s':''} <svg class="gi" style="font-size:11px;vertical-align:-1px"><use href="#i-info"></use></svg></div>`:''}
+      <div class="prog-segbar" id="home-prog-fill-${plan.id}">${buildProgSegments(progHome.pct,plan.weeks?plan.weeks.length:0)}</div>
+      <span style="font-size:11px;font-weight:700;color:var(--t3);white-space:nowrap"><span id="home-prog-lbl-${plan.id}">${progHome.done}/${progHome.total} treinos</span> <span style="font-size:7px;vertical-align:middle">●</span> <span id="home-prog-pct-${plan.id}">${progHome.pct}%</span></span>
+    </div>`:''}
     ${(plan&&planNeedsVo2Refresh(plan))?`<div class="cs-note"><span><svg class="gi"><use href="#i-info"></use></svg></span><div>Esta planilha foi gerada com um VO₂ estimado pelo nível. Você possui um VO₂ real calculado.<div style="margin-top:6px"><button onclick="recalcPlanVo2(${plan.id})" style="background:none;border:none;padding:0;font-size:14px;font-weight:700;color:var(--acc);text-decoration:underline;cursor:pointer;font-family:inherit">Atualizar planilha com VO₂ real →</button></div></div></div>`:''}
     ${plan?buildTodayMini(plan):''}
     <div class="cs-actions-discrete">
@@ -4041,9 +3985,12 @@ function wzCalc3km(){
   const sec=parseFloat(document.getElementById('wz-3km-s')?.value)||0;
   const totalMin=min+sec/60;
   if(!totalMin||totalMin<7||totalMin>40){showToast('Tempo válido: entre 7:00 e 40:00 min.');return;}
-  // Fórmula metabólica da ACSM pra corrida: VO2 = 0,2 × velocidade (m/min) + 3,5
+  // Fórmula metabólica da ACSM: caminhada abaixo de 134 m/min, corrida acima —
+  // mesmo corte já usado no teste de 1.600m. Sem isso, um 3km bem lento
+  // (comum em tempos perto dos 40min) usava a fórmula de corrida indevidamente
+  // e superestimava o VO2.
   const speedMmin=3000/totalMin;
-  const vo2=0.2*speedMmin+3.5;
+  const vo2=speedMmin<134?(0.1*speedMmin+3.5):(0.2*speedMmin+3.5);
   if(vo2<15||vo2>90){showToast('Resultado fora do esperado. Revise os dados.');return;}
   wzFinishTest(vo2,vo2/3.5,`3km — ${min}:${String(Math.round(sec)).padStart(2,'0')}`,'physiological');
 }
@@ -7072,10 +7019,6 @@ function buildPlanUI(race){
   <div id="plan-weeks-${race}"></div>`;
 }
 
-function toggleLongExpand(id){
-  const el=document.getElementById(id);if(!el)return;
-  el.classList.toggle('open');
-}
 function toggleDayDetail(cell){
   // Mobile: tap day cell to show/hide detail
   const detail=cell.querySelector('.day-detail');
@@ -8040,7 +7983,8 @@ function calcWeekStreak(plan){
 // semanas) e nunca muda, pra ficar sempre alinhada com o selo de streak
 // ao lado, que usa essa mesma largura fixa.
 function buildProgSegments(pct,weekCount){
-  const fill=pct>=100?'var(--gr)':'linear-gradient(90deg,var(--acc),var(--acc2))';
+  const isComplete=pct>=100;
+  const fill=isComplete?'var(--gr)':'linear-gradient(90deg,var(--acc),var(--acc2))';
   let ticksHtml='';
   if(weekCount>1){
     // Marca só as divisas INTERNAS entre semanas (nunca nas pontas 0%/100%)
@@ -8056,7 +8000,9 @@ function buildProgSegments(pct,weekCount){
     stops.push('transparent 100%');
     ticksHtml=`<div class="prog-seg-ticks" style="background-image:linear-gradient(to right,${stops.join(',')})"></div>`;
   }
-  return`<div class="prog-seg-fill" style="width:${pct}%;background:${fill}"></div>${ticksHtml}`;
+  const knobColor=isComplete?'var(--gr)':'var(--acc)';
+  const knobHtml=(pct>0&&pct<100)?`<div class="prog-seg-knob" style="left:calc(${pct}% - 4.5px);box-shadow:0 0 0 2px ${knobColor}"></div>`:'';
+  return`<div class="prog-seg-fill" style="width:${pct}%;background:${fill}"><div class="prog-seg-sheen"></div></div>${ticksHtml}${knobHtml}`;
 }
 
 async function toggleDone(planId,wIdx,dIdx){
@@ -8074,7 +8020,14 @@ async function toggleDone(planId,wIdx,dIdx){
   // com a distância/duração real, sem precisar apertar "Sincronizar" à parte.
   const apiKey=icuGetApiKey(),athleteId=icuGetAthleteId();
   if(apiKey&&athleteId){
-    try{await icuCheckPlanCompletions(plan,apiKey,athleteId,undefined,true);}catch(e){}
+    try{
+      const r=await icuCheckPlanCompletions(plan,apiKey,athleteId,undefined,true);
+      if(r&&r.error){
+        showToast(r.error==='auth'
+          ? 'Não foi possível conectar ao intervals.icu — verifique sua API Key e Athlete ID.'
+          : 'Não foi possível conectar ao intervals.icu agora.');
+      }
+    }catch(e){}
   }
   if(plan.done[key]){
     // achou de verdade via sincronização — já está pronto
@@ -8248,7 +8201,7 @@ function openManualCompletionModal(planId,wIdx,dIdx){
     <div style="margin-bottom:1rem">
       <div style="margin-bottom:10px"><label style="font-size:10.5px;color:var(--t3);text-transform:uppercase">Distância</label>
         <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:6px;background:var(--s1);overflow:hidden;max-width:160px">
-          <input id="mdone-dist" value="${plannedDist}" inputmode="decimal" placeholder="0" oninput="shareMaskNumber(this);mdoneRecalcPace()" onblur="padDistOnBlur(this)" style="flex:1;min-width:0;border:none;background:none;padding:7px 4px 7px 9px;font-size:13px;font-family:inherit;color:var(--t1)"/>
+          <input id="mdone-dist" value="${plannedDist}" inputmode="decimal" placeholder="0" oninput="shareMaskNumber(this);mdoneOnDistInput()" onblur="padDistOnBlur(this)" style="flex:1;min-width:0;border:none;background:none;padding:7px 4px 7px 9px;font-size:13px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:12px;padding-right:9px">km</span>
         </div></div>
       <div style="margin-bottom:10px"><label style="font-size:10.5px;color:var(--t3);text-transform:uppercase">Tempo</label>
@@ -8256,7 +8209,7 @@ function openManualCompletionModal(planId,wIdx,dIdx){
       </div>
       <div><label style="font-size:10.5px;color:var(--t3);text-transform:uppercase">Ritmo <span style="text-transform:none;color:var(--t3);font-weight:400">(calculado sozinho, mas pode editar)</span></label>
         <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:6px;background:var(--s1);overflow:hidden;max-width:160px">
-          <input id="mdone-pace" inputmode="numeric" placeholder="0:00" oninput="shareMaskPace(this)" style="flex:1;min-width:0;border:none;background:none;padding:7px 4px 7px 9px;font-size:13px;font-family:inherit;color:var(--t1)"/>
+          <input id="mdone-pace" inputmode="numeric" placeholder="0:00" oninput="shareMaskPace(this);mdoneRecalcTimeFromPace()" onblur="padTimeOnBlur(this)" style="flex:1;min-width:0;border:none;background:none;padding:7px 4px 7px 9px;font-size:13px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:12px;padding-right:9px">/km</span>
         </div></div>
     </div>
@@ -8267,12 +8220,20 @@ function openManualCompletionModal(planId,wIdx,dIdx){
   </div>`;
   document.body.appendChild(modal);
 }
+// Garante que um ritmo digitado sem segundos (ex: "6") vire "6:00" antes de
+// ser salvo/exibido em qualquer lugar — evita ficar sem os segundos nos
+// detalhes do treino ou na imagem de compartilhar.
+function normalizePaceStr(v){
+  v=(v==null?'':String(v)).trim();
+  if(v&&!v.includes(':'))return v+':00';
+  return v;
+}
 function confirmManualCompletion(planId,wIdx,dIdx){
   const plan=savedPlans.find(p=>p.id===planId);if(!plan)return;
   const key=`${wIdx}-${dIdx}`;
   const dist=(document.getElementById('mdone-dist')||{}).value||'';
   const duration=readTimeFields('mdone-t');
-  const pace=(document.getElementById('mdone-pace')||{}).value||'';
+  const pace=normalizePaceStr((document.getElementById('mdone-pace')||{}).value||'');
   if(!dist&&!duration&&!pace){
     plan.done[key]=true;
   }else{
@@ -8457,7 +8418,12 @@ function shareMaskTime(el){
 function shareMaskPace(el){
   const d=el.value.replace(/\D/g,'').slice(0,4);
   let out=d;
-  if(d.length>2)out=d.slice(0,-2)+':'+d.slice(-2);
+  if(d.length>2){
+    let mm=d.slice(0,-2), ss=d.slice(-2);
+    // Segundos vão de 00 a 59 — nunca deixa passar de 59 (ex: "6:80" não existe).
+    if(parseInt(ss,10)>59)ss='59';
+    out=mm+':'+ss;
+  }
   el.value=out;
 }
 function shareMaskNumber(el){
@@ -8531,6 +8497,33 @@ function mdoneRecalcPace(){
   const mm=Math.floor(paceSec/60), ss=Math.round(paceSec%60);
   paceEl.value=`${mm}:${String(ss).padStart(2,'0')}`;
 }
+// Caminho inverso: distância + ritmo já digitados → calcula o tempo total
+// (ritmo × distância) e preenche os campos de h/m/s sozinho.
+function mdoneRecalcTimeFromPace(){
+  const distEl=document.getElementById('mdone-dist');
+  const paceEl=document.getElementById('mdone-pace');
+  if(!distEl||!paceEl)return;
+  const distVal=parseFloat((distEl.value||'').replace(',','.'));
+  const paceParts=(paceEl.value||'').split(':');
+  // Se a pessoa só digitou os minutos (ex: "6"), assume 00 segundos — não
+  // precisa esperar ela completar ":00" pra já calcular o tempo.
+  const paceMin=parseInt(paceParts[0])||0;
+  const paceSecPart=paceParts.length>1?(parseInt(paceParts[1])||0):0;
+  const paceSec=paceMin*60+paceSecPart;
+  if(!distVal||distVal<=0||!paceSec)return;
+  const totalSec=Math.round(paceSec*distVal);
+  const hh=Math.floor(totalSec/3600), mm=Math.floor((totalSec%3600)/60), ss=totalSec%60;
+  const hEl=document.getElementById('mdone-t-h'),mEl=document.getElementById('mdone-t-m'),sEl=document.getElementById('mdone-t-s');
+  if(hEl)hEl.value=hh>0?String(hh):'';
+  if(mEl)mEl.value=String(mm).padStart(2,'0');
+  if(sEl)sEl.value=String(ss).padStart(2,'0');
+}
+// Quando a distância muda: se já tem tempo digitado, recalcula o ritmo (como
+// sempre); senão, se já tem ritmo digitado, calcula o tempo a partir dele.
+function mdoneOnDistInput(){
+  if(readTimeFields('mdone-t'))mdoneRecalcPace();
+  else mdoneRecalcTimeFromPace();
+}
 function openShareModal(planId,wIdx,dIdx){
   const plan=savedPlans.find(p=>p.id===planId);if(!plan)return;
   const wk=plan.weeks[wIdx];if(!wk)return;
@@ -8594,7 +8587,7 @@ function renderShareModalBody(){
       <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">Tipo</label><input id="share-f-type" value="${f.type}" oninput="shareUpdateField('type',this.value)" style="width:100%;min-width:0;box-sizing:border-box;padding:6px 7px;border:1px solid var(--bdr2);border-radius:6px;font-size:12px;font-family:inherit;background:var(--s1);color:var(--t1)"/></div>
       <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">Distância</label>
         <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:6px;background:var(--s1);overflow:hidden">
-          <input id="share-f-dist" value="${f.distNum}" inputmode="decimal" placeholder="0" oninput="shareMaskNumber(this);shareUpdateField('distNum',this.value);shareRecalcPace()" onblur="padDistOnBlur(this)" style="flex:1;width:0;min-width:0;border:none;background:none;padding:6px 2px 6px 7px;font-size:12px;font-family:inherit;color:var(--t1)"/>
+          <input id="share-f-dist" value="${f.distNum}" inputmode="decimal" placeholder="0" oninput="shareMaskNumber(this);shareUpdateField('distNum',this.value);shareOnDistInput()" onblur="padDistOnBlur(this)" style="flex:1;width:0;min-width:0;border:none;background:none;padding:6px 2px 6px 7px;font-size:12px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:10.5px;padding-right:6px;flex-shrink:0">km</span>
         </div></div>
       <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">Tempo</label>
@@ -8602,7 +8595,7 @@ function renderShareModalBody(){
       </div>
       <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">Ritmo</label>
         <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:6px;background:var(--s1);overflow:hidden">
-          <input id="share-f-pace" value="${f.paceNum}" inputmode="numeric" placeholder="0:00" oninput="shareMaskPace(this);shareUpdateField('paceNum',this.value)" onblur="padTimeOnBlur(this);shareUpdateField('paceNum',this.value)" style="flex:1;width:0;min-width:0;border:none;background:none;padding:6px 2px 6px 7px;font-size:12px;font-family:inherit;color:var(--t1)"/>
+          <input id="share-f-pace" value="${f.paceNum}" inputmode="numeric" placeholder="0:00" oninput="shareMaskPace(this);shareUpdateField('paceNum',this.value);shareRecalcTimeFromPace()" onblur="padTimeOnBlur(this);shareUpdateField('paceNum',this.value)" style="flex:1;width:0;min-width:0;border:none;background:none;padding:6px 2px 6px 7px;font-size:12px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:10.5px;padding-right:6px;flex-shrink:0">/km</span>
         </div></div>
       <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">FC</label>
@@ -8619,7 +8612,7 @@ function renderShareModalBody(){
 }
 
 function shareSetFormat(fmt){ if(!shareCtx)return; shareCtx.format=fmt; renderShareModalBody(); }
-function shareUpdateField(name,value){ if(!shareCtx)return; shareCtx[name]=value; shareRedrawCanvas(); }
+function shareUpdateField(name,value){ if(!shareCtx)return; shareCtx[name]=name==='paceNum'?normalizePaceStr(value):value; shareRedrawCanvas(); }
 // Calcula o ritmo automaticamente a partir da distância + tempo (mesma
 // lógica da modal de conclusão manual) — atualiza o campo e o preview.
 function shareRecalcPace(){
@@ -8639,6 +8632,34 @@ function shareRecalcPace(){
   const paceEl=document.getElementById('share-f-pace');
   if(paceEl)paceEl.value=paceVal;
   shareRedrawCanvas();
+}
+// Caminho inverso: distância + ritmo já preenchidos → calcula o tempo total
+// e preenche os campos de h/m/s sozinho.
+function shareRecalcTimeFromPace(){
+  if(!shareCtx)return;
+  const distVal=parseFloat((shareCtx.distNum||'').replace(',','.'));
+  const paceParts=(shareCtx.paceNum||'').split(':');
+  // Mesma lógica da modal de conclusão manual: minutos sem segundos digitados
+  // já assume :00, sem precisar esperar a pessoa completar.
+  const paceMin=parseInt(paceParts[0])||0;
+  const paceSecPart=paceParts.length>1?(parseInt(paceParts[1])||0):0;
+  const paceSec=paceMin*60+paceSecPart;
+  if(!distVal||distVal<=0||!paceSec)return;
+  const totalSec=Math.round(paceSec*distVal);
+  const hh=Math.floor(totalSec/3600), mm=Math.floor((totalSec%3600)/60), ss=totalSec%60;
+  shareCtx.duration=hh>0?`${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`:`${mm}:${String(ss).padStart(2,'0')}`;
+  const hEl=document.getElementById('share-f-t-h'),mEl=document.getElementById('share-f-t-m'),sEl=document.getElementById('share-f-t-s');
+  if(hEl)hEl.value=hh>0?String(hh):'';
+  if(mEl)mEl.value=String(mm).padStart(2,'0');
+  if(sEl)sEl.value=String(ss).padStart(2,'0');
+  shareRedrawCanvas();
+}
+// Quando a distância muda: se já tem tempo preenchido, recalcula o ritmo
+// (como sempre); senão, se já tem ritmo preenchido, calcula o tempo a
+// partir dele.
+function shareOnDistInput(){
+  if(shareCtx&&shareCtx.duration)shareRecalcPace();
+  else shareRecalcTimeFromPace();
 }
 function shareRemovePhoto(){ if(!shareCtx)return; shareCtx.photoDataUrl=null; sharePhotoImgCache=null; renderShareModalBody(); }
 // Reduz o tamanho da foto antes de guardar/desenhar — foto de câmera pode
@@ -9307,7 +9328,6 @@ function renderRealizadosList(){
     return;
   }
   wrap.innerHTML=`<div class="saved-list">`+list.map(entry=>{
-    const planExists=savedPlans.some(p=>p.id===entry.planId);
     const dateLabel=fmtDateFull(new Date(entry.date));
     const metaBits=[entry.dist,entry.duration,entry.pace?`${entry.pace}/km`:null,entry.avgHr?`FC ${entry.avgHr}`:null].filter(Boolean).join(' · ');
     return`<div class="realizado-row" style="cursor:pointer" onclick="openRealizadoDetailModal('${entry.id}')">
@@ -9325,7 +9345,6 @@ function renderRealizadosList(){
           <button class="btn-icon" title="Excluir" onclick="event.stopPropagation();deleteRealizadoEntry('${entry.id}')" style="color:var(--rd)"><svg class="gi"><use href="#i-delete"></use></svg></button>
         </div>
       </div>
-      ${planExists?`<div style="padding:0 16px 14px"><button class="btn-open-plan" style="width:100%" onclick="event.stopPropagation();switchSavedSubTab('plans');toggleWeeksPanel(${entry.planId},true);"><svg class="gi"><use href="#i-menu_book"></use></svg> Ver planilha</button></div>`:''}
     </div>`;
   }).join('')+`</div>`
   +(hasMore?`<button class="btn-open-plan" style="width:100%;margin-top:12px" onclick="loadMoreRealizados()">Carregar mais</button>`:'');
@@ -9336,7 +9355,6 @@ function renderRealizadosList(){
 function openRealizadoDetailModal(logId){
   const entry=completedLog.find(e=>e.id===logId);if(!entry)return;
   const old=document.getElementById('realizado-detail-modal');if(old)old.remove();
-  const planExists=savedPlans.some(p=>p.id===entry.planId);
   const dateLabel=fmtDateFull(new Date(entry.date));
   const realInfoHtml=formatRealInfoBlock({dist:entry.dist,duration:entry.duration,pace:entry.pace,avgHr:entry.avgHr});
   const modal=document.createElement('div');
@@ -9350,7 +9368,6 @@ function openRealizadoDetailModal(logId){
       <div class="stat-card" style="margin-top:.6rem;padding:10px 12px">${realInfoHtml}</div>
       <div class="modal-actions" style="flex-direction:column;gap:10px;margin-top:1.1rem;flex-shrink:0">
         <button class="btn-modal-ok" style="width:100%;height:48px;font-size:14.5px" onclick="document.getElementById('realizado-detail-modal').remove();openShareModalFromLog('${entry.id}')"><svg class="gi"><use href="#i-share"></use></svg> Compartilhar</button>
-        ${planExists?`<button class="btn-modal-cancel" style="width:100%;height:48px;font-size:14.5px" onclick="document.getElementById('realizado-detail-modal').remove();switchSavedSubTab('plans');toggleWeeksPanel(${entry.planId},true);">Ver planilha</button>`:''}
         <button class="btn-modal-cancel" style="width:100%;height:44px;font-size:13.5px" onclick="document.getElementById('realizado-detail-modal').remove()">Fechar</button>
         <button style="width:100%;height:40px;font-size:13px;background:none;border:none;color:var(--rd);cursor:pointer;font-family:inherit;font-weight:600" onclick="deleteRealizadoEntry('${entry.id}')"><svg class="gi" style="font-size:15px;vertical-align:-2px"><use href="#i-delete"></use></svg> Excluir registro</button>
       </div>
@@ -9593,7 +9610,7 @@ function renderSavedList(){
                 })();
                 const realInfoSw=(isDone&&plan.done[`${wIdx}-${dIdx}`]&&typeof plan.done[`${wIdx}-${dIdx}`]==='object')?plan.done[`${wIdx}-${dIdx}`]:null;
                 const swActionsHtml=(dp.detail&&!dp.rest)?`<div class="sw-day-actions"><div class="sw-day-hint" onclick="swDayTap(event,${plan.id},${wIdx},${dIdx})">Ver detalhes</div><button class="sw-mark-btn${isDone?' is-done':''}" onclick="swMarkDoneTap(event,${plan.id},${wIdx},${dIdx},this)"><svg class="gi"><use href="#i-check"></use></svg><span class="sw-mark-btn-label">${isDone?(realInfoSw?`feito (${realInfoSw.dist||'—'})`:'Desmarcar como feito'):'Marcar como feito'}</span></button></div>`:'';
-                return`<div class="sw-day${dp.rest?' rest':''}${isDone?' done':''}${isToday?' today':''}" id="swday-${plan.id}-${wIdx}-${dIdx}" ${!dp.rest?`onclick="swDayTap(event,${plan.id},${wIdx},${dIdx})"`:''}><div class="sw-day-name">${DAYS[dIdx]}</div><div class="sw-day-center"><div class="sw-day-date">${dayDate||''}</div><div class="sw-day-type" style="color:${col}">${dp.type}${dp.subtypeBadge||''}</div></div>${swInfoHtml}${swActionsHtml}<div class="sw-check">${isDone?'<svg class="gi"><use href="#i-check"></use></svg>':''}</div></div>`;
+                return`<div class="sw-day${dp.rest?' rest':''}${isDone?' done':''}${isToday?' today':''}" id="swday-${plan.id}-${wIdx}-${dIdx}" ${!dp.rest?`onclick="swDayTap(event,${plan.id},${wIdx},${dIdx})"`:''}><div class="sw-day-name">${DAYS[dIdx]}</div><div class="sw-day-center">${isToday?'<div class="sw-day-today-badge">HOJE</div>':''}<div class="sw-day-date">${dayDate||''}</div><div class="sw-day-type" style="color:${col}">${dp.type}${dp.subtypeBadge||''}</div></div>${swInfoHtml}${swActionsHtml}<div class="sw-check">${isDone?'<svg class="gi"><use href="#i-check"></use></svg>':''}</div></div>`;
               }).join('')}
             </div>
           </div>`;
@@ -11044,7 +11061,6 @@ function exportXLSX(race){
 })();
 
 /* ── Expor funções ao escopo global (necessário por usar type="module") ── */
-window.toggleLongExpand=toggleLongExpand;
 window.toggleDayDetail=toggleDayDetail;
 window.updateLegendBar=updateLegendBar;
 window.setDistEstreante=setDistEstreante;
@@ -11789,8 +11805,15 @@ async function icuHeaderSyncTap(btn){
   if(!wzSummaryPlanId){showToast('Nenhuma planilha atual pra sincronizar.');return;}
   if(btn)btn.classList.add('spinning');
   try{
-    const count=await icuAutoCheckAllPlans(true);
-    showToast(count>0?`${count} treino${count!==1?'s':''} atualizado${count!==1?'s':''} a partir do relógio.`:'Nenhum treino novo concluído encontrado.');
+    const r=await icuAutoCheckAllPlans(true);
+    if(r&&r.error){
+      showToast(r.error==='auth'
+        ? 'Não foi possível conectar ao intervals.icu — verifique sua API Key e Athlete ID.'
+        : 'Não foi possível conectar ao intervals.icu agora.');
+    } else {
+      const count=r?r.count:0;
+      showToast(count>0?`${count} treino${count!==1?'s':''} atualizado${count!==1?'s':''} a partir do relógio.`:'Nenhum treino novo concluído encontrado.');
+    }
   }catch(e){
     showToast('Não foi possível sincronizar agora.');
   }
@@ -11888,7 +11911,13 @@ async function icuCheckPlanCompletions(plan,apiKey,athleteId,usedActivityIds,for
       fetch(`https://intervals.icu/api/v1/athlete/${encodeURIComponent(athletePath)}/events?oldest=${oldest}&newest=${newest}`,{headers:{'Authorization':authHeader}}),
       fetch(`https://intervals.icu/api/v1/athlete/${encodeURIComponent(athletePath)}/activities?oldest=${oldest}&newest=${newest}`,{headers:{'Authorization':authHeader}})
     ]);
-    if(!evRes.ok||!actRes.ok)return 0;
+    if(!evRes.ok||!actRes.ok){
+      // Distingue "chave/Athlete ID inválidos" (401/403) de qualquer outra
+      // falha de requisição — antes os dois casos retornavam 0 igualzinho a
+      // "nada novo encontrado", escondendo um problema real de conexão.
+      const authFail=[evRes.status,actRes.status].some(s=>s===401||s===403);
+      return{count:0,error:authFail?'auth':'request'};
+    }
     const events=await evRes.json();
     const activitiesRaw=await actRes.json();
     // Atividades excluídas em Realizados de propósito (decisão definitiva
@@ -11998,11 +12027,12 @@ async function icuCheckPlanCompletions(plan,apiKey,athleteId,usedActivityIds,for
     });
 
     if(markedCount>0)persistAccountPlans();
-    return markedCount+unplannedCount;
-    return markedCount;
+    return{count:markedCount+unplannedCount,error:null};
   }catch(e){
     console.warn('[intervals.icu] erro ao checar conclusões',e);
-    return 0;
+    // fetch rejeitou antes de qualquer resposta (sem internet, DNS, CORS
+    // etc.) — não é problema de credencial, é falha de conexão mesmo.
+    return{count:0,error:'network'};
   }
 }
 
@@ -12016,18 +12046,18 @@ async function icuCheckPlanCompletions(plan,apiKey,athleteId,usedActivityIds,for
 // que suficiente pro limite real do intervals.icu (10 chamadas/segundo).
 async function icuAutoCheckAllPlans(force){
   const apiKey=icuGetApiKey(),athleteId=icuGetAthleteId();
-  if(!apiKey||!athleteId)return 0;
-  if(!wzSummaryPlanId)return 0;
+  if(!apiKey||!athleteId)return{count:0,error:null};
+  if(!wzSummaryPlanId)return{count:0,error:null};
   const plan=savedPlans.find(p=>p.id===wzSummaryPlanId);
-  if(!plan)return 0;
-  let total=0;
-  try{ total=await icuCheckPlanCompletions(plan,apiKey,athleteId,undefined,force); }catch(e){}
-  if(total>0){
+  if(!plan)return{count:0,error:null};
+  let result={count:0,error:null};
+  try{ result=await icuCheckPlanCompletions(plan,apiKey,athleteId,undefined,force); }catch(e){result={count:0,error:'network'};}
+  if(result.count>0){
     updateSavedBadge();
     renderSavedList();
     renderCalcSummary();
   }
-  return total;
+  return result;
 }
 
 // Botão manual "Sincronizar com intervals.icu" de uma planilha específica —
@@ -13259,6 +13289,30 @@ function montadorAddWeek(delta){
   montadorRenderCalendar();
   montadorUpdateFooter();
 }
+
+// ── Pular 1ª semana: o oposto do "−" acima (que só tira a ÚLTIMA semana).
+// Descarta tudo que estava agendado na semana 1 e empurra o conteúdo das
+// demais semanas um lugar pra cima (semana 2 vira semana 1, etc.), sempre
+// mantendo a mesma data de início do calendário — útil quando a pessoa já
+// treinou essas semanas fora do app, ou simplesmente quer começar o plano
+// mais adiante. Não mexe no Banco (a origem/numeração de lá continua igual).
+function montadorRemoveFirstWeek(){
+  if(!montador)return;
+  if(montador.weekCount<=1){showToast('Só sobrou 1 semana — não dá pra remover mais.');return;}
+  if(!confirm('Descartar os treinos da 1ª semana e adiantar as demais um lugar?\n\nOs treinos da semana 1 do calendário serão perdidos (o Banco continua intacto).'))return;
+  const shifted=new Map();
+  montador.assigned.forEach((val,key)=>{
+    const[wIdx,dIdx]=key.split('_').map(Number);
+    if(wIdx===0)return; // descarta o que estava na 1ª semana
+    shifted.set(`${wIdx-1}_${dIdx}`,val);
+  });
+  montador.assigned=shifted;
+  montador.weekCount-=1;
+  montadorRenderCalendar();
+  montadorUpdateFooter();
+  showToast('1ª semana removida — as demais avançaram um lugar.');
+}
+window.montadorRemoveFirstWeek=montadorRemoveFirstWeek;
 
 function montadorRenderAll(){
   montadorRenderBank();
