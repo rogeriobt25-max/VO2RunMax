@@ -3903,7 +3903,21 @@ function buildStandaloneHomeCard(){
 // decidir se a introdução "Planilhas Personalizadas" aparece — mantém a
 // regra simples e num lugar só, em vez de espalhada em vários checks.
 function isReturningUser(){
-  return !!((savedPlans&&savedPlans.length>0)||wzSummaryPlanId!=null||getCurrentSummaryVo2()||getPersonalRecordsItems().length>0||getBestMarksItems().length>0);
+  if(savedPlans&&savedPlans.length>0)return true;
+  if(wzSummaryPlanId!=null)return true;
+  if(getCurrentSummaryVo2())return true;
+  if(getPersonalRecordsItems().length>0)return true;
+  if(getBestMarksItems().length>0)return true;
+  // Sinal extra, local e sempre disponível na hora (sem depender de nada
+  // ainda ter carregado da nuvem): existe um resumo de planilha em cache
+  // desse aparelho? Sem essa checagem, em momentos bem cedo do
+  // carregamento (ex: restaurando o assistente logo ao abrir a página,
+  // antes de qualquer dado assíncrono chegar), isReturningUser() dizia
+  // "não" mesmo pra quem tinha planilha de verdade — mostrando à toa a
+  // apresentação completa (calc-hero) junto do formulário do assistente,
+  // como se fosse a primeira vez usando o app.
+  try{ if(lsGet('wz_summary_state'))return true; }catch(e){}
+  return false;
 }
 function positionCalcHero(showAbove){
   const heroEl=document.getElementById('calc-hero');
