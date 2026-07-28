@@ -16,11 +16,11 @@
 <link rel="apple-touch-icon" href="icon-192.png"/>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
-<meta name="description" content="Calcule seu VO2 Máx e gere planilhas de treino para 10km, meia-maratona e maratona."/>
+<meta name="description" content="VO2 RunMax (Run Max): calcule seu VO2 Máx e gere planilhas de treino para 10km, meia-maratona e maratona."/>
 <meta property="og:type" content="website"/>
 <meta property="og:site_name" content="VO2 RunMax"/>
 <meta property="og:title" content="VO2 RunMax"/>
-<meta property="og:description" content="Calcule seu VO2 Máx e gere planilhas de treino para 10km, meia-maratona e maratona."/>
+<meta property="og:description" content="VO2 RunMax (Run Max): calcule seu VO2 Máx e gere planilhas de treino para 10km, meia-maratona e maratona."/>
 <meta property="og:url" content="https://vo2runmax.com.br/"/>
 <meta property="og:image" content="https://vo2runmax.com.br/logologin.png"/>
 <meta property="og:image:width" content="512"/>
@@ -3337,6 +3337,14 @@ function switchNav(p,skipScroll){
   if(p==='calc'&&wzBuildingNew){
     wzBuildingNew=false;
     wzVo2OnlyMode=false;
+    // Se ainda não há resumo carregado (pode acontecer depois de recarregar
+    // a página no meio do assistente — a limpeza do login zera
+    // wzSummaryPlanId, e as funções que o repõem ficam bloqueadas enquanto
+    // wzBuildingNew=true), tenta achar a planilha atual AGORA que saiu do
+    // assistente de vez. Sem isso, cancelar o assistente nessa situação
+    // específica deixava a tela inicial sem planilha nenhuma até recarregar
+    // a página de novo.
+    if(!wzSummaryPlanId&&typeof wzAutoRestoreFromSavedPlans==='function')wzAutoRestoreFromSavedPlans();
     renderCalcSummary();
   }
   const wasOnSaved=document.getElementById('page-saved')?.style.display==='block';
@@ -3654,7 +3662,16 @@ function wzRestoreSummaryState(){
   }catch(e){}
 }
 function wzClearSummaryState(){
-  wzSummaryPlanId=null;wzSummarySnapshot=null;wzBuildingNew=false;
+  wzSummaryPlanId=null;wzSummarySnapshot=null;
+  // NÃO reseta wzBuildingNew aqui — essa função roda no início do login
+  // (pra limpar resíduo de resumo de uma conta ANTERIOR, evitando mostrar
+  // o resumo de outra pessoa). O problema: se a pessoa estava no meio do
+  // assistente (restaurado por restoreNavTabEarly ANTES do login terminar
+  // de confirmar — restoreNavTabEarly roda antes do Firebase resolver),
+  // resetar wzBuildingNew aqui cancelava o assistente sem querer bem no
+  // meio de um recarregamento — e só acontecia logado, porque só o fluxo
+  // de login chama essa função. Essa era a causa real do "assistente some
+  // e cai na tela inicial ao recarregar a página logado".
   try{localStorage.removeItem('wz_summary_state');}catch(e){}
   renderCalcSummary();
 }
@@ -4223,6 +4240,9 @@ function wzStartNewPlan(){
 function wzCancelBuildingNew(){
   wzBuildingNew=false;
   wzVo2OnlyMode=false;
+  // Mesmo motivo do fix em switchNav: repõe o resumo se ainda não tiver um
+  // (pode acontecer depois de recarregar a página no meio do assistente).
+  if(!wzSummaryPlanId&&typeof wzAutoRestoreFromSavedPlans==='function')wzAutoRestoreFromSavedPlans();
   renderCalcSummary();
   syncCalcNavHighlight();
   jumpTo(null);
@@ -4231,6 +4251,7 @@ window.wzCancelBuildingNew=wzCancelBuildingNew;
 /* Botão "Ver planilha": vai pra Meus Treinos, destaca o card e já abre
    a planilha direto (painel expandido, rolando até o dia de hoje). */
 function goToSavedPlan(planId){
+  switchSavedSubTab('plans'); // garante a sub-aba certa — sem isso, se "Realizados" estivesse ativa antes, "Abrir planilha" caía lá em vez de mostrar a planilha
   switchNav('saved',true);
   // Não salta pra lugar nenhum aqui ainda — deixa só o salto de dentro de
   // toggleWeeksPanel acontecer (direto pro dia de hoje). Saltar primeiro
@@ -15481,6 +15502,9 @@ function lwStepEndChime(){
       setTimeout(()=>{ if(LW)lwPlayBeepOnCtx(ctx,i<3?1400:1700,i<3?130:320,0.34); },offsetMs);
     });
   }catch(e){}
+  // Vibra 3 vezes junto com o sino (pedido explícito: diferenciar melhor
+  // do início) — pulsos mais longos que antes, pra ficar mais perceptível.
+  lwVibrate([180,90,180,90,300]);
 }
 // Contagem "3, 2, 1" antes de soltar o cronômetro de uma etapa — usa o
 // Web Audio API (mesmo mecanismo dos outros bipes), então funciona mesmo se
@@ -15495,10 +15519,10 @@ function lwStepEndChime(){
 // um tom só sustentado, que soa mais datado) — pedido explícito: deixar
 // mais moderno.
 function lwStartCountdownBeep(n){
-  if(n>1){ lwBeep(520,280,0.36); lwVibrate(110); }
+  if(n>1){ lwBeep(520,280,0.36); lwVibrate(160); }
   else{
-    lwBeep(700,120,0.32); lwVibrate(110);
-    setTimeout(()=>{ if(LW){lwBeep(1050,750,0.38); lwVibrate([150,80,700]);} },130);
+    lwBeep(700,120,0.32); lwVibrate(160);
+    setTimeout(()=>{ if(LW){lwBeep(1050,750,0.38); lwVibrate([180,90,900]);} },130);
   }
 }
 // Bipe de FIM DE TREINO (treino inteiro, não só uma etapa) — 2 tons
@@ -15621,7 +15645,7 @@ function lwCheckStepCompletion(){
 }
 function lwCompleteCurrentStep(){
   const step=LW.steps[LW.stepIdx];
-  lwVibrate([150,80,150]); // vibra duas vezes ao terminar a etapa (dá pra sentir mesmo sem olhar/ouvir) — igual pra etapa por tempo ou por distância
+  lwVibrate([180,90,180,90,300]); // vibra 3 vezes ao terminar a etapa (dá pra sentir mesmo sem olhar/ouvir) — igual pra etapa por tempo ou por distância; mesmo padrão do sino, pra ficar consistente
   const distStepM=LW.totalDistM-LW.segStartDistM;
   const timeStepSec=(lwElapsedMs()-LW.segStartElapsedMs)/1000;
   const paceSec=distStepM>0?timeStepSec/(distStepM/1000):null;
