@@ -3672,7 +3672,17 @@ function wzClearSummaryState(){
   // meio de um recarregamento — e só acontecia logado, porque só o fluxo
   // de login chama essa função. Essa era a causa real do "assistente some
   // e cai na tela inicial ao recarregar a página logado".
-  try{localStorage.removeItem('wz_summary_state');}catch(e){}
+  //
+  // Pelo MESMO motivo, também não apaga o cache local (wz_summary_state)
+  // enquanto wzBuildingNew=true: isReturningUser() passou a checar esse
+  // cache pra saber se mostra ou não a apresentação completa (calc-hero)
+  // junto do assistente — apagar ele bem aqui, e ainda por cima chamar
+  // renderCalcSummary() logo em seguida, fazia a apresentação aparecer de
+  // novo "pra valer" nessa segunda renderização, desfazendo a primeira
+  // (correta) que wzStartNewPlan() já tinha feito segundos antes.
+  if(!wzBuildingNew){
+    try{localStorage.removeItem('wz_summary_state');}catch(e){}
+  }
   renderCalcSummary();
 }
 /* Fallback pra contas que já tinham planilha salva ANTES do resumo compacto
