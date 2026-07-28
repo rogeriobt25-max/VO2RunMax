@@ -642,11 +642,11 @@ details[open] summary::after{transform:rotate(90deg)}
 .saved-weeks-panel{display:none;padding:12px}
 .saved-weeks-panel.open{display:block}
 
-.sw-week{margin-bottom:10px;border:1px solid var(--bdr2);box-shadow:none;border-radius:var(--r);overflow:hidden}
+.sw-week{margin-bottom:10px;border:1px solid var(--bdr2);box-shadow:none;border-radius:var(--r);overflow:hidden;background:var(--s1)}
 .sw-week-header{padding:7px 12px;background:var(--bg);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bdr)}
 .sw-week-lbl{font-size:12.5px;font-weight:800;color:var(--t2)}
 .sw-week-prog{font-size:11.5px;color:var(--t3)}
-.sw-days{display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg)}
+.sw-days{display:grid;grid-template-columns:repeat(7,1fr);background:var(--s1)}
 .sw-day{padding:16px 3px;border-right:1px solid var(--bdr-day);text-align:center;cursor:pointer;transition:all .2s;position:relative;display:flex;flex-direction:column}
 .sw-day:last-child{border-right:none}
 .sw-day.rest{background:rgba(0,0,0,0.02);cursor:default}
@@ -1150,7 +1150,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-vo2-pointer::after{content:'';position:absolute;top:0;left:50%;width:11px;height:11px;margin-left:-5.5px;border-radius:50%;background:var(--dot-color,#333a42);box-shadow:0 0 0 2px var(--s1)}
 .cs-vo2-txt{font-size:15px;font-weight:700;color:var(--t1)}
 .cs-note{display:flex;align-items:flex-start;gap:6px;font-size:14px;color:var(--t3);line-height:1.45;padding:.75rem 0 0;margin:.75rem 0 0;border-top:1px solid var(--bdr)}
-.cs-today{padding:.95rem 1.2rem 0;margin:1rem -1.2rem 0;background:var(--bg);border-top:1px solid var(--bdr)}
+.cs-today{padding:.95rem 1.2rem;margin:1rem -1.2rem 0;background:var(--bg);border-top:1px solid var(--bdr);border-bottom:1px solid var(--bdr)}
 .cs-today-eyebrow{font-size:14.5px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--t1);margin-bottom:6px}
 .cs-today-meta{font-size:13px;color:var(--t3);margin-bottom:9px}
 .cs-today-body{font-size:14.5px;color:var(--t2);line-height:1.55}
@@ -2200,29 +2200,21 @@ async function saveIcuConfigToCloud(uid,cfg){
 }
 
 /* ── Login com Google ── */
-// Detecta mobile pra escolher o método de login do Google — popup é
-// conhecidamente pouco confiável em navegadores mobile (a própria
-// documentação do Firebase recomenda redirect nesse caso: "O método de
-// redirect é o preferido em dispositivos móveis"). Desktop continua com
-// popup, que funciona bem lá e é uma experiência mais rápida (não sai da
-// página).
-function isMobileDevice(){
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
+// REVERTIDO pra popup sempre (era popup no desktop, redirect no mobile) —
+// o redirect, mesmo sendo a recomendação oficial do Firebase pra mobile,
+// quebrou na prática: a pessoa selecionava a conta, voltava pro app, mas o
+// login não completava. Causa mais provável: navegadores atuais bloqueando
+// acesso a armazenamento de terceiros durante a volta do redirect — um
+// problema conhecido e documentado pelo próprio Firebase, que exigiria uma
+// infraestrutura extra (proxy de authDomain) pra contornar de verdade. Como
+// o popup já era confirmadamente funcional antes, voltar pra ele remove a
+// regressão sem depender dessa complexidade extra.
 async function doGoogleLogin(){
   if(!fbAuth){showToast('Serviço indisponível. Recarregue a página.');return;}
   const btn=document.getElementById('auth-google-btn');
   if(btn){btn.disabled=true;btn.style.opacity='.6';}
   try{
     const provider=new firebase.auth.GoogleAuthProvider();
-    if(isMobileDevice()){
-      // No mobile, a página INTEIRA sai pro Google e volta — não tem
-      // try/catch útil aqui pro resultado em si (isso é tratado depois, no
-      // carregamento seguinte, por checkGoogleRedirectResult). Essa chamada
-      // só dispara a navegação.
-      await fbAuth.signInWithRedirect(provider);
-      return;
-    }
     await fbAuth.signInWithPopup(provider);
     closeAuthModal();
     // Mesmo motivo do login por e-mail: garante que a tela recarregue do
@@ -2234,10 +2226,6 @@ async function doGoogleLogin(){
     if(btn){btn.disabled=false;btn.style.opacity='1';}
   }
 }
-// Erro de login do Google — usado tanto pelo caminho de popup (desktop,
-// erro vem na hora) quanto pelo de redirect (mobile, erro só aparece no
-// carregamento seguinte, via checkGoogleRedirectResult). Mesma lógica nos
-// dois casos, só o "quando" muda.
 function handleGoogleSignInError(e){
   if(e&&(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request')){
     // a pessoa só fechou o popup — não é erro de verdade, sem toast
@@ -2254,25 +2242,6 @@ function handleGoogleSignInError(e){
   }else{
     console.warn('Google sign-in error',e);
     showToast('Não foi possível entrar com o Google. Tente novamente.');
-  }
-}
-// Checa se a página acabou de carregar DE VOLTA de um redirect do Google
-// (fluxo mobile, ver doGoogleLogin) — precisa rodar em toda carga da
-// página, mesmo quando não veio de lá (nesse caso, result.user vem vazio e
-// não faz nada). Chamado uma vez em initAuth, logo depois de fbAuth existir.
-async function checkGoogleRedirectResult(){
-  if(!fbAuth)return;
-  try{
-    const result=await fbAuth.getRedirectResult();
-    if(result&&result.user){
-      // Login via redirect concluído — mesmo motivo do popup: recarrega a
-      // tela do zero já com a conta certa carregada. Evita loop porque
-      // getRedirectResult() só devolve um user real UMA vez, logo depois
-      // do retorno do Google — numa recarga seguinte normal, vem vazio.
-      window.location.reload();
-    }
-  }catch(e){
-    handleGoogleSignInError(e);
   }
 }
 
@@ -2770,7 +2739,6 @@ function initAuth(){
   }else{fbApp=firebase.apps[0];}
   fbAuth=firebase.auth();
   fbDb=firebase.firestore();
-  checkGoogleRedirectResult(); // completa o login do Google se a página acabou de voltar do redirect (fluxo mobile — ver doGoogleLogin)
   // Carrega último teste do localStorage enquanto Firebase inicializa
   loadLastTestFromStorage();
   fbAuth.onAuthStateChanged(async(user)=>{
@@ -3887,7 +3855,7 @@ function buildStandaloneHomeCard(){
     <button onclick="wzCalcRealVo2()" style="background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
   return`
     ${vo2Block}
-    ${vo2Live?`<button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()">
+    ${vo2Live?`<button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()" style="margin-top:.6rem">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-bolt"></use></svg> VO₂ Máx e Zonas</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
@@ -4035,7 +4003,7 @@ function renderCalcSummary(){
     <div class="cs-actions-discrete">
       <button class="cs-link" onclick="goToSavedPlan(${wzSummaryPlanId})"><svg class="gi"><use href="#i-menu_book"></use></svg> Abrir planilha</button>
     </div>
-    <button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()">
+    <button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()" style="margin-top:.6rem">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-bolt"></use></svg> VO₂ Máx e Zonas</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
@@ -8448,7 +8416,16 @@ function confirmSaveSuccessGoToSaved(){
   pendingSavedPlanId=null;
 }
 function updateSavedBadge(){
-  const n=savedPlans.length;
+  // Só conta planilhas ATIVAS — concluídas não entram na notificação (pedido
+  // explícito). Mesmo critério de "concluída" já usado em renderSavedList e
+  // na tela inicial: bateu 100% dos treinos OU já passou um dia do último
+  // treino de verdade da planilha, mesmo sem ter marcado tudo como feito.
+  const n=savedPlans.filter(p=>{
+    const prog=calcProgress(p);
+    const info=getTodayInfo(p);
+    const isCompleted=prog.pct>=100||(info&&info.status==='finished');
+    return!isCompleted;
+  }).length;
   const topBadge=document.getElementById('saved-count');
   const botBadge=document.getElementById('bnav-saved-count');
   if(topBadge)topBadge.textContent=n;
