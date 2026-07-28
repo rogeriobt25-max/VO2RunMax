@@ -3935,13 +3935,21 @@ function renderCalcSummary(){
   if(!box)return;
   const wzWrap=document.getElementById('wz-wrap');
   const ra=document.getElementById('result-area');
-  if(!wzSummaryPlanId){
+  if(!wzSummaryPlanId||wzBuildingNew){
     closeVo2ZonesPanel();closeRecordsPanel();closeMarksPanel();
     // Sem planilha nenhuma (ou todas foram apagadas) — mesmo assim, se
     // existir um VO₂ já calculado e/ou recordes já registrados, mantém
     // essas seções visíveis na tela inicial, acima da área de montar uma
     // planilha nova.
-    const standaloneHtml=(!wzBuildingNew)?buildStandaloneHomeCard():'';
+    // Calcula o card standalone (VO2/recordes/marcas) uma vez só — usado
+    // pra decidir SE existe algo (nothingToShow), independente de estar ou
+    // não construindo uma planilha nova agora. Sem separar essas duas
+    // coisas, "nothingToShow" ficava true sempre que wzBuildingNew=true
+    // (já que aí a caixa fica vazia de propósito), mesmo quando a pessoa
+    // claramente tem histórico — o que fazia o cabeçalho de boas-vindas
+    // aparecer por engano ao lado do assistente pra quem já é conta antiga.
+    const standaloneCardHtml=buildStandaloneHomeCard();
+    const standaloneHtml=wzBuildingNew?'':standaloneCardHtml;
     if(standaloneHtml){
       box.style.display='';
       box.innerHTML=standaloneHtml;
@@ -3961,7 +3969,7 @@ function renderCalcSummary(){
     // apresentação com um botão grande "Gerar Planilha" — uma tela inicial
     // de verdade, distinta do assistente, que o botão voltar já sabe tratar
     // corretamente (ver vo2SyncWizardHistory).
-    const nothingToShow=!standaloneHtml;
+    const nothingToShow=!standaloneCardHtml;
     const showWizardArea=wzBuildingNew;
     if(wzWrap)wzWrap.style.display=showWizardArea?'':'none';
     const returning=isReturningUser();
@@ -15444,11 +15452,28 @@ function lwBeep(freq,durMs,gainVal){
 function lwPlayBeepOnCtx(ctx,freq,durMs,gainVal){
   try{
     const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.type='sine'; // deixado explícito — já era o padrão, mas deixa claro que o som é limpo (sem harmônicos ásperos de onda quadrada/serrote)
     osc.frequency.value=freq||880;
     osc.connect(gain);gain.connect(ctx.destination);
-    gain.gain.setValueAtTime(gainVal||0.24,ctx.currentTime);
-    osc.start();
-    osc.stop(ctx.currentTime+(durMs||110)/1000);
+    const peak=gainVal||0.24;
+    const dur=(durMs||110)/1000;
+    const now=ctx.currentTime;
+    // Envelope com sustentação: ataque rápido, mas SEGURA no volume até
+    // 75% do tempo, só caindo suave nos 25% finais — em vez de já começar a
+    // decair exponencialmente logo depois do ataque. Sem essa sustentação,
+    // os bipes mais longos (início/fim de treino, 750-1400ms) pareciam
+    // "sumir" bem antes do tempo real deles, porque o decaimento
+    // exponencial cai rápido demais logo no começo — dava a sensação de
+    // bipe curto mesmo tendo duração longa. Bipes curtos continuam
+    // soando limpos, só que agora proporcionalmente mais "cheios" também.
+    const attackEnd=now+Math.min(0.008,dur*0.15);
+    const releaseStart=now+dur*0.75;
+    gain.gain.setValueAtTime(0.0001,now);
+    gain.gain.exponentialRampToValueAtTime(peak,attackEnd);
+    gain.gain.setValueAtTime(peak,releaseStart);
+    gain.gain.exponentialRampToValueAtTime(0.0001,now+dur);
+    osc.start(now);
+    osc.stop(now+dur);
   }catch(e){}
 }
 // Bipe duplo, grave — propositalmente diferente do bipe agudo de fim de
@@ -15456,6 +15481,23 @@ function lwPlayBeepOnCtx(ctx,freq,durMs,gainVal){
 function lwPaceAlertBeep(){
   lwBeep(600,140);
   setTimeout(()=>{ if(LW)lwBeep(600,140); },230);
+}
+// Sino de FIM DE ETAPA — pedido explícito: soava parecido demais com a
+// contagem de INÍCIO (as duas eram "tique-tique-tique-BIPE sustentado",
+// só com afinações diferentes). Em vez de um tom só e sustentado, um sino
+// de verdade "tilinta" — várias notas curtas e brilhantes em sequência
+// rápida ("prim prim prim prim"), cada uma com decaimento rápido (bem
+// diferente do envelope "segura o volume" usado nos bipes de início/fim de
+// treino). Junto com o pino/aviso da última etapa (só ajustado o valor da
+// função lwPlayBeepOnCtx, mesma engine de sempre).
+function lwStepEndChime(){
+  if(!LW)return;
+  try{
+    const ctx=LW.audioCtx||(LW.audioCtx=new(window.AudioContext||window.webkitAudioContext)());
+    [0,110,220,340].forEach((offsetMs,i)=>{
+      setTimeout(()=>{ if(LW)lwPlayBeepOnCtx(ctx,i<3?1400:1700,i<3?130:320,0.34); },offsetMs);
+    });
+  }catch(e){}
 }
 // Contagem "3, 2, 1" antes de soltar o cronômetro de uma etapa — usa o
 // Web Audio API (mesmo mecanismo dos outros bipes), então funciona mesmo se
@@ -15470,7 +15512,7 @@ function lwPaceAlertBeep(){
 // destacar mais.
 function lwStartCountdownBeep(n){
   if(n>1)lwBeep(520,280,0.36);
-  else{ lwBeep(760,1000,0.36); lwVibrate([120,60,400]); } // pedido explícito: vibração de início fraca — Web Vibration API não tem controle de intensidade, só duração/padrão; pulso duplo + mais longo é o jeito de parecer mais forte
+  else{ lwBeep(760,1000,0.36); lwVibrate([150,80,700]); } // pedido explícito: ainda curta demais pra perceber — pulso final bem mais longo
 }
 // Bipe de FIM DE TREINO (treino inteiro, não só uma etapa) — 3 tons
 // subindo, o último bem mais longo e mais grave-ao-agudo que os outros
@@ -15486,7 +15528,7 @@ function lwFinishBeep(ctx){
   if(!ctx)return;
   lwPlayBeepOnCtx(ctx,660,220,0.36);
   setTimeout(()=>lwPlayBeepOnCtx(ctx,880,220,0.36),300);
-  setTimeout(()=>{ lwPlayBeepOnCtx(ctx,1100,1400,0.36); lwVibrate(450); },600);
+  setTimeout(()=>{ lwPlayBeepOnCtx(ctx,1100,1400,0.36); lwVibrate(700); },600);
 }
 
 // ── Vibração (se o aparelho suportar) ──
@@ -15565,10 +15607,13 @@ function lwCheckStepCompletion(){
       const beepKey=`${LW.stepIdx}-${remInt}`;
       if(LW.lastBeepKey!==beepKey){
         LW.lastBeepKey=beepKey;
-        // O bipe do ÚLTIMO segundo (remInt===1) é bem mais longo e mais alto
-        // que os outros da contagem (5,4,3,2) — dá a sensação de que a etapa
-        // realmente terminou, em vez de só mais um tique da contagem.
-        lwBeep(remInt===1?1250:900,remInt===1?750:160,remInt===1?0.36:0.24);
+        // O sinal do ÚLTIMO segundo (remInt===1) agora é o "sino" (ver
+        // lwStepEndChime — várias tilintadas curtas, bem diferente de um
+        // bipe só) — marca claramente que a etapa terminou, sem soar
+        // parecido com a contagem de início do treino. Os tiques 5-4-3-2
+        // continuam como um bipe simples de aviso, sem mudança.
+        if(remInt===1)lwStepEndChime();
+        else lwBeep(900,160,0.24);
         lwVibrate(remInt===1?300:80); // último segundo vibra mais forte/longo pra marcar bem o fim
       }
     }
@@ -15915,7 +15960,7 @@ async function lwSkipStep(){
 }
 function lwFinishWorkout(){
   if(!LW)return;
-  lwVibrate([300,120,300,120,450]); // padrão mais longo/forte que antes (pedido explícito: vibração de fim fraca) — diferente do de fim de etapa, pra marcar que foi o TREINO que acabou
+  lwVibrate([350,150,350,150,700]); // pedido explícito: ainda curta demais pra perceber — pulso final bem mais longo, diferente do de fim de etapa
   lwFinishBeep(LW.audioCtx); // captura o AudioContext AGORA, antes de LW ser zerado mais abaixo
   lwStopGPS();lwStopTimer();lwStopLockWatcher();lwReleaseWakeLock();lwStopKeepAlive();
   const timeSec=lwElapsedMs()/1000;
@@ -16007,12 +16052,11 @@ function lwBuildOverlay(){
       </div>
     </div>
 
-    <div style="text-align:left;margin-bottom:10px;line-height:1.4">
-      <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-        <span id="lw-step-progress" style="font-size:12.5px;font-weight:800;color:#FC4C02;text-transform:uppercase;letter-spacing:.03em"></span><span id="lw-step-label" style="font-size:12.5px;font-weight:800;color:#FC4C02;text-transform:uppercase;letter-spacing:.03em"></span>
-      </div>
-      <div id="lw-step-pace" style="font-size:14.5px;color:var(--t2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-      <div id="lw-step-target" style="font-size:14.5px;color:var(--t2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+    <div style="text-align:left;margin-bottom:10px;line-height:1.3">
+      <div id="lw-step-progress" style="font-size:15px;font-weight:800;color:#FC4C02;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+      <div id="lw-step-label" style="font-size:19px;font-weight:800;color:#FC4C02;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px"></div>
+      <div id="lw-step-pace" style="font-size:19px;font-weight:800;color:var(--t2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+      <div id="lw-step-target" style="font-size:19px;font-weight:800;color:var(--t2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
     </div>
 
     <div id="lw-touch-lock-msg" style="display:none;position:relative;z-index:51;pointer-events:none;text-align:center;margin:0 0 10px;padding:9px 14px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff">
@@ -16250,7 +16294,7 @@ function lwUpdateUI(){
     if(timeLblEl)timeLblEl.textContent='Tempo total';
   }else if(step){
     if(stepProgEl)stepProgEl.textContent=`ETAPA ${LW.stepIdx+1} DE ${LW.steps.length}`+(step.repIdx?` · ${step.repIdx}/${step.repTotal}`:'');
-    if(stepLblEl)stepLblEl.textContent=' · '+step.label;
+    if(stepLblEl)stepLblEl.textContent=step.label;
     if(el('lw-step-pace')){
       const paceEl2=el('lw-step-pace');
       paceEl2.textContent=(step.paceMinMps&&step.paceMaxMps)?`${lwFmtPaceSecPerKm(1000/step.paceMaxMps)}–${lwFmtPaceSecPerKm(1000/step.paceMinMps)} /km`:'';
