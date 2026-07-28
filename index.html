@@ -92,7 +92,7 @@
   --dpu:#9086d6;--dpu2:rgba(144,134,214,0.16);
   --dshadow-card:0 1px 2px rgba(0,0,0,0.25),0 1px 8px rgba(0,0,0,0.25);
   --dshadow-card-hover:0 2px 4px rgba(0,0,0,0.3),0 4px 14px rgba(0,0,0,0.32);
-  --dhdr-glass:rgba(23,28,34,0.88);--dnav-glass:rgba(23,28,34,0.92);
+  --dhdr-glass:rgba(22,22,22,0.88);--dnav-glass:rgba(22,22,22,0.92);
   --dshadow-nav:0 -1px 8px rgba(0,0,0,0.28);--dshadow-modal:0 8px 30px rgba(0,0,0,0.38);
   --don-acc:#04283a;
   --dwarm:#fc4c02;--dwarm2:#ff7a1a;--don-warm:#2a0f00;
@@ -113,8 +113,8 @@
     --shadow-card:var(--dshadow-card);--shadow-card-hover:var(--dshadow-card-hover);
     --hdr-glass:var(--dhdr-glass);--nav-glass:var(--dnav-glass);
     --shadow-nav:var(--dshadow-nav);--shadow-modal:var(--dshadow-modal);
-    --stat-bg:var(--bg);--stat-bdr:var(--bdr2);--on-acc:var(--don-acc);
-    --mc-bg:var(--bg);--mc-border:none;--mc-shadow:0 0 0 1px rgba(255,255,255,0.10),0 4px 14px rgba(0,0,0,0.5);
+    --stat-bg:var(--s1);--stat-bdr:var(--bdr2);--on-acc:var(--don-acc);
+    --mc-bg:var(--s1);--mc-border:none;--mc-shadow:0 0 0 1px rgba(255,255,255,0.10),0 4px 14px rgba(0,0,0,0.5);
     --warm:var(--dwarm);--warm2:var(--dwarm2);--on-warm:var(--don-warm);
   }
 }
@@ -132,8 +132,8 @@ html[data-theme="dark"]{
   --shadow-card:var(--dshadow-card);--shadow-card-hover:var(--dshadow-card-hover);
   --hdr-glass:var(--dhdr-glass);--nav-glass:var(--dnav-glass);
   --shadow-nav:var(--dshadow-nav);--shadow-modal:var(--dshadow-modal);
-  --stat-bg:var(--bg);--stat-bdr:var(--bdr2);--on-acc:var(--don-acc);
-  --mc-bg:var(--bg);--mc-border:none;--mc-shadow:0 0 0 1px rgba(255,255,255,0.10),0 4px 14px rgba(0,0,0,0.5);
+  --stat-bg:var(--s1);--stat-bdr:var(--bdr2);--on-acc:var(--don-acc);
+  --mc-bg:var(--s1);--mc-border:none;--mc-shadow:0 0 0 1px rgba(255,255,255,0.10),0 4px 14px rgba(0,0,0,0.5);
   --warm:var(--dwarm);--warm2:var(--dwarm2);--on-warm:var(--don-warm);
 }
 
@@ -1161,12 +1161,12 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-today-done{min-height:38px;padding:0 1.1rem;border:none;border-radius:6px;background:var(--gr);color:#fff;font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.03em}
 .cs-eyebrow{font-size:13px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin-bottom:6px}
 .cs-greeting{font-size:17px;font-weight:800;color:var(--t1);margin-bottom:12px}
-.cs-actions-discrete{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:1.1rem;padding-top:.9rem;border-top:1px solid var(--bdr)}
+.cs-actions-discrete{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:1.1rem;padding-top:.9rem}
 .cs-link{background:none;border:none;color:var(--t2);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;padding:4px 2px;display:flex;align-items:center;gap:5px;transition:color .2s}
-.cs-vo2zones-btn{width:100%;margin-top:.7rem;padding:.75rem 1rem;border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);background:var(--mc-bg);color:var(--t1);font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.cs-vo2zones-btn{width:100%;margin-top:0;padding:.85rem 2px;border:none;border-bottom:1px solid var(--bdr2);border-radius:0;background:none;box-shadow:none;color:var(--t1);font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:space-between;text-align:left;gap:8px;transition:background .2s}
 .cs-vo2zones-btn:active{background:var(--s3)}
-.cs-vo2zones-btn.on{background:var(--s3);border-color:var(--bdr-day);color:var(--acc)}
-.cs-vo2zones-btn .cs-vo2zones-arrow{font-size:11px;transition:transform .2s}
+.cs-vo2zones-btn.on{color:var(--acc)}
+.cs-vo2zones-btn .cs-vo2zones-arrow{font-size:11px;transition:transform .2s;color:var(--t3);flex-shrink:0}
 .vo2zones-panel{background:var(--bg);border:none;border-top:1px solid var(--bdr);border-radius:0;padding:1.1rem 0 0;margin-bottom:1.1rem;box-shadow:none;margin-top:.6rem}
 /* Card de destaque neutro (Recordes Pessoais, Melhores Marcas, "Realizado")
    — fundo sólido neutro, sem nenhuma cor (nem fundo colorido nem borda
@@ -3887,22 +3887,22 @@ function buildStandaloneHomeCard(){
     <button onclick="wzCalcRealVo2()" style="background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
   return`
     ${vo2Block}
-    ${vo2Live?`<button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()" style="margin-top:.75rem">
+    ${vo2Live?`<button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-bolt"></use></svg> VO₂ Máx e Zonas</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
     <div id="vo2zones-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
-    ${hasProgress?`<button class="cs-vo2zones-btn" id="progress-toggle-btn" onclick="toggleProgressPanel()" style="margin-top:.5rem">
+    ${hasProgress?`<button class="cs-vo2zones-btn" id="progress-toggle-btn" onclick="toggleProgressPanel()">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-trending_up"></use></svg> Progresso</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
     <div id="progress-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
-    ${recItems.length?`<button class="cs-vo2zones-btn" id="records-toggle-btn" onclick="toggleRecordsPanel()" style="margin-top:.5rem">
+    ${recItems.length?`<button class="cs-vo2zones-btn" id="records-toggle-btn" onclick="toggleRecordsPanel()">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--warm)"><use href="#i-emoji_events"></use></svg> Recordes Pessoais</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
     <div id="records-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
-    ${markItems.length?`<button class="cs-vo2zones-btn" id="marks-toggle-btn" onclick="toggleMarksPanel()" style="margin-top:.5rem">
+    ${markItems.length?`<button class="cs-vo2zones-btn" id="marks-toggle-btn" onclick="toggleMarksPanel()">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--warm)"><use href="#i-track_changes"></use></svg> Melhores Marcas</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
@@ -4040,17 +4040,17 @@ function renderCalcSummary(){
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
     <div id="vo2zones-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>
-    ${currentUser&&getWeeklyVolumeData(8).some(w=>w.km>0)?`<button class="cs-vo2zones-btn" id="progress-toggle-btn" onclick="toggleProgressPanel()" style="margin-top:.5rem">
+    ${currentUser&&getWeeklyVolumeData(8).some(w=>w.km>0)?`<button class="cs-vo2zones-btn" id="progress-toggle-btn" onclick="toggleProgressPanel()">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-trending_up"></use></svg> Progresso</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
     <div id="progress-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
-    ${getPersonalRecordsItems().length?`<button class="cs-vo2zones-btn" id="records-toggle-btn" onclick="toggleRecordsPanel()" style="margin-top:.5rem">
+    ${getPersonalRecordsItems().length?`<button class="cs-vo2zones-btn" id="records-toggle-btn" onclick="toggleRecordsPanel()">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--warm)"><use href="#i-emoji_events"></use></svg> Recordes Pessoais</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
     <div id="records-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
-    ${getBestMarksItems().length?`<button class="cs-vo2zones-btn" id="marks-toggle-btn" onclick="toggleMarksPanel()" style="margin-top:.5rem">
+    ${getBestMarksItems().length?`<button class="cs-vo2zones-btn" id="marks-toggle-btn" onclick="toggleMarksPanel()">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--warm)"><use href="#i-track_changes"></use></svg> Melhores Marcas</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
@@ -10465,7 +10465,14 @@ function renderSavedList(){
   let html=`<div id="today-card-wrap" style="display:none"></div><div class="saved-list">`;
   orderedPlans.forEach(plan=>{
     const is42=plan.race==='42';const is10k=plan.race==='10k';const prog=calcProgress(plan);
-    const isCompleted=prog.pct>=100;
+    const todayInfo=getTodayInfo(plan);
+    // Mesma regra usada na tela inicial (e em checkAndReplaceActivePlan):
+    // concluída se bateu 100% dos treinos OU se já passou um dia do último
+    // treino de verdade da planilha (calendário), mesmo sem ter marcado
+    // tudo como feito. Antes, aqui só considerava o progresso — por isso
+    // dava pra a tela inicial mostrar "Ciclo Concluído" e a lista de "Meus
+    // Treinos" continuar mostrando a mesma planilha como pendente.
+    const isCompleted=prog.pct>=100||(todayInfo&&todayInfo.status==='finished');
     const isCurrent=plan.id===latestPlanId;
     const raceDistKm=is42?42.195:is10k?10:21.0975;
     const raceMin=Math.round(raceDistKm/plan.raceSpeed*60);const rh=Math.floor(raceMin/60),rm=raceMin%60;
@@ -10474,7 +10481,6 @@ function renderSavedList(){
     const montadaName=plan.montada?(plan.name||'').replace(/<svg[\s\S]*?<\/svg>\s*/,'').trim():'';
     const titleWithParens=titleLabel;
     const profLabel=PROFILES[plan.profKey]?.label||'';
-    const todayInfo=getTodayInfo(plan);
     const itemIconSvg=is42?trophyIconSvg(24):is10k?medalIconSvg('#2563EB','#1D4ED8',24):medalIconSvg('#F5C518','#B8860B',24);
     const badgeHtml=isCompleted?`<div class="saved-item-badge completed">Concluída</div>`:(isCurrent?`<div class="saved-item-badge current">Planilha atual</div>`:'');
     html+=`<div class="saved-item${isCompleted?' is-completed':''}${isCurrent?' current':''}" id="saved-item-${plan.id}">
@@ -16019,7 +16025,7 @@ function lwBuildOverlay(){
   // AMOLED (fundo preto puro). Reaproveita a mesma paleta escura (--d*) já
   // usada pelo tema escuro do app, só que fixada localmente neste overlay
   // — não muda o tema do resto do app.
-  div.style.cssText='position:fixed;inset:0;--bg:var(--dbg);--s1:var(--ds1);--s2:var(--ds2);--s3:var(--ds3);--bdr:var(--dbdr);--bdr2:var(--dbdr2);--bdr-day:var(--dbdr-day);--t1:var(--dt1);--t2:var(--dt2);--t3:var(--dt3);--pure-fg:#fff;--acc:var(--dacc);--acc2:var(--dacc2);--acc3:var(--dacc3);--acc4:var(--dacc4);--gr:var(--dgr);--gr2:var(--dgr2);--am:var(--dam);--am2:var(--dam2);--rd:var(--drd);--rd2:var(--drd2);--pu:var(--dpu);--pu2:var(--dpu2);--shadow-card:var(--dshadow-card);--shadow-card-hover:var(--dshadow-card-hover);--stat-bg:var(--bg);--stat-bdr:var(--bdr2);--on-acc:var(--don-acc);--mc-bg:var(--bg);--mc-border:none;--warm:var(--dwarm);--warm2:var(--dwarm2);--on-warm:var(--don-warm);color-scheme:dark;background:var(--bg);z-index:500;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px calc(env(safe-area-inset-bottom,0px) + 18px);overflow-y:auto';
+  div.style.cssText='position:fixed;inset:0;--bg:var(--dbg);--s1:var(--ds1);--s2:var(--ds2);--s3:var(--ds3);--bdr:var(--dbdr);--bdr2:var(--dbdr2);--bdr-day:var(--dbdr-day);--t1:var(--dt1);--t2:var(--dt2);--t3:var(--dt3);--pure-fg:#fff;--acc:var(--dacc);--acc2:var(--dacc2);--acc3:var(--dacc3);--acc4:var(--dacc4);--gr:var(--dgr);--gr2:var(--dgr2);--am:var(--dam);--am2:var(--dam2);--rd:var(--drd);--rd2:var(--drd2);--pu:var(--dpu);--pu2:var(--dpu2);--shadow-card:var(--dshadow-card);--shadow-card-hover:var(--dshadow-card-hover);--stat-bg:var(--ds1);--stat-bdr:var(--bdr2);--on-acc:var(--don-acc);--mc-bg:var(--ds1);--mc-border:none;--warm:var(--dwarm);--warm2:var(--dwarm2);--on-warm:var(--don-warm);color-scheme:dark;background:var(--bg);z-index:500;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 18px) 18px calc(env(safe-area-inset-bottom,0px) + 18px);overflow-y:auto';
   div.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div style="font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--t3);text-transform:uppercase;display:flex;align-items:center;gap:6px">
@@ -16053,10 +16059,10 @@ function lwBuildOverlay(){
     </div>
 
     <div style="text-align:left;margin-bottom:10px;line-height:1.3">
-      <div id="lw-step-progress" style="font-size:15px;font-weight:800;color:#FC4C02;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-      <div id="lw-step-label" style="font-size:19px;font-weight:800;color:#FC4C02;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px"></div>
+      <div id="lw-step-progress" style="font-size:15px;font-weight:800;color:var(--pure-fg);text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+      <div id="lw-step-label" style="font-size:19px;font-weight:800;color:var(--pure-fg);text-transform:uppercase;letter-spacing:.03em;margin-top:1px"></div>
       <div id="lw-step-pace" style="font-size:19px;font-weight:800;color:var(--t2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
-      <div id="lw-step-target" style="font-size:19px;font-weight:800;color:var(--t2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+      <div id="lw-step-target" style="font-size:19px;font-weight:800;color:var(--t2);margin-top:2px"></div>
     </div>
 
     <div id="lw-touch-lock-msg" style="display:none;position:relative;z-index:51;pointer-events:none;text-align:center;margin:0 0 10px;padding:9px 14px;border-radius:12px;background:rgba(0,0,0,.55);color:#fff">
@@ -16234,9 +16240,14 @@ function lwUpdateUI(){
   const timeEl=el('lw-time'), timeLblEl=el('lw-time-label');
   const step=LW.steps[LW.stepIdx];
 
-  // Destaque em laranja pra chamar atenção pro título da etapa.
-  if(stepProgEl)stepProgEl.style.color='#FC4C02';
-  if(stepLblEl)stepLblEl.style.color='#FC4C02';
+  // Branco (igual aos outros números da tela) — era laranja, exatamente a
+  // cor de marca da Strava (#FC4C02); trocado pra não emprestar a
+  // identidade visual de outro app, e pra não conflitar com o azul do
+  // próprio app, que já é usado no alerta de "ritmo rápido" (ver
+  // lw-pace-indicator). O destaque continua vindo do negrito + caixa alta +
+  // espaçamento entre letras, sem precisar de cor própria.
+  if(stepProgEl)stepProgEl.style.color='var(--pure-fg)';
+  if(stepLblEl)stepLblEl.style.color='var(--pure-fg)';
   // Depois que todas as etapas acabam, esse botão passa a finalizar o
   // treino em vez de pular — troca o texto/ícone pra deixar isso claro
   // (em vez de continuar parecendo "Pular etapa").
@@ -16255,11 +16266,17 @@ function lwUpdateUI(){
     // mostra. O campo de tempo sempre mostra o TOTAL do treino, sempre
     // contando pra cima — nunca regressivo, nunca reseta.
     if(allStepsDone){
-      if(stepProgEl)stepProgEl.textContent='TREINO';
-      if(stepLblEl)stepLblEl.textContent=' · Todas as etapas concluídas 🎉';
+      if(stepProgEl){stepProgEl.textContent='TREINO';stepProgEl.style.color='var(--gr)';}
+      if(stepLblEl){stepLblEl.textContent='Todas as etapas concluídas 🎉';stepLblEl.style.color='var(--gr)';stepLblEl.style.fontSize='15px';}
       if(el('lw-step-pace'))el('lw-step-pace').textContent='';
-      if(stepTgtEl)stepTgtEl.textContent='Toque em "Finalizar treino" quando terminar.';
+      if(stepTgtEl){stepTgtEl.textContent='Toque em "Finalizar treino" quando terminar.';stepTgtEl.style.fontSize='14px';}
     }else{
+      // Volta pro branco padrão e pro tamanho grande — só a mensagem de
+      // "tudo concluído" usa verde e fonte menor (frase mais longa, fica
+      // pesada demais em fonte grande); o progresso normal de etapa
+      // continua branco, com a fonte grande de sempre.
+      if(stepProgEl)stepProgEl.style.color='var(--pure-fg)';
+      if(stepLblEl){stepLblEl.style.color='var(--pure-fg)';stepLblEl.style.fontSize='19px';}
       if(stepProgEl)stepProgEl.textContent=''; // "ETAPA 1 DE 1" não faz sentido pra treino direto
       if(stepLblEl)stepLblEl.textContent=step?step.label:'';
       if(el('lw-step-pace')){
@@ -16267,6 +16284,7 @@ function lwUpdateUI(){
         paceEl2.textContent=(step&&step.paceMinMps&&step.paceMaxMps)?`${lwFmtPaceSecPerKm(1000/step.paceMaxMps)}–${lwFmtPaceSecPerKm(1000/step.paceMinMps)} /km`:'';
       }
       if(stepTgtEl){
+        stepTgtEl.style.fontSize='19px';
         let tgtTxt='';
         // Só informativo, igual ao card das etapas normais — não mexe em
         // nenhum campo de dado (tempo continua sempre contando pra cima aqui,
@@ -16293,13 +16311,14 @@ function lwUpdateUI(){
     if(timeEl)timeEl.textContent=LW.stepPending?'00:00':lwFmtDurationDisplay(totalActiveSec);
     if(timeLblEl)timeLblEl.textContent='Tempo total';
   }else if(step){
-    if(stepProgEl)stepProgEl.textContent=`ETAPA ${LW.stepIdx+1} DE ${LW.steps.length}`+(step.repIdx?` · ${step.repIdx}/${step.repTotal}`:'');
-    if(stepLblEl)stepLblEl.textContent=step.label;
+    if(stepProgEl){stepProgEl.style.color='var(--pure-fg)';stepProgEl.textContent=`ETAPA ${LW.stepIdx+1} DE ${LW.steps.length}`+(step.repIdx?` · ${step.repIdx}/${step.repTotal}`:'');}
+    if(stepLblEl){stepLblEl.style.color='var(--pure-fg)';stepLblEl.style.fontSize='19px';stepLblEl.textContent=step.label;}
     if(el('lw-step-pace')){
       const paceEl2=el('lw-step-pace');
       paceEl2.textContent=(step.paceMinMps&&step.paceMaxMps)?`${lwFmtPaceSecPerKm(1000/step.paceMaxMps)}–${lwFmtPaceSecPerKm(1000/step.paceMinMps)} /km`:'';
     }
     if(stepTgtEl){
+      stepTgtEl.style.fontSize='19px';
       let tgtTxt='';
       if(step.endType==='distance')tgtTxt=step.endValue<1000?`${Math.round(step.endValue)}m`:`${(step.endValue/1000).toFixed(2)}km`;
       else if(step.endType==='time'){
