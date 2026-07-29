@@ -15555,16 +15555,28 @@ function lwStartTimer(){
     // IMPORTANTE: só reinicia se o watch estiver REALMENTE mudo — nem um
     // fix impreciso sequer chegando (LW.lastAccuracyAt, atualizado em
     // QUALQUER posição recebida, mesmo as descartadas por precisão ruim) —
-    // não simplesmente "sem fix BOM ainda". Antes, reiniciar mesmo quando
-    // só faltava precisão (GPS "esquentando" logo depois de religar, o que
-    // é normal e demora alguns segundos) cancelava um watch que já estava
-    // no meio do caminho de conseguir um fix bom, empurrando o
-    // reconhecimento pra bem mais perto do próximo ciclo de 25s inteiro —
-    // detectado na prática: demorava quase 25s pra reconhecer o GPS de
-    // volta, em vez dos ~14s esperados.
+    // não simplesmente "sem fix BOM ainda". Reiniciar mesmo quando só
+    // faltava precisão (GPS "esquentando" logo depois de religar, o que é
+    // normal e demora alguns segundos) cancelava um watch que já estava no
+    // meio do caminho de conseguir um fix bom.
+    //
+    // Cadência de 5s (era 25s): testado que, no Samsung Internet, o watch
+    // realmente NÃO retoma sozinho quando o GPS do aparelho volta a ligar —
+    // fica mudo até alguém chamar watchPosition de novo (diferente do
+    // Chrome, que retoma sozinho em uns 5s). Com o ciclo de 25s, o tempo de
+    // reconhecimento ficava refém de cair bem ou mal nesse intervalo —
+    // podia demorar quase os 25s inteiros. Com 5s, no pior caso o Samsung
+    // fica bem mais perto do tempo do Chrome.
     const semFixRecente=!LW.lastGoodPoint||Date.now()-LW.lastGoodPoint.t>=LW_GPS_STALE_MS;
-    const semSinalDeVerdade=!LW.lastAccuracyAt||Date.now()-LW.lastAccuracyAt>=15000;
-    if(semFixRecente&&semSinalDeVerdade&&(!LW.lastSilentGpsRetryAt||Date.now()-LW.lastSilentGpsRetryAt>=25000)){
+    const semSinalDeVerdade=!LW.lastAccuracyAt||Date.now()-LW.lastAccuracyAt>=10000;
+    // Teto de segurança: cobre o caso raro de ficar recebendo sinal impreciso
+    // sem parar (o que travaria o reinício acima pra sempre, já que "sempre
+    // tem sinal chegando") mas a precisão nunca melhorar o suficiente pra
+    // virar um fix bom de verdade. Força reiniciar de qualquer jeito depois
+    // de 60s sem nenhum fix BOM, mesmo com sinal impreciso trickando.
+    const referenciaSemFixBom=LW.lastGoodPoint?LW.lastGoodPoint.t:LW.gpsWatchStartedAt;
+    const tetoSeguranca=!!(referenciaSemFixBom&&Date.now()-referenciaSemFixBom>=60000);
+    if(semFixRecente&&(semSinalDeVerdade||tetoSeguranca)&&(!LW.lastSilentGpsRetryAt||Date.now()-LW.lastSilentGpsRetryAt>=5000)){
       LW.lastSilentGpsRetryAt=Date.now();
       lwStopGPS();
       lwStartGPS();
