@@ -7,10 +7,19 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="VO2 RunMax"/>
-<meta name="theme-color" content="#0099cc"/>
+<meta name="theme-color" content="#eceff2"/>
 <meta name="color-scheme" content="light dark"/>
 <script>(function(){try{if('scrollRestoration' in history)history.scrollRestoration='manual';}catch(e){}})();</script>
-<script>(function(){try{var t=localStorage.getItem('vo2-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');document.documentElement.style.colorScheme='dark';}else if(t==='light'){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.colorScheme='light';}else{document.documentElement.style.colorScheme='light dark';}}catch(e){}})();</script>
+<script>(function(){try{var t=localStorage.getItem('vo2-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');document.documentElement.style.colorScheme='dark';}else if(t==='light'){document.documentElement.setAttribute('data-theme','light');document.documentElement.style.colorScheme='light';}else{document.documentElement.style.colorScheme='light dark';}
+  // Barra de status (Android, quando instalado como app): antes ficava sempre
+  // azul (cor de marca), destacando como uma faixa separada por cima do
+  // cabeçalho. Agora o cabeçalho em si usa a cor do FUNDO da página (--bg,
+  // não mais a superfície própria --hdr-glass — pedido explícito, pra tudo
+  // virar "uma coisa só"), então a barra de status acompanha essa mesma cor.
+  var isDark=t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var tc=document.querySelector('meta[name="theme-color"]');
+  if(tc)tc.setAttribute('content',isDark?'#000000':'#eceff2');
+}catch(e){}})();</script>
 <title>VO2 RunMax</title>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon-192.png"/>
@@ -233,9 +242,15 @@ body{
   z-index:100;
   height:var(--hdr-safe);
   padding-top:env(safe-area-inset-top, 0px);
-  background:var(--hdr-glass);
-  -webkit-backdrop-filter:blur(18px) saturate(1.6);
-  backdrop-filter:blur(18px) saturate(1.6);
+  /* Pedido explícito: cabeçalho na mesma cor do fundo da página (--bg), em
+     vez da própria cor de superfície (--hdr-glass, branco/cinza-escuro) —
+     fica "uma coisa só" com o resto, sem parecer um cartão flutuando por
+     cima. Como agora é opaco e idêntico ao que tem atrás, o blur/saturação
+     não tem mais efeito visível nenhum (só faz sentido quando dá pra ver o
+     conteúdo por trás através de transparência) — removido. A linha fina
+     embaixo (border-bottom) continua de propósito: é a única pista visual
+     de que esse cabeçalho fica fixo enquanto os cards rolam por baixo dele. */
+  background:var(--bg);
   border-bottom:1px solid var(--bdr);
   box-shadow:none;
   display:flex;
@@ -256,13 +271,6 @@ body{
   object-fit:contain;
 }
 .app-logo.app-logo-hidden{display:none}
-.header-install-btn{display:none;align-items:center;gap:6px;height:32px;padding:0 14px;border-radius:16px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t1);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;max-width:100%;overflow:hidden;box-sizing:border-box}
-.header-install-btn .gi{font-size:15px;flex-shrink:0}
-.header-install-btn-label{overflow:hidden;text-overflow:ellipsis}
-@media(max-width:440px){
-  .header-install-btn{padding:0 9px;gap:0}
-  .header-install-btn-label{display:none}
-}
 
 /* ── APP LOGO in login/auth modal ── */
 .auth-modal-logo{
@@ -995,12 +1003,34 @@ details[open] summary::after{transform:rotate(90deg)}
   transition:transform .45s cubic-bezier(0.34,1.3,0.64,1);
 }
 .install-banner.show{transform:translateY(0)}
-.install-banner-icon{font-size:28px;flex-shrink:0}
+.install-banner-icon{font-size:28px;flex-shrink:0;color:var(--t1)}
 .install-banner-text{flex:1;min-width:0}
-.install-banner-title{font-size:14px;font-weight:800;color:#fff;margin-bottom:2px}
-.install-banner-sub{font-size:12.5px;color:rgba(255,255,255,0.55);line-height:1.4}
+.install-banner-title{font-size:14px;font-weight:800;color:var(--t1);margin-bottom:2px}
+.install-banner-sub{font-size:12.5px;color:var(--t3);line-height:1.4}
 .install-banner-btn{height:34px;padding:0 14px;border:none;border-radius:var(--rb);background:var(--acc);color:var(--on-acc);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
-.install-banner-close{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
+.install-banner-close{width:28px;height:28px;border-radius:50%;background:var(--s2);border:none;color:var(--t2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
+
+/* ── Faixa de instalar abaixo do header (tela de convidado, acima de
+   "Planilhas Personalizadas") ── */
+.install-strip{
+  display:none;align-items:center;gap:10px;
+  background:var(--s2);border:1px solid var(--bdr2);border-radius:10px;
+  padding:10px 12px;margin-bottom:16px;
+}
+.install-strip-icon{font-size:18px;color:var(--acc);flex-shrink:0;display:flex}
+.install-strip-text{flex:1;font-size:13px;font-weight:700;color:var(--t1);min-width:0}
+.install-strip-btn{height:32px;padding:0 14px;border:none;border-radius:var(--rb);background:var(--acc);color:var(--on-acc);font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+
+/* ── Chip de instalar na tela inicial (logado), canto superior direito,
+   sem mexer no resto do layout do resumo ── */
+.install-chip{
+  display:none;align-items:center;gap:6px;
+  position:absolute;top:0;right:0;
+  height:30px;padding:0 12px;border-radius:16px;
+  border:1px solid var(--bdr2);background:var(--s2);color:var(--t1);
+  font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;
+}
+.install-chip .gi{font-size:14px;color:var(--acc)}
 
 
 /* ── LGPD BANNER ── */
@@ -1152,6 +1182,29 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-note{display:flex;align-items:flex-start;gap:6px;font-size:14px;color:var(--t3);line-height:1.45;padding:.75rem 0 0;margin:.75rem 0 0;border-top:1px solid var(--bdr)}
 .cs-today{padding:1rem 1.2rem;margin:1rem 0 0;background:var(--mc-bg);border-radius:var(--r2);box-shadow:var(--mc-shadow)}
 .cs-today-eyebrow{font-size:14.5px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--t1);margin-bottom:6px}
+
+/* ── Carrossel "Próximos treinos" (tela inicial) ── */
+.cs-upcoming-wrap{margin-top:1.1rem}
+.cs-upcoming-scroll{
+  display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;margin:8px -2px 0;
+  scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;
+}
+.cs-upcoming-scroll::-webkit-scrollbar{display:none}
+.cs-upcoming-card{
+  scroll-snap-align:start;flex:0 0 auto;width:148px;
+  background:var(--s2);border:1px solid var(--bdr2);border-radius:12px;
+  padding:12px;box-sizing:border-box;
+}
+.cs-upcoming-date{font-size:10.5px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+.cs-upcoming-type{font-size:13px;font-weight:800;line-height:1.3;margin-bottom:2px}
+.cs-upcoming-pace{font-size:11.5px;color:var(--t3);margin-bottom:8px}
+.cs-upcoming-details{width:100%;height:26px;margin-top:2px;border:none;background:none;padding:0;color:var(--t3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;text-decoration:underline;text-underline-offset:2px}
+.cs-upcoming-done{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:800;color:var(--gr);margin-top:10px}
+.cs-upcoming-btn{
+  width:100%;height:32px;margin-top:10px;border:none;border-radius:7px;
+  background:var(--acc);color:var(--on-acc);font-size:12px;font-weight:800;
+  cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;
+}
 .cs-today-meta{font-size:13px;color:var(--t3);margin-bottom:9px}
 .cs-today-body{font-size:14.5px;color:var(--t2);line-height:1.55}
 .cs-today-workout{padding:0;margin-bottom:.65rem}
@@ -1364,9 +1417,7 @@ details[open] summary::after{transform:rotate(90deg)}
 
 <div class="app-nav">
   <img class="app-logo" id="app-logo" src="logo.png" alt="VO2 RunMax" onerror="this.classList.add('app-logo-hidden')"/>
-  <div style="flex:1;display:flex;justify-content:center;min-width:0;overflow:hidden">
-    <button id="header-install-btn" class="header-install-btn" onclick="headerInstallTap()"><svg class="gi"><use href="#i-smartphone"></use></svg> <span class="header-install-btn-label">Instalar app</span></button>
-  </div>
+  <div style="flex:1"></div>
   <div class="auth-bar" id="auth-loading-bar" style="gap:8px;align-items:center">
     <div style="width:100px;height:34px;border-radius:8px;background:var(--s2);opacity:.5;animation:authLoadingPulse 1.1s ease-in-out infinite"></div>
   </div>
@@ -1489,7 +1540,8 @@ details[open] summary::after{transform:rotate(90deg)}
 </div>
 
 <!-- ── CALCULADORA ── -->
-<div id="page-calc" class="wrap">
+<div id="page-calc" class="wrap" style="position:relative">
+  <button id="install-chip-home" class="install-chip" onclick="installPromptTap()"><svg class="gi"><use href="#i-download"></use></svg> Instalar</button>
   <div id="calc-summary" class="calc-summary" style="display:none"></div>
   <!-- WIZARD CONTAINER -->
   <div id="wz-wrap" style="display:none">
@@ -1704,6 +1756,11 @@ details[open] summary::after{transform:rotate(90deg)}
        em cima): sem isso, esse cabeçalho de boas-vindas ("Planilhas
        Personalizadas") aparecia por um instante em toda reabertura do app,
        mesmo pra quem já tem conta/planilha, até o JS decidir escondê-lo. -->
+    <div id="install-strip-landing" class="install-strip">
+      <span class="install-strip-icon"><svg class="gi"><use href="#i-download"></use></svg></span>
+      <span class="install-strip-text">Instalar app</span>
+      <button class="install-strip-btn" onclick="installPromptTap()">Instalar</button>
+    </div>
     <h1 style="text-align:left"><span>Planilhas</span> Personalizadas</h1>
     <div class="hero-feature-list" style="margin:14px 0 4px;display:flex;flex-direction:column;gap:12px">
       <div style="display:flex;align-items:flex-start;gap:10px">
@@ -2501,6 +2558,12 @@ function setAppTheme(mode){
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.style.colorScheme='light dark';
   }
+  // Mesma cor sólida do fundo da página (--bg) do tema ativo (ver script
+  // inline no <head>, que já faz isso no primeiro paint) — mantém a barra
+  // de status alinhada com o cabeçalho ao trocar de tema sem recarregar.
+  const isDark=mode==='dark'||(mode==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const tc=document.querySelector('meta[name="theme-color"]');
+  if(tc)tc.setAttribute('content',isDark?'#000000':'#eceff2');
   updateThemeButtons();
 }
 window.setAppTheme=setAppTheme;
@@ -3459,6 +3522,18 @@ function restoreModalState(){
   if(state.modal.modal==='realizadoDetail'){
     const logId=state.modal.params&&state.modal.params.logId;
     if(logId&&completedLog.some(e=>e.id===logId))openRealizadoDetailModal(logId);
+  }else if(state.modal.modal==='share'){
+    // Alguns navegadores (Samsung Internet é o caso mais comum, principalmente
+    // ao escolher foto pelo "Arquivos" em vez do álbum de fotos) recarregam a
+    // página sozinhos enquanto o seletor nativo de arquivo está aberto — a
+    // aba volta "do zero", sem lembrar de nada. Sem essa restauração, a
+    // pessoa caía direto na tela inicial, achando que o app tinha bugado.
+    // A foto em si não sobrevive (nunca chegou a ser lida pelo app antes do
+    // recarregamento), mas pelo menos a modal de compartilhar reabre no
+    // treino certo, pra tentar de novo.
+    const p=state.modal.params||{};
+    if(p.planId!=null)openShareModal(p.planId,p.wIdx,p.dIdx);
+    else if(p.logId&&completedLog.some(e=>e.id===p.logId))openShareModalFromLog(p.logId);
   }
 }
 var _navStateRestored=false;
@@ -3778,21 +3853,30 @@ function wzAutoRestoreFromSavedPlans(){
 // Mesma ideia de buildUnplannedCardsForToday, mas com as classes cs-today
 // (usadas só no mini-card da tela inicial, visual mais compacto).
 function buildUnplannedMiniCardsForToday(){
-  const todayStr8=new Date().toISOString().slice(0,10);
-  const items=completedLog.filter(e=>e.unplanned && new Date(e.date).toISOString().slice(0,10)===todayStr8);
+  // BUG CORRIGIDO: antes comparava com .toISOString().slice(0,10), que usa
+  // o fuso UTC. No horário do Brasil (UTC-3), à noite (grosso modo depois
+  // das 21h locais) o relógio em UTC já virou o dia seguinte — então
+  // "hoje" em UTC não batia mais com a data local do treino registrado,
+  // e o card sumia da tela inicial mesmo o registro existindo certinho em
+  // Realizados (que exibe a data local, sem essa conversão). Agora os dois
+  // lados usam a data de calendário LOCAL do navegador.
+  const ymdLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const todayStr8=ymdLocal(new Date());
+  const items=completedLog.filter(e=>e.unplanned && ymdLocal(new Date(e.date))===todayStr8);
   if(!items.length)return'';
   return items.map(entry=>{
     const realInfoHtml=formatRealInfoBlock({dist:entry.dist,duration:entry.duration,pace:entry.pace,avgHr:entry.avgHr});
-    // Nome real vindo do relógio/intervals.icu — só uma DICA visual (ex: "pode
-    // ser o Fartlek de amanhã, adiantado"), nunca vincula nada sozinho. A
-    // pessoa decide se quer marcar o dia certo como feito manualmente.
-    const nameHintHtml=entry.realName?`<div style="font-size:12px;color:var(--t3);margin:2px 0 6px">Nome no relógio: <span style="color:var(--t2)">${escapeHtmlLite(entry.realName)}</span></div>`:'';
+    // Nome real vindo do relógio/intervals.icu — vira o TÍTULO do card (em vez
+    // de uma dica pequena embaixo), já que é a informação mais útil pra pessoa
+    // reconhecer qual treino foi esse (ex: "pode ser o Fartlek de amanhã,
+    // adiantado"). Nunca vincula nada sozinho — a pessoa decide se quer
+    // marcar o dia certo da planilha como feito manualmente.
+    const displayName=entry.realName?escapeHtmlLite(entry.realName):entry.type;
     return`<div class="cs-today" style="margin-top:10px">
       <div class="cs-today-eyebrow" style="color:var(--am)"><svg class="gi"><use href="#i-check_circle"></use></svg> TREINO CONCLUÍDO</div>
-      <div style="margin:2px 0 6px"><span style="font-size:10px;font-weight:800;color:var(--am);background:var(--am2);border-radius:4px;padding:2px 6px">NÃO PROGRAMADO</span></div>
+      <div style="margin:2px 0 6px"><span style="font-size:10px;font-weight:800;color:var(--am);background:var(--am2);border-radius:4px;padding:2px 6px">NÃO PROGRAMADO HOJE</span></div>
       <div class="cs-today-workout">
-        <div class="cs-today-type" style="color:var(--t2)">${entry.type}</div>
-        ${nameHintHtml}
+        <div class="cs-today-type" style="color:var(--t1)">${displayName}</div>
         <div class="stat-card" style="margin-top:10px;padding:10px 12px">${realInfoHtml}</div>
         <button onclick="openShareModalFromLog('${entry.id}')" style="margin-top:12px;background:none;border:1px solid var(--bdr2);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--t2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-share"></use></svg> Compartilhar</button>
       </div>
@@ -3851,6 +3935,56 @@ function buildTodayMini(plan){
       </div>
     </div>`:''}
   </div>`+unplannedMiniHtml;
+}
+// Carrossel horizontal "Próximos treinos" — mostra os dias com treino de
+// verdade (pula descanso/caminhada) entre amanhã e 7 dias à frente, com a
+// mesma opção de "Iniciar" que o card de hoje já tem. Limitado a 7 dias de
+// propósito: é o que já cabe numa semana da planilha, e evita desenhar cards
+// demais à toa — os dados já estão todos na memória (a planilha inteira já
+// foi carregada), então isso não pesa nada, é só filtrar o que já existe.
+function buildUpcomingCarousel(plan){
+  if(!plan||!plan.weeks)return'';
+  const today=new Date();today.setHours(0,0,0,0);
+  const items=[];
+  plan.weeks.forEach((wk,wIdx)=>{
+    const weekStart=getWeekStartDate(plan,wIdx);
+    if(!weekStart)return;
+    wk.days.forEach((day,dIdx)=>{
+      if(day.rest||day.type==='Descanso'||day.type==='Caminhar')return;
+      const scheduledAt=new Date(weekStart);
+      scheduledAt.setDate(weekStart.getDate()+dIdx);
+      scheduledAt.setHours(0,0,0,0);
+      const diffDays=Math.round((scheduledAt-today)/86400000);
+      // 1 a 7: começa AMANHÃ (hoje já tem o card próprio, maior, logo acima)
+      // e vai até 7 dias à frente — não mais que isso, de propósito.
+      if(diffDays<1||diffDays>7)return;
+      items.push({wIdx,dIdx,day,scheduledAt});
+    });
+  });
+  if(!items.length)return'';
+  items.sort((a,b)=>a.scheduledAt-b.scheduledAt);
+  const cardsHtml=items.map(it=>buildUpcomingCard(plan,it)).join('');
+  return`<div class="cs-upcoming-wrap">
+    <div class="cs-eyebrow"><svg class="gi"><use href="#i-schedule"></use></svg> Próximos treinos</div>
+    <div class="cs-upcoming-scroll">${cardsHtml}</div>
+  </div>`;
+}
+function buildUpcomingCard(plan,it){
+  const{wIdx,dIdx,day,scheduledAt}=it;
+  const isDone=!!plan.done[`${wIdx}-${dIdx}`];
+  const is42=plan.race==='42', is10k=plan.race==='10k';
+  const col=(day.type==='Prova!'||day.type==='Corrida!'?(is42?'#a78bfa':is10k?'#0079b3':'#00ff88'):typeColors[day.type])||'#334455';
+  const dateStr=`${String(scheduledAt.getDate()).padStart(2,'0')}/${String(scheduledAt.getMonth()+1).padStart(2,'0')}`;
+  const dayName=ICU_DAYS_BR[dIdx];
+  return`<div class="cs-upcoming-card">
+    <div class="cs-upcoming-date">${dayName} · ${dateStr}</div>
+    <div class="cs-upcoming-type" style="color:${col}">${day.type}${day.dist?` · ${day.dist}`:''}</div>
+    ${day.pace?`<div class="cs-upcoming-pace">${compactPaceDisplay(day)}</div>`:''}
+    <button class="cs-upcoming-details" onclick="openDayDetailModal(${plan.id},${wIdx},${dIdx})"><svg class="gi"><use href="#i-info"></use></svg> Detalhes</button>
+    ${isDone
+      ?`<div class="cs-upcoming-done"><svg class="gi"><use href="#i-check_circle"></use></svg> Concluído</div>`
+      :`<button class="cs-upcoming-btn" onclick="startLiveWorkout(${plan.id},${wIdx},${dIdx})"><svg class="gi"><use href="#i-directions_run"></use></svg> Iniciar</button>`}
+  </div>`;
 }
 // Anel/gauge do VO2 Máx — extraído pra função própria pra poder ser
 // reaproveitado tanto no card "Planilha atual" quanto no card standalone
@@ -4049,6 +4183,7 @@ function renderCalcSummary(){
     </div>`:''}
     ${(plan&&planNeedsVo2Refresh(plan))?`<div class="cs-note"><span><svg class="gi"><use href="#i-info"></use></svg></span><div>Esta planilha foi gerada com um VO₂ estimado pelo nível. Você possui um VO₂ real calculado.<div style="margin-top:6px"><button onclick="recalcPlanVo2(${plan.id})" style="background:none;border:none;padding:0;font-size:14px;font-weight:700;color:var(--acc);text-decoration:underline;cursor:pointer;font-family:inherit">Atualizar planilha com VO₂ real →</button></div></div></div>`:''}
     ${plan?buildTodayMini(plan):''}
+    ${plan?buildUpcomingCarousel(plan):''}
     <div class="cs-actions-discrete">
       <button class="cs-link" onclick="goToSavedPlan(${wzSummaryPlanId})"><svg class="gi"><use href="#i-menu_book"></use></svg> Abrir planilha</button>
     </div>
@@ -8795,6 +8930,12 @@ function logCompletion(plan,wIdx,dIdx){
   if(!day||day.rest)return;
   const doneVal=plan.done[`${wIdx}-${dIdx}`];
   const real=(doneVal&&typeof doneVal==='object')?doneVal:null;
+  // De onde veio essa conclusão — mostrado como observação discreta no card
+  // de Realizados. 'watch' e 'live' já vêm marcados explicitamente em quem
+  // grava plan.done (ver icuCheckPlanCompletionsInner e lwFinishWorkout);
+  // sem esse marcador explícito, cai em 'manual' (digitado ou "Pular" na
+  // modal de conclusão manual — nesse caso doneVal nem é objeto).
+  const source=(real&&real.source)?real.source:'manual';
   let dateMs=Date.now();
   const wkStart=getWeekStartDate(plan,wIdx);
   if(wkStart){ const d=new Date(wkStart); d.setDate(d.getDate()+dIdx); dateMs=d.getTime(); }
@@ -8808,6 +8949,7 @@ function logCompletion(plan,wIdx,dIdx){
     pace:(real&&real.pace)?real.pace:(day.pace||null),
     avgHr:(real&&real.avgHr)?real.avgHr:null,
     activityId:(real&&real.activityId)?real.activityId:null,
+    source,
     planName:plan.name||''
   };
   const idx=completedLog.findIndex(e=>e.id===entry.id);
@@ -8886,6 +9028,7 @@ function logUnplannedCompletion(act,dateStr){
     completedAt:dateMs,
     type:'Corrida',
     unplanned:true,
+    source:'watch',
     activityId:act.id,
     dist:distKm?`${distKm}km`:null,
     duration:durLabel,
@@ -8960,7 +9103,7 @@ function confirmManualCompletion(planId,wIdx,dIdx){
   if(!dist&&!duration&&!pace){
     plan.done[key]=true;
   }else{
-    plan.done[key]={real:true,dist:dist?`${dist}km`:null,duration:duration||null,pace:pace||null,completedAt:Date.now()};
+    plan.done[key]={real:true,dist:dist?`${dist}km`:null,duration:duration||null,pace:pace||null,source:'manual',completedAt:Date.now()};
   }
   const modal=document.getElementById('manual-done-modal');if(modal)modal.remove();
   finishToggleDoneUI(planId,wIdx,dIdx);
@@ -9254,6 +9397,7 @@ function openShareModal(planId,wIdx,dIdx){
   };
 
   const old=document.getElementById('share-modal');if(old)old.remove();
+  saveModalState('share',{planId,wIdx,dIdx}); // pra reabrir essa modal se o navegador recarregar a página sozinho (ver restoreModalState)
   const modal=document.createElement('div');
   modal.id='share-modal';
   modal.className='modal-bg';
@@ -9261,7 +9405,7 @@ function openShareModal(planId,wIdx,dIdx){
   modal.innerHTML=`<div class="modal-box" style="max-width:420px;max-height:92vh;overflow-y:auto">
     <div class="modal-title" style="margin-bottom:.8rem">Compartilhar treino</div>
     <div id="share-modal-body"></div>
-    <button class="btn-modal-ok" style="width:100%;background:none;color:var(--t2);margin-top:.8rem" onclick="document.getElementById('share-modal').remove()">Fechar</button>
+    <button class="btn-modal-ok" style="width:100%;background:none;color:var(--t2);margin-top:.8rem" onclick="document.getElementById('share-modal').remove();clearModalState()">Fechar</button>
   </div>`;
   document.body.appendChild(modal);
   renderShareModalBody();
@@ -9279,7 +9423,7 @@ function renderShareModalBody(){
     <div style="margin-bottom:.8rem">
       <label style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:8px;font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600">
         <svg class="gi" style="vertical-align:-2px"><use href="#i-add_a_photo"></use></svg> ${f.photoDataUrl?'Trocar foto':'Adicionar foto (opcional)'}
-        <input type="file" accept="image/*" style="display:none" onchange="shareOnPhotoChange(this)"/>
+        <input type="file" accept="image/*" style="display:none" onclick="shareFilePickerPending=true" onchange="shareOnPhotoChange(this)"/>
       </label>
       <button onclick="shareCopyStatsImage()" title="Copia só a logo e os dados, com fundo transparente, pra colar em cima de qualquer foto" style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:8px;font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600;background:none;font-family:inherit;margin-left:6px">
         <svg class="gi" style="vertical-align:-2px"><use href="#i-content_copy"></use></svg> Copiar dados
@@ -10136,6 +10280,13 @@ function buildRealizadosFilterBar(){
 // ── Lista de treinos concluídos ("Realizados") — independente das
 // planilhas, mais recente primeiro, 15 por vez ("carregar mais" no fim),
 // dentro do período escolhido no filtro acima.
+// Observação discreta de origem do registro: veio sozinho do relógio via
+// intervals.icu, foi digitado/confirmado manualmente, ou foi rastreado
+// pelo próprio Treino ao Vivo do app (GPS + todas as etapas do treino).
+function completionSourceLabel(source){
+  const map={watch:'Via relógio',manual:'Concluído manualmente',live:'Realizado pelo VO2 RunMax'};
+  return map[source]||'';
+}
 function renderRealizadosList(){
   const wrap=document.getElementById('saved-realizados-wrap');if(!wrap)return;
   const loggedIn=!!currentUser;
@@ -10167,9 +10318,9 @@ function renderRealizadosList(){
     return`<div class="realizado-row" style="cursor:pointer" onclick="openRealizadoDetailModal('${entry.id}')">
       <div class="saved-item-header">
         <div class="saved-item-info">
-          <div class="saved-item-name">${dateLabel} · ${entry.type}</div>
-          ${entry.unplanned?`<div style="margin:3px 0"><span style="font-size:10px;font-weight:800;color:var(--am);background:var(--am2);border-radius:4px;padding:2px 6px">NÃO PROGRAMADO</span></div>`:''}
-          ${entry.realName?`<div style="font-size:11.5px;color:var(--t3)">Nome no relógio: ${escapeHtmlLite(entry.realName)}</div>`:''}
+          <div class="saved-item-name">${dateLabel} · ${entry.realName?escapeHtmlLite(entry.realName):entry.type}</div>
+          ${entry.unplanned?`<div style="margin:3px 0"><span style="font-size:10px;font-weight:800;color:var(--am);background:var(--am2);border-radius:4px;padding:2px 6px">REALIZADO EM DATA NÃO PROGRAMADA</span></div>`:''}
+          ${entry.source?`<div style="font-size:11px;color:var(--t3);margin:1px 0 2px">${completionSourceLabel(entry.source)}</div>`:''}
           <div class="saved-item-meta">
             ${metaBits?`<span>${metaBits}</span>`:'<span style="color:var(--t3)">Sem dados detalhados</span>'}
             ${entry.planName?`<span style="color:var(--t3)">${entry.planName}</span>`:''}
@@ -10198,9 +10349,9 @@ function openRealizadoDetailModal(logId){
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:210;display:flex;align-items:center;justify-content:center;padding:1rem';
   modal.innerHTML=`
     <div class="modal-box" style="max-width:360px;max-height:85vh;overflow-y:auto;padding:1.7rem 1.4rem;text-align:left;display:flex;flex-direction:column">
-      <div class="modal-title">${dateLabel} — ${entry.type}</div>
-      ${entry.unplanned?`<div style="margin:3px 0 .5rem"><span style="font-size:10px;font-weight:800;color:var(--am);background:var(--am2);border-radius:4px;padding:2px 6px">NÃO PROGRAMADO</span></div>`:''}
-      ${entry.realName?`<div style="font-size:12.5px;color:var(--t3);margin-bottom:.5rem">Nome no relógio: <span style="color:var(--t2)">${escapeHtmlLite(entry.realName)}</span></div>`:''}
+      <div class="modal-title">${dateLabel} — ${entry.realName?escapeHtmlLite(entry.realName):entry.type}</div>
+      ${entry.unplanned?`<div style="margin:3px 0 .5rem"><span style="font-size:10px;font-weight:800;color:var(--am);background:var(--am2);border-radius:4px;padding:2px 6px">REALIZADO EM DATA NÃO PROGRAMADA</span></div>`:''}
+      ${entry.source?`<div style="font-size:12px;color:var(--t3);margin-bottom:.3rem">${completionSourceLabel(entry.source)}</div>`:''}
       ${entry.planName?`<div class="modal-sub" style="text-align:left;margin-bottom:.5rem">${entry.planName}</div>`:''}
       <div class="stat-card" style="margin-top:.6rem;padding:10px 12px">${realInfoHtml}</div>
       <div class="modal-actions" style="flex-direction:column;gap:10px;margin-top:1.1rem;flex-shrink:0">
@@ -10229,6 +10380,7 @@ function openShareModalFromLog(logId){
     avgHrNum:stripUnit(entry.avgHr)
   };
   const old=document.getElementById('share-modal');if(old)old.remove();
+  saveModalState('share',{logId}); // pra reabrir essa modal se o navegador recarregar a página sozinho (ver restoreModalState)
   const modal=document.createElement('div');
   modal.id='share-modal';
   modal.className='modal-bg';
@@ -10236,7 +10388,7 @@ function openShareModalFromLog(logId){
   modal.innerHTML=`<div class="modal-box" style="max-width:420px;max-height:92vh;overflow-y:auto">
     <div class="modal-title" style="margin-bottom:.8rem">Compartilhar treino</div>
     <div id="share-modal-body"></div>
-    <button class="btn-modal-ok" style="width:100%;background:none;color:var(--t2);margin-top:.8rem" onclick="document.getElementById('share-modal').remove()">Fechar</button>
+    <button class="btn-modal-ok" style="width:100%;background:none;color:var(--t2);margin-top:.8rem" onclick="document.getElementById('share-modal').remove();clearModalState()">Fechar</button>
   </div>`;
   document.body.appendChild(modal);
   renderShareModalBody();
@@ -12181,11 +12333,15 @@ function initInstallBanner(){
   window.addEventListener('beforeinstallprompt',function(e){
     e.preventDefault();
     _deferredInstallPrompt=e;
-    // Botão fixo do header: fica visível sempre que a instalação for
-    // possível, mesmo que a pessoa já tenha dispensado o popup — ele é a
-    // forma "silenciosa" de instalar depois, sem interromper ninguém.
-    var headerBtn=document.getElementById('header-install-btn');
-    if(headerBtn)headerBtn.style.display='inline-flex';
+    // Faixa (tela de convidado) e chip (tela inicial logada): ficam visíveis
+    // sempre que a instalação for possível, mesmo que a pessoa já tenha
+    // dispensado o popup de baixo — são a forma "silenciosa" de instalar
+    // depois, sem interromper ninguém (substituem o antigo botão do header,
+    // que ficava espremido demais pro texto não sumir).
+    var stripEl=document.getElementById('install-strip-landing');
+    if(stripEl)stripEl.style.display='flex';
+    var chipEl=document.getElementById('install-chip-home');
+    if(chipEl)chipEl.style.display='inline-flex';
     // Only show the dismissible popup if user hasn't dismissed before
     if(!lsGet('vo2_install_dismissed')){
       setTimeout(function(){
@@ -12209,33 +12365,38 @@ function initInstallBanner(){
       }
     });
   }
-  // Hide banner AND header button once app is installed
+  // Hide banner AND the strip/chip once app is installed
   window.addEventListener('appinstalled',function(){
     var banner=document.getElementById('install-banner');
     if(banner)banner.classList.remove('show');
-    var headerBtn=document.getElementById('header-install-btn');
-    if(headerBtn)headerBtn.style.display='none';
+    var stripEl=document.getElementById('install-strip-landing');
+    if(stripEl)stripEl.style.display='none';
+    var chipEl=document.getElementById('install-chip-home');
+    if(chipEl)chipEl.style.display='none';
     lsSet('vo2_install_dismissed','1');
   });
 }
-// Clique no botão do header — mesmo prompt nativo do popup (efeito idêntico
-// ao instalar por lá). Quando PLAY_STORE_URL estiver preenchida (publicado
-// na loja), passa a abrir a ficha da Play Store em vez do prompt do PWA.
-function headerInstallTap(){
+// Clique na faixa (convidado) ou no chip (tela inicial) — mesmo prompt
+// nativo do popup de baixo (efeito idêntico ao instalar por lá). Quando
+// PLAY_STORE_URL estiver preenchida (publicado na loja), passa a abrir a
+// ficha da Play Store em vez do prompt do PWA.
+function installPromptTap(){
   if(PLAY_STORE_URL){ window.open(PLAY_STORE_URL,'_blank'); return; }
   if(_deferredInstallPrompt){
     _deferredInstallPrompt.prompt();
     _deferredInstallPrompt.userChoice.then(function(r){
       if(r.outcome==='accepted'){
         showToast('App instalado com sucesso!');
-        var headerBtn=document.getElementById('header-install-btn');
-        if(headerBtn)headerBtn.style.display='none';
+        var stripEl=document.getElementById('install-strip-landing');
+        if(stripEl)stripEl.style.display='none';
+        var chipEl=document.getElementById('install-chip-home');
+        if(chipEl)chipEl.style.display='none';
       }
       _deferredInstallPrompt=null;
     });
   }
 }
-window.headerInstallTap=headerInstallTap;
+window.installPromptTap=installPromptTap;
 function dismissInstallBanner(){
   var banner=document.getElementById('install-banner');
   if(banner)banner.classList.remove('show');
@@ -12301,11 +12462,22 @@ function shareRedrawIfOpen(){
     shareRedrawCanvas();
   }
 }
+// Sinaliza que a perda de foco que está prestes a acontecer é esperada —
+// abrir a câmera ou o seletor de arquivo tira o foco da aba do mesmo jeito
+// que minimizar o app manualmente, mas aqui NÃO é pra fechar a modal (ver
+// visibilitychange abaixo). Sem essa distinção, em navegadores que abrem um
+// seletor de foto "pesado" (troca de app de verdade, ex: Samsung Internet
+// com Câmera ou Meus Arquivos), a modal fechava sozinha ANTES da pessoa
+// conseguir escolher a foto — no Chrome isso não aparecia porque o seletor
+// de fotos dele roda sem tirar o foco da aba.
+let shareFilePickerPending=false;
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible'){
     shareRedrawIfOpen();
     icuAutoCheckOnResume();
+    shareFilePickerPending=false; // voltou (com ou sem foto escolhida) — libera a proteção de novo
   }else{
+    if(shareFilePickerPending)return; // foco saiu pra abrir câmera/seletor de foto — não fecha, só redesenha quando voltar
     // Ao minimizar/trocar de app com a tela de compartilhar aberta, fecha
     // ela agora — o navegador pode descartar o desenho do canvas em
     // segundo plano (fica preto/branco/azul do nada ao voltar), e isso é
@@ -12804,7 +12976,7 @@ function icuAutoCheckOnResume(){
 
 <!-- INSTALL BANNER (PWA Add to Home Screen) -->
 <div class="install-banner" id="install-banner">
-  <div class="install-banner-icon"><svg class="gi"><use href="#i-smartphone"></use></svg></div>
+  <div class="install-banner-icon"><svg class="gi"><use href="#i-download"></use></svg></div>
   <div class="install-banner-text">
     <div class="install-banner-title">Instalar o app</div>
     <div class="install-banner-sub">Adicione à tela inicial para acesso rápido</div>
@@ -13179,7 +13351,7 @@ async function icuCheckPlanCompletionsInner(plan,apiKey,athleteId,usedActivityId
         completedLog=completedLog.filter(e=>e.id!==oldUnplannedId);
         persistCompletedRemoval(oldUnplannedId);
       }
-      plan.done[p.key]={real:true,dist:distKm?`${distKm}km`:null,duration:durLabel,pace:paceLabel,calories:calLabel,avgHr:hrLabel,activityId:act.id,completedAt:act.start_date_local?new Date(act.start_date_local).getTime():Date.now()};
+      plan.done[p.key]={real:true,dist:distKm?`${distKm}km`:null,duration:durLabel,pace:paceLabel,calories:calLabel,avgHr:hrLabel,activityId:act.id,source:'watch',completedAt:act.start_date_local?new Date(act.start_date_local).getTime():Date.now()};
       logCompletion(plan,p.wIdx,p.dIdx);
       markedCount++;
     });
@@ -15487,10 +15659,7 @@ function lwBeep(freq,durMs,gainVal){
 // demais (fim de etapa, alerta de ritmo), sem mexer no volume desses outros.
 function lwPlayBeepOnCtx(ctx,freq,durMs,gainVal){
   try{
-    const osc=ctx.createOscillator(),gain=ctx.createGain();
-    osc.type='sine'; // deixado explícito — já era o padrão, mas deixa claro que o som é limpo (sem harmônicos ásperos de onda quadrada/serrote)
-    osc.frequency.value=freq||880;
-    osc.connect(gain);gain.connect(ctx.destination);
+    const f=freq||880;
     const peak=gainVal||0.24;
     const dur=(durMs||110)/1000;
     const now=ctx.currentTime;
@@ -15504,18 +15673,59 @@ function lwPlayBeepOnCtx(ctx,freq,durMs,gainVal){
     // soando limpos, só que agora proporcionalmente mais "cheios" também.
     const attackEnd=now+Math.min(0.008,dur*0.15);
     const releaseStart=now+dur*0.75;
+    // Corpo do bipe: seno puro de novo (tirei o harmônico/onda triangular da
+    // versão anterior — pedido explícito: estava soando metálico demais). A
+    // textura "esportiva" agora vem só do clique de ataque abaixo, não mais
+    // de uma segunda voz tonal.
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.type='sine';
+    osc.frequency.value=f;
+    osc.connect(gain);gain.connect(ctx.destination);
     gain.gain.setValueAtTime(0.0001,now);
     gain.gain.exponentialRampToValueAtTime(peak,attackEnd);
     gain.gain.setValueAtTime(peak,releaseStart);
     gain.gain.exponentialRampToValueAtTime(0.0001,now+dur);
     osc.start(now);
     osc.stop(now+dur);
+
+    // Clique de ataque — pedido explícito: dá aquele caráter "esportivo",
+    // mas sem ficar seco/curto demais. Um estouro breve de ruído branco
+    // filtrado perto da frequência do próprio bipe (pra combinar com o tom,
+    // em vez de soar como um clique solto por cima), com decaimento suave
+    // de 35ms — mais "thock" macio do que "tick" seco seria com uns 10-15ms.
+    const clickDur=0.035;
+    const bufSize=Math.max(1,Math.round(ctx.sampleRate*clickDur));
+    const noiseBuf=ctx.createBuffer(1,bufSize,ctx.sampleRate);
+    const data=noiseBuf.getChannelData(0);
+    for(let i=0;i<bufSize;i++)data[i]=Math.random()*2-1;
+    const noise=ctx.createBufferSource();
+    noise.buffer=noiseBuf;
+    // Passa-baixa em vez de passa-faixa ressonante: um filtro ressonante
+    // (Q alto) faz o ruído "tinir" numa frequência só, o que é justamente o
+    // que soa metálico — passa-baixa dá um "thock" mais surdo/percussivo,
+    // sem esse tinido. Cortando bem abaixo da fundamental (0.6x) pra ficar
+    // ainda mais grave/encorpado que o tom em si.
+    const noiseFilter=ctx.createBiquadFilter();
+    noiseFilter.type='lowpass';
+    noiseFilter.frequency.value=f*0.6;
+    noiseFilter.Q.value=0.5;
+    const noiseGain=ctx.createGain();
+    const clickPeak=Math.min(0.7,peak*2.2); // mais presente que antes — pedido explícito
+    noiseGain.gain.setValueAtTime(clickPeak,now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001,now+clickDur);
+    noise.connect(noiseFilter);noiseFilter.connect(noiseGain);noiseGain.connect(ctx.destination);
+    noise.start(now);
+    noise.stop(now+clickDur);
   }catch(e){}
 }
 // Bipe duplo, grave — propositalmente diferente do bipe agudo de fim de
-// etapa, pra dar pra distinguir de ouvido qual dos dois alertas é.
+// etapa, pra dar pra distinguir de ouvido qual dos dois alertas é. Junto
+// com a vibração — pedido explícito: longa e intensa, bem diferente das
+// vibrações curtas de fim de etapa/contagem, pra sentir mesmo sem olhar
+// pro celular (ex: no bolso ou no braço) que o ritmo saiu da faixa.
 function lwPaceAlertBeep(){
   lwBeep(600,140);
+  lwVibrate([250,120,250,120,700]);
   setTimeout(()=>{ if(LW)lwBeep(600,140); },230);
 }
 // Sino de FIM DE ETAPA — pedido explícito: soava parecido demais com a
@@ -15544,18 +15754,13 @@ function lwStepEndChime(){
 // é um sinal sonoro simples e confiável, independente do motor de voz.
 // Tom propositalmente diferente dos outros dois bipes do app (fim de etapa
 // = sino; alerta de ritmo = grave duplo 600) pra não confundir: aqui são
-// dois bipes graves (3, 2) seguidos de um "bi-BIP" ascendente rápido no
-// "vai" (1) — nota curta e grave, seguida de uma nota mais longa e aguda,
-// que também vibra junto. Esse padrão de duas notas subindo é o clássico
-// sinal de "começou/confirmado" de relógios esportivos (bem diferente de
-// um tom só sustentado, que soa mais datado) — pedido explícito: deixar
-// mais moderno.
+// dois bipes graves (3, 2) seguidos de UM bipe agudo só, contínuo e mais
+// longo, no "vai" (1) — pedido explícito: era um "bi-BIP" duplo (nota curta
+// + nota longa em sequência) e ficou soando confuso/metálico; agora é só
+// uma nota só, sustentada.
 function lwStartCountdownBeep(n){
   if(n>1){ lwBeep(520,280,0.36); lwVibrate(160); }
-  else{
-    lwBeep(700,120,0.32); lwVibrate(160);
-    setTimeout(()=>{ if(LW){lwBeep(1050,750,0.38); lwVibrate([180,90,900]);} },130);
-  }
+  else{ lwBeep(1050,750,0.38); lwVibrate([180,90,900]); }
 }
 // Bipe de FIM DE TREINO (treino inteiro, não só uma etapa) — 2 tons
 // subindo (o "crescendo", cada um vibrando junto), seguidos de 3 tilintadas
@@ -16015,7 +16220,16 @@ function lwFinishWorkout(){
   lwVibrate([350,150,350,150,700]); // pedido explícito: ainda curta demais pra perceber — pulso final bem mais longo, diferente do de fim de etapa
   lwFinishBeep(LW.audioCtx); // captura o AudioContext AGORA, antes de LW ser zerado mais abaixo
   lwStopGPS();lwStopTimer();lwStopLockWatcher();lwReleaseWakeLock();lwStopKeepAlive();
-  const timeSec=lwElapsedMs()/1000;
+  // Mesmo "tempo ativo" mostrado ao vivo na tela como "tempo total" (e usado
+  // pro ritmo médio) — descontando o tempo gasto em avisos falados entre
+  // etapas. Antes esse cálculo usava lwElapsedMs() puro (SEM descontar as
+  // falas), então o tempo/ritmo médio salvo no fim do treino podia ficar
+  // diferente do que a pessoa via na tela o treino inteiro — bug real,
+  // detectado ao confirmar se o ritmo médio ao vivo era "o mesmo que fica
+  // salvo depois".
+  const timeSec=LW.stepPending
+    ?Math.max(0,((LW.pendingStartElapsedMs||0)-(LW.totalPendingMs||0))/1000)
+    :Math.max(0,(lwElapsedMs()-(LW.totalPendingMs||0))/1000);
   const distKm=LW.totalDistM/1000;
   const paceSec=distKm>0.05?timeSec/distKm:null;
   const distTxt=distKm>0?`${distKm.toFixed(2)} quilômetros`:'nenhuma distância registrada';
@@ -16038,7 +16252,7 @@ function lwFinishWorkout(){
     if(plan){
       const durationStr=lwFmtDurationStorage(timeSec);
       const paceStr=paceSec?lwFmtPaceSecPerKm(paceSec):null;
-      plan.done[key]={real:true,dist:distKm>0?`${distKm.toFixed(2)}km`:null,duration:durationStr||null,pace:paceStr||null,completedAt:Date.now()};
+      plan.done[key]={real:true,dist:distKm>0?`${distKm.toFixed(2)}km`:null,duration:durationStr||null,pace:paceStr||null,source:'live',completedAt:Date.now()};
       finishToggleDoneUI(planId,wIdx,dIdx); // grava local sempre e tenta sincronizar com a nuvem; se estiver offline, fica registrado localmente e sincroniza sozinho quando a conexão voltar (ver listener 'online')
     }
     // O cálculo do treino (tempo, distância, pace) não depende de internet —
@@ -16111,8 +16325,8 @@ function lwBuildOverlay(){
       <div id="lw-step-target" style="font-size:16px;font-weight:500;color:var(--t2);margin-top:2px"></div>
     </div>
 
-    <div id="lw-touch-lock-msg" style="display:none;position:relative;z-index:51;pointer-events:none;text-align:center;margin:0 0 4px;padding:5px 12px;border-radius:10px;background:rgba(0,0,0,.55);color:#fff">
-      <svg class="gi" style="font-size:14px;vertical-align:-2px;margin-right:4px"><use href="#i-lock"></use></svg><span style="font-size:11.5px;font-weight:800">Tela travada</span><span style="font-size:11px;opacity:.85"> — toque duas vezes para destravar</span>
+    <div id="lw-touch-lock-msg" style="display:none;position:absolute;left:16px;right:16px;top:78px;z-index:51;pointer-events:none;text-align:center;padding:9px 14px;border-radius:12px;background:rgba(0,0,0,.72);color:#fff">
+      <svg class="gi" style="font-size:18px;vertical-align:-3px;margin-right:6px"><use href="#i-lock"></use></svg><span style="font-size:15px;font-weight:800">Tela travada</span><span style="font-size:13px;opacity:.85"> — toque duas vezes para destravar</span>
     </div>
 
     <div style="position:relative;display:flex;justify-content:center;margin-bottom:16px">
@@ -16133,12 +16347,12 @@ function lwBuildOverlay(){
       </div>
       <div style="text-align:center;padding:0 12px">
         <div id="lw-pace" style="font-size:34px;font-weight:900;color:var(--pure-fg);line-height:1">--:--</div>
-        <div style="font-size:9.5px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-top:4px">pace atual /km</div>
-        <div id="lw-pace-indicator" style="font-size:11px;font-weight:800;margin-top:3px;min-height:14px"></div>
+        <div style="font-size:9.5px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-top:4px">ritmo atual /km</div>
+        <div id="lw-pace-indicator" style="font-size:14px;font-weight:800;margin-top:4px;min-height:17px"></div>
       </div>
     </div>
 
-    <div id="lw-total-row" style="display:grid;grid-template-columns:1fr 1fr;border-top:2px solid var(--bdr);padding:12px 0;margin-bottom:18px">
+    <div id="lw-total-row" style="display:grid;grid-template-columns:1fr 1fr;border-top:2px solid var(--bdr);padding:12px 0 0">
       <div style="text-align:center;padding:0 12px;border-right:2px solid var(--bdr)">
         <div id="lw-dist-total" style="font-size:20px;font-weight:800;color:var(--t2);font-variant-numeric:tabular-nums;line-height:1">0.00 km</div>
         <div style="font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:4px">km total</div>
@@ -16147,6 +16361,10 @@ function lwBuildOverlay(){
         <div id="lw-time-total" style="font-size:20px;font-weight:800;color:var(--t2);font-variant-numeric:tabular-nums;line-height:1">00:00</div>
         <div style="font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:4px">tempo total</div>
       </div>
+    </div>
+    <div id="lw-pace-avg-row" style="text-align:center;padding-top:12px;margin-bottom:18px">
+      <div id="lw-pace-avg" style="font-size:20px;font-weight:800;color:var(--t2);font-variant-numeric:tabular-nums;line-height:1">--:--</div>
+      <div style="font-size:9px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:4px">ritmo médio /km</div>
     </div>
 
     <div style="flex:1"></div>
@@ -16238,6 +16456,22 @@ function lwUpdateUI(){
     :Math.max(0,(lwElapsedMs()-(LW.totalPendingMs||0))/1000);
   const timeTotalEl=el('lw-time-total'); if(timeTotalEl)timeTotalEl.textContent=lwFmtDurationDisplay(totalActiveSec);
   const totalRowEl=el('lw-total-row'); if(totalRowEl)totalRowEl.style.display=showAsDireto?'none':'grid';
+  // Ritmo médio do treino inteiro (não da etapa) — já dá pra calcular com o
+  // que já é gravado o tempo todo (distância total + tempo total ativo),
+  // sem precisar guardar nada novo. Ao contrário do bloco de km/tempo total,
+  // continua aparecendo em treino "direto" também — nesse modo o card
+  // principal já mostra o total, mas não mostra ritmo médio em lugar
+  // nenhum, então esconder seria perder essa informação à toa. Como o
+  // divisor (borda) de cima normalmente vem do bloco de km/tempo total,
+  // quando ele está escondido esse card ganha a própria borda, pra não
+  // ficar "grudado" no card do ritmo atual acima.
+  const paceAvgRowEl=el('lw-pace-avg-row');
+  if(paceAvgRowEl){
+    paceAvgRowEl.style.borderTop=showAsDireto?'2px solid var(--bdr)':'none';
+    paceAvgRowEl.style.marginTop=showAsDireto?'0':'0';
+  }
+  const paceAvgEl=el('lw-pace-avg');
+  if(paceAvgEl)paceAvgEl.textContent=(distKm>0.01&&totalActiveSec>0)?lwFmtPaceSecPerKm(totalActiveSec/distKm):'--:--';
 
   const paceEl=el('lw-pace'); if(paceEl)paceEl.textContent=(LW.status==='paused')?'--:--':(curPace?lwFmtPaceSecPerKm(curPace):'--:--'); // pausado (manual ou automático) = parado de verdade, não faz sentido mostrar o último pace "congelado" como se ainda estivesse valendo
   const dot=el('lw-gps-dot'); if(dot)dot.style.background=LW.status==='paused'?'var(--t3)':((LW.lastGoodPoint&&Date.now()-LW.lastGoodPoint.t<LW_GPS_STALE_MS)?'var(--gr)':'var(--rd)');
