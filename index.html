@@ -15273,13 +15273,14 @@ window.addEventListener('beforeunload',(e)=>{
 // ── GPS ──
 function lwStartGPS(){
   lwWatchGeoPermissionChange(); // prima o cache de LW.geoPermState o quanto antes
+  LW.gpsWatchStartedAt=Date.now(); // usado pelo cão de guarda (lwCheckGpsStale) pro caso de NUNCA ter tido fix nenhum ainda
   // timeout:10000 — antes era 15000. Esse é o prazo que o próprio navegador
   // usa pra desistir de esperar um fix e disparar o erro TIMEOUT (code 3)
   // quando NUNCA teve nenhuma posição ainda (ex: começou o treino já sem
-  // GPS ligado). Reduzido pra bater com o mesmo total de ~14s do outro
-  // cenário (GPS que caiu no meio do treino, ver LW_GPS_STALE_MS) — antes
-  // esse caminho específico demorava uns 19s (15s daqui + 4s de
-  // confirmação em lwOnGeoError) pra avisar.
+  // GPS ligado). Na prática (testado): o Samsung Internet não respeita
+  // esse valor de verdade pra watchPosition contínuo — reduzir ele sozinho
+  // não adiantou nada lá. Por isso agora lwCheckGpsStale também cobre esse
+  // caso por conta própria, sem depender do navegador honrar isso.
   LW.watchId=navigator.geolocation.watchPosition(lwOnPosition,lwOnGeoError,{enableHighAccuracy:true,maximumAge:2000,timeout:10000});
 }
 function lwStopGPS(){
@@ -15550,7 +15551,24 @@ function lwStartTimer(){
 // válido e, se passar muito tempo, mostra o mesmo aviso de GPS sem sinal.
 const LW_GPS_STALE_MS=10000;
 function lwCheckGpsStale(){
-  if(!LW||!LW.lastGoodPoint)return; // ainda nem teve o primeiro fix — isso já é coberto pelos erros normais
+  if(!LW)return;
+  if(!LW.lastGoodPoint){
+    // Nunca teve NENHUM fix ainda — antes esse caso ficava só por conta do
+    // `timeout` do watchPosition, que o Samsung Internet na prática não
+    // respeita direito (testado: continuava mudo por ~25s reais mesmo com
+    // timeout:10000 configurado). Agora conta por conta própria, a partir
+    // de quando começamos a pedir localização (LW.gpsWatchStartedAt) —
+    // funciona igual em qualquer navegador, sem depender de nada externo.
+    if(!LW.gpsWatchStartedAt)return;
+    const sinceStart=Date.now()-LW.gpsWatchStartedAt;
+    if(sinceStart>=LW_GPS_STALE_MS){
+      if(!LW.geoUnavailableSince)LW.geoUnavailableSince=Date.now()-sinceStart;
+      if(Date.now()-LW.geoUnavailableSince>=4000){
+        lwShowGpsBanner('Sem acesso à localização. Verifique se o GPS do aparelho está ligado. O app continua tentando sozinho em segundo plano e reconhece automaticamente assim que voltar.');
+      }
+    }
+    return;
+  }
   const sinceLastFix=Date.now()-LW.lastGoodPoint.t;
   if(sinceLastFix>=LW_GPS_STALE_MS){
     if(!LW.geoUnavailableSince)LW.geoUnavailableSince=Date.now()-sinceLastFix; // não reseta a contagem se já vinha de um erro reportado
