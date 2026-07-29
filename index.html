@@ -15262,8 +15262,13 @@ window.addEventListener('beforeunload',(e)=>{
 
 // ── GPS ──
 function lwStartGPS(){
-  lwWatchGeoPermissionChange(); // prima o cache de LW.geoPermState o quanto antes
-  LW.gpsWatchStartedAt=Date.now(); // usado pelo cão de guarda (lwCheckGpsStale) pro caso de NUNCA ter tido fix nenhum ainda
+  lwWatchGeoPermissionChange(); // além de cuidar do retomar sozinho, decide AQUI se o relógio de espera (gpsWatchStartedAt) já começa agora ou só depois do popup de permissão ser resolvido — ver lá dentro
+  if(!('permissions'in navigator)){
+    // Sem Permissions API disponível nesse navegador — não dá pra saber se
+    // tem popup pendente esperando a pessoa decidir, então mantém o
+    // comportamento simples de sempre (conta a partir de agora mesmo).
+    LW.gpsWatchStartedAt=Date.now();
+  }
   // timeout:10000 — antes era 15000. Esse é o prazo que o próprio navegador
   // usa pra desistir de esperar um fix e disparar o erro TIMEOUT (code 3)
   // quando NUNCA teve nenhuma posição ainda (ex: começou o treino já sem
@@ -15314,21 +15319,45 @@ function lwOnGeoError(err){
 // de olho via Permissions API, e assim que a pessoa for lá e liberar
 // manualmente (nas configurações do site), o app detecta sozinho e retoma o
 // GPS na hora — sem precisar reiniciar o treino.
+//
+// Além disso, essa mesma checagem decide QUANDO o relógio de espera do "sem
+// GPS" (gpsWatchStartedAt, usado pelo cão de guarda em lwCheckGpsStale)
+// começa a contar: se a permissão ainda está como 'prompt' (primeira vez,
+// popup na tela), o relógio fica em suspenso até a pessoa realmente decidir
+// — permitir ou bloquear. Sem isso, o tempo gasto lendo/decidindo o popup
+// contava contra o prazo de 14s à toa, fazendo o banner (ou até o "GPS
+// ATIVO") demorar mais que o necessário só por causa de quanto tempo a
+// pessoa levou pra tocar no popup.
 function lwWatchGeoPermissionChange(){
   if(!LW||!('permissions'in navigator)||LW.geoPermWatching)return;
   LW.geoPermWatching=true;
   navigator.permissions.query({name:'geolocation'}).then(status=>{
-    if(LW)LW.geoPermState=status.state; // só cache informativo (não usado pra decidir o banner — ver comentário em lwOnGeoError sobre por que isso não é confiável)
+    if(!LW)return;
+    LW.geoPermState=status.state;
+    if(status.state!=='prompt'){
+      // Já estava resolvida de antes (concedida ou bloqueada em sessão
+      // anterior) — sem popup nenhum dessa vez, conta a partir de agora,
+      // igual sempre foi.
+      LW.gpsWatchStartedAt=Date.now();
+    }
+    // Se for 'prompt', gpsWatchStartedAt fica sem valor até o onchange
+    // abaixo disparar (a pessoa decidiu) — não seta nada aqui de propósito.
     status.onchange=()=>{
-      if(LW)LW.geoPermState=status.state;
-      LW&&(LW.geoPermWatching=false);
-      if(status.state==='granted'&&LW&&LW.status==='running'){
+      if(!LW)return;
+      LW.geoPermState=status.state;
+      LW.geoPermWatching=false;
+      if(status.state!=='prompt')LW.gpsWatchStartedAt=Date.now(); // popup acabou de ser resolvido agora — só a partir daqui conta
+      if(status.state==='granted'&&LW.status==='running'){
         showToast('Localização liberada — retomando o GPS.');
         LW.lastGoodPoint=null;
         lwStartGPS();
       }
     };
-  }).catch(()=>{ if(LW)LW.geoPermWatching=false; });
+  }).catch(()=>{
+    if(!LW)return;
+    LW.geoPermWatching=false;
+    if(!LW.gpsWatchStartedAt)LW.gpsWatchStartedAt=Date.now(); // Permissions API falhou — sem como saber se tem popup pendente, cai no comportamento simples
+  });
 }
 // ── Aviso fixo de GPS na tela ──
 // Um toast sozinho passa batido fácil (a pessoa tá correndo, não olhando o
@@ -15515,15 +15544,27 @@ function lwStartTimer(){
     if(!LW.wakeLock)lwRequestWakeLock(); // detectou que o wake lock caiu sozinho (SO/navegador) — tenta reconseguir na hora, sem esperar o app ficar oculto/visível de novo; também vale autopausado, pra tela não apagar enquanto espera a pessoa voltar a correr
     // Retry automático em segundo plano sempre que não há um fix bom
     // recente — vale tanto quando a pessoa dispensou o aviso ("Continuar
-    // sem GPS") quanto quando o banner "Tentar de novo" ainda está na
-    // tela sem ter sido tocado. O watch antigo pode ter "morrido" (mesmo
-    // comportamento de navegador visto antes) e nunca mais responder
-    // sozinho, mesmo já com o GPS do aparelho ligado de novo — reiniciar
-    // de vez em quando dá a chance de pegar o sinal sem precisar tocar em
-    // nada. Se der certo, lwOnPosition já limpa o aviso sozinho assim que
-    // chegar um fix bom (a bolinha fica verde na hora).
+    // sem GPS") quanto quando o banner ainda está na tela. O watch antigo
+    // pode ter "morrido" (mesmo comportamento de navegador visto antes) e
+    // nunca mais responder sozinho, mesmo já com o GPS do aparelho ligado
+    // de novo — reiniciar de vez em quando dá a chance de pegar o sinal
+    // sem precisar tocar em nada. Se der certo, lwOnPosition já limpa o
+    // aviso sozinho assim que chegar um fix bom (a bolinha fica verde na
+    // hora).
+    //
+    // IMPORTANTE: só reinicia se o watch estiver REALMENTE mudo — nem um
+    // fix impreciso sequer chegando (LW.lastAccuracyAt, atualizado em
+    // QUALQUER posição recebida, mesmo as descartadas por precisão ruim) —
+    // não simplesmente "sem fix BOM ainda". Antes, reiniciar mesmo quando
+    // só faltava precisão (GPS "esquentando" logo depois de religar, o que
+    // é normal e demora alguns segundos) cancelava um watch que já estava
+    // no meio do caminho de conseguir um fix bom, empurrando o
+    // reconhecimento pra bem mais perto do próximo ciclo de 25s inteiro —
+    // detectado na prática: demorava quase 25s pra reconhecer o GPS de
+    // volta, em vez dos ~14s esperados.
     const semFixRecente=!LW.lastGoodPoint||Date.now()-LW.lastGoodPoint.t>=LW_GPS_STALE_MS;
-    if(semFixRecente&&(!LW.lastSilentGpsRetryAt||Date.now()-LW.lastSilentGpsRetryAt>=25000)){
+    const semSinalDeVerdade=!LW.lastAccuracyAt||Date.now()-LW.lastAccuracyAt>=15000;
+    if(semFixRecente&&semSinalDeVerdade&&(!LW.lastSilentGpsRetryAt||Date.now()-LW.lastSilentGpsRetryAt>=25000)){
       LW.lastSilentGpsRetryAt=Date.now();
       lwStopGPS();
       lwStartGPS();
