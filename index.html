@@ -1012,22 +1012,14 @@ details[open] summary::after{transform:rotate(90deg)}
 .install-banner-btn{height:34px;padding:0 14px;border:none;border-radius:var(--rb);background:var(--acc);color:var(--on-acc);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
 .install-banner-close{width:28px;height:28px;border-radius:50%;background:var(--s2);border:none;color:var(--t2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit}
 
-/* ── Faixa de instalar abaixo do header (tela de convidado, acima de
-   "Planilhas Personalizadas") ── */
-.install-strip{
-  display:none;align-items:center;gap:10px;
-  background:var(--s2);border:1px solid var(--bdr2);border-radius:10px;
-  padding:10px 12px;margin-bottom:16px;
-}
-.install-strip-icon{font-size:18px;color:var(--acc);flex-shrink:0;display:flex}
-.install-strip-text{flex:1;font-size:13px;font-weight:700;color:var(--t1);min-width:0}
-.install-strip-btn{height:32px;padding:0 14px;border:none;border-radius:var(--rb);background:var(--acc);color:var(--on-acc);font-size:12.5px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
-
 /* ── Chip de instalar na tela inicial (logado), canto superior direito,
-   sem mexer no resto do layout do resumo ── */
+   sem mexer no resto do layout do resumo. right:12px pra alinhar com os
+   botões do header (Entrar/Criar conta/Sair), que também ficam a 12px da
+   borda (ver .auth-bar) — antes estava right:0, colado na borda mesmo,
+   desalinhado com o resto do que aparece nessa mesma linha vertical. ── */
 .install-chip{
   display:none;align-items:center;gap:6px;
-  position:absolute;top:0;right:0;
+  position:absolute;top:0;right:12px;
   height:30px;padding:0 12px;border-radius:16px;
   border:1px solid var(--bdr2);background:var(--s2);color:var(--t1);
   font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;
@@ -1759,11 +1751,6 @@ details[open] summary::after{transform:rotate(90deg)}
        em cima): sem isso, esse cabeçalho de boas-vindas ("Planilhas
        Personalizadas") aparecia por um instante em toda reabertura do app,
        mesmo pra quem já tem conta/planilha, até o JS decidir escondê-lo. -->
-    <div id="install-strip-landing" class="install-strip">
-      <span class="install-strip-icon"><svg class="gi"><use href="#i-download"></use></svg></span>
-      <span class="install-strip-text">Instalar app</span>
-      <button class="install-strip-btn" onclick="installPromptTap()">Instalar</button>
-    </div>
     <h1 style="text-align:left"><span>Planilhas</span> Personalizadas</h1>
     <div class="hero-feature-list" style="margin:14px 0 4px;display:flex;flex-direction:column;gap:12px">
       <div style="display:flex;align-items:flex-start;gap:10px">
@@ -12342,13 +12329,11 @@ function initInstallBanner(){
   window.addEventListener('beforeinstallprompt',function(e){
     e.preventDefault();
     _deferredInstallPrompt=e;
-    // Faixa (tela de convidado) e chip (tela inicial logada): ficam visíveis
-    // sempre que a instalação for possível, mesmo que a pessoa já tenha
-    // dispensado o popup de baixo — são a forma "silenciosa" de instalar
-    // depois, sem interromper ninguém (substituem o antigo botão do header,
-    // que ficava espremido demais pro texto não sumir).
-    var stripEl=document.getElementById('install-strip-landing');
-    if(stripEl)stripEl.style.display='flex';
+    // Chip (tela inicial logada): fica visível sempre que a instalação for
+    // possível, mesmo que a pessoa já tenha dispensado o popup de baixo —
+    // é a forma "silenciosa" de instalar depois, sem interromper ninguém
+    // (substitui o antigo botão do header, que ficava espremido demais pro
+    // texto não sumir).
     var chipEl=document.getElementById('install-chip-home');
     if(chipEl)chipEl.style.display='inline-flex';
     // Only show the dismissible popup if user hasn't dismissed before
@@ -12374,21 +12359,19 @@ function initInstallBanner(){
       }
     });
   }
-  // Hide banner AND the strip/chip once app is installed
+  // Hide banner AND the chip once app is installed
   window.addEventListener('appinstalled',function(){
     var banner=document.getElementById('install-banner');
     if(banner)banner.classList.remove('show');
-    var stripEl=document.getElementById('install-strip-landing');
-    if(stripEl)stripEl.style.display='none';
     var chipEl=document.getElementById('install-chip-home');
     if(chipEl)chipEl.style.display='none';
     lsSet('vo2_install_dismissed','1');
   });
 }
-// Clique na faixa (convidado) ou no chip (tela inicial) — mesmo prompt
-// nativo do popup de baixo (efeito idêntico ao instalar por lá). Quando
-// PLAY_STORE_URL estiver preenchida (publicado na loja), passa a abrir a
-// ficha da Play Store em vez do prompt do PWA.
+// Clique no chip (tela inicial) — mesmo prompt nativo do popup de baixo
+// (efeito idêntico ao instalar por lá). Quando PLAY_STORE_URL estiver
+// preenchida (publicado na loja), passa a abrir a ficha da Play Store em
+// vez do prompt do PWA.
 function installPromptTap(){
   if(PLAY_STORE_URL){ window.open(PLAY_STORE_URL,'_blank'); return; }
   if(_deferredInstallPrompt){
@@ -12396,8 +12379,6 @@ function installPromptTap(){
     _deferredInstallPrompt.userChoice.then(function(r){
       if(r.outcome==='accepted'){
         showToast('App instalado com sucesso!');
-        var stripEl=document.getElementById('install-strip-landing');
-        if(stripEl)stripEl.style.display='none';
         var chipEl=document.getElementById('install-chip-home');
         if(chipEl)chipEl.style.display='none';
       }
