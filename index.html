@@ -9419,7 +9419,7 @@ function renderShareModalBody(){
     <div style="margin-bottom:.8rem">
       <label style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:8px;font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600">
         <svg class="gi" style="vertical-align:-2px"><use href="#i-add_a_photo"></use></svg> ${f.photoDataUrl?'Trocar foto':'Adicionar foto (opcional)'}
-        <input type="file" accept="image/*" style="display:none" onclick="shareFilePickerPending=true" onchange="shareOnPhotoChange(this)"/>
+        <input type="file" accept="image/*" style="display:none" onclick="shareArmFilePickerGuard()" onchange="shareOnPhotoChange(this)"/>
       </label>
       <button onclick="shareCopyStatsImage()" title="Copia só a logo e os dados, com fundo transparente, pra colar em cima de qualquer foto" style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:8px;font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600;background:none;font-family:inherit;margin-left:6px">
         <svg class="gi" style="vertical-align:-2px"><use href="#i-content_copy"></use></svg> Copiar dados
@@ -9529,6 +9529,12 @@ function shareDownscaleImage(dataUrl,maxDim,cb){
   img.src=dataUrl;
 }
 function shareOnPhotoChange(input){
+  // A foto chegou (ou pelo menos o seletor concluiu e disparou o evento) —
+  // desliga a proteção aqui, ponto definitivo de "a troca de app acabou",
+  // em vez de depender de visibilitychange (que pode piscar mais de uma vez
+  // no meio da troca pra câmera/seletor em alguns aparelhos).
+  shareFilePickerPending=false;
+  clearTimeout(_shareFilePickerTimeout);
   const file=input.files&&input.files[0];if(!file||!shareCtx)return;
   const reader=new FileReader();
   reader.onload=e=>{
@@ -12461,11 +12467,26 @@ function shareRedrawIfOpen(){
 // conseguir escolher a foto — no Chrome isso não aparecia porque o seletor
 // de fotos dele roda sem tirar o foco da aba.
 let shareFilePickerPending=false;
+let _shareFilePickerTimeout=null;
+// Liga a proteção — chamado no toque em "Adicionar/Trocar foto". Timeout de
+// segurança de 45s: cobre o caso de a pessoa cancelar o seletor sem escolher
+// nada e a aba nunca mais avisar que "voltou" claramente.
+function shareArmFilePickerGuard(){
+  shareFilePickerPending=true;
+  clearTimeout(_shareFilePickerTimeout);
+  _shareFilePickerTimeout=setTimeout(()=>{shareFilePickerPending=false;},45000);
+}
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible'){
     shareRedrawIfOpen();
     icuAutoCheckOnResume();
-    shareFilePickerPending=false; // voltou (com ou sem foto escolhida) — libera a proteção de novo
+    // NÃO desliga shareFilePickerPending aqui — em alguns aparelhos (visto
+    // no Samsung Internet) a troca pra câmera/seletor pisca oculto→visível→
+    // oculto de novo antes do seletor de verdade abrir na tela; desligar já
+    // nessa primeira piscada desarmava a proteção cedo demais, e a SEGUNDA
+    // vez que ficava oculto (aí sim indo pro seletor) fechava a modal do
+    // mesmo jeito que antes. Agora só desliga quando a foto chega de
+    // verdade (shareOnPhotoChange) ou pelo timeout de segurança acima.
   }else{
     if(shareFilePickerPending)return; // foco saiu pra abrir câmera/seletor de foto — não fecha, só redesenha quando voltar
     // Ao minimizar/trocar de app com a tela de compartilhar aberta, fecha
@@ -15252,53 +15273,47 @@ window.addEventListener('beforeunload',(e)=>{
 // ── GPS ──
 function lwStartGPS(){
   lwWatchGeoPermissionChange(); // prima o cache de LW.geoPermState o quanto antes
-  LW.watchId=navigator.geolocation.watchPosition(lwOnPosition,lwOnGeoError,{enableHighAccuracy:true,maximumAge:2000,timeout:15000});
+  // timeout:10000 — antes era 15000. Esse é o prazo que o próprio navegador
+  // usa pra desistir de esperar um fix e disparar o erro TIMEOUT (code 3)
+  // quando NUNCA teve nenhuma posição ainda (ex: começou o treino já sem
+  // GPS ligado). Reduzido pra bater com o mesmo total de ~14s do outro
+  // cenário (GPS que caiu no meio do treino, ver LW_GPS_STALE_MS) — antes
+  // esse caminho específico demorava uns 19s (15s daqui + 4s de
+  // confirmação em lwOnGeoError) pra avisar.
+  LW.watchId=navigator.geolocation.watchPosition(lwOnPosition,lwOnGeoError,{enableHighAccuracy:true,maximumAge:2000,timeout:10000});
 }
 function lwStopGPS(){
   if(LW&&LW.watchId!=null){navigator.geolocation.clearWatch(LW.watchId);LW.watchId=null;}
 }
 function lwOnGeoError(err){
   if(!err||!LW)return;
-  // Em muitos Android/Chrome, depois que a pessoa RECUSA o prompt de ativar a
-  // localização uma vez (ou o code===1 aparece por conta do GPS do aparelho
-  // estar desligado), o navegador simplesmente PARA de mostrar aquele prompt
-  // de novo dentro da mesma sessão da página — mesmo reiniciando o
-  // watchPosition via "Tentar de novo". A única forma de reativar o prompt
-  // nesse caso costuma ser recarregar a página depois de ligar o GPS. Por
-  // isso, se já tentamos um retry manual (lwGpsBannerActivate) e o erro
-  // ainda voltou, a mensagem passa a sugerir isso também.
-  const sugestaoRecarregar=LW.gpsRetriedOnce?' Se persistir mesmo depois de tentar de novo, recarregue a página depois de ligar o GPS/permitir a localização — alguns celulares só voltam a pedir depois de um recarregamento.':'';
   if(err.code===1){ // PERMISSION_DENIED
     // NA PRÁTICA (testado): esse código não distingue com segurança "site
     // bloqueado no navegador" de "GPS do aparelho desligado". Em vários
     // Android/Chrome os dois casos disparam code===1, e a Permissions API
     // também pode reportar 'denied' mesmo com a permissão do site OK, só
-    // porque a localização do sistema está desligada. Ou seja: não dá pra
-    // confiar 100% em nenhum dos dois sinais pra decidir se o clique
-    // resolve. Por isso o "Tentar de novo" fica SEMPRE disponível — na
-    // pior das hipóteses (bloqueio real do site) o clique não faz mal
-    // nenhum, e na melhor (GPS do aparelho desligado) ele reinicia o
-    // watchPosition e pega o sinal assim que a pessoa ligar o GPS.
+    // porque a localização do sistema está desligada. Por isso não vale a
+    // pena diferenciar a mensagem — o app já tenta de novo sozinho em
+    // segundo plano (ver o retry silencioso no loop principal), então não
+    // depende de nenhuma ação manual da pessoa pra reconhecer se o GPS
+    // voltar a funcionar.
     lwWatchGeoPermissionChange();
-    showToast('Sem acesso à localização. Verifique se o GPS do aparelho está ligado e se a permissão de localização deste site está ativa no navegador — depois toque em "Tentar de novo".'+sugestaoRecarregar);
-    lwShowGpsBanner('Sem acesso à localização. Verifique se o GPS do aparelho está ligado e se a permissão deste site está ativa nas configurações do navegador, depois toque em "Tentar de novo".'+sugestaoRecarregar);
+    showToast('Sem acesso à localização. Verifique se o GPS do aparelho está ligado — o app continua tentando sozinho e reconhece assim que voltar.');
+    lwShowGpsBanner('Sem acesso à localização. Verifique se o GPS do aparelho está ligado. O app continua tentando sozinho em segundo plano e reconhece automaticamente assim que voltar.');
   }else if(err.code===2||err.code===3){ // POSITION_UNAVAILABLE ou TIMEOUT persistente
     // Tratamos os dois juntos: na prática (testado), desligar o GPS do
     // aparelho NO MEIO do treino costuma aparecer como TIMEOUT repetido
     // (code 3), não como POSITION_UNAVAILABLE — e antes o código ignorava
     // code 3 de propósito (achando que era só sinal fraco passageiro),
     // então desligar o GPS durante o treino não avisava nada, o app
-    // continuava parecendo normal. Agora os dois casos levam ao mesmo
-    // aviso. "Tentar de novo" funciona de verdade aqui: reinicia o
-    // watchPosition e, assim que a pessoa ligar o GPS do aparelho, pega o
-    // sinal de novo.
+    // continuava parecendo normal. Agora os dois casos levam ao mesmo aviso.
     // Ainda assim, esse erro pode aparecer nos primeiros segundos com o GPS
     // "esquentando" (partida fria, indoors) MESMO com o GPS ligado — então
-    // só mostra o banner se persistir 8s seguidos sem nenhum fix bom, pra
+    // só mostra o banner se persistir 4s seguidos sem nenhum fix bom, pra
     // não dar alarme falso logo no início ou por uma falha passageira.
     if(!LW.geoUnavailableSince)LW.geoUnavailableSince=Date.now();
-    if(Date.now()-LW.geoUnavailableSince>=8000){
-      lwShowGpsBanner('GPS sem sinal — o GPS do celular pode ter sido desligado ou você está num local sem sinal. Verifique em Ajustes > Localização do aparelho, depois toque em "Tentar de novo".'+sugestaoRecarregar);
+    if(Date.now()-LW.geoUnavailableSince>=4000){
+      lwShowGpsBanner('GPS sem sinal — o GPS do celular pode ter sido desligado ou você está num local sem sinal. O app continua tentando sozinho e reconhece automaticamente assim que o sinal voltar.');
     }
   }
 }
@@ -15391,16 +15406,6 @@ function lwHideGpsBanner(){
     LW.gpsBannerSpokenAt=null;
     if(!lwSpeechBusy())lwSpeak('GPS retomado.',lwFirePendingPauseAnnounce);
   }
-}
-function lwGpsBannerActivate(){
-  if(!LW)return;
-  LW.gpsDismissed=false;
-  LW.geoUnavailableSince=null;
-  LW.lastGoodPoint=null;
-  LW.gpsRetriedOnce=true; // marca que já tentou de novo manualmente — usado pra saber se deve sugerir recarregar a página caso persista
-  lwStopGPS();
-  lwStartGPS();
-  showToast('Tentando pegar o sinal de GPS de novo... Se o problema persistir, verifique se a localização está ligada nas configurações do celular.');
 }
 function lwGpsBannerDismiss(){
   if(!LW)return;
@@ -15543,14 +15548,14 @@ function lwStartTimer(){
 // sempre, porque só checava "já teve algum fix bom", não "teve um fix bom
 // recentemente"). Esse cão de guarda olha há quanto tempo não chega um fix
 // válido e, se passar muito tempo, mostra o mesmo aviso de GPS sem sinal.
-const LW_GPS_STALE_MS=12000;
+const LW_GPS_STALE_MS=10000;
 function lwCheckGpsStale(){
   if(!LW||!LW.lastGoodPoint)return; // ainda nem teve o primeiro fix — isso já é coberto pelos erros normais
   const sinceLastFix=Date.now()-LW.lastGoodPoint.t;
   if(sinceLastFix>=LW_GPS_STALE_MS){
     if(!LW.geoUnavailableSince)LW.geoUnavailableSince=Date.now()-sinceLastFix; // não reseta a contagem se já vinha de um erro reportado
-    if(Date.now()-LW.geoUnavailableSince>=8000){
-      lwShowGpsBanner('GPS sem sinal — faz tempo que nenhuma posição chegou. O GPS do celular pode ter sido desligado ou você está num local sem sinal. Verifique em Ajustes > Localização do aparelho, depois toque em "Tentar de novo".');
+    if(Date.now()-LW.geoUnavailableSince>=4000){
+      lwShowGpsBanner('GPS sem sinal — faz tempo que nenhuma posição chegou. O GPS do celular pode ter sido desligado ou você está num local sem sinal. O app continua tentando sozinho e reconhece automaticamente assim que o sinal voltar.');
     }
   }
 }
@@ -15589,7 +15594,7 @@ function lwLockTouch(){
   if(!LW)return;
   LW.touchLock.active=true;
   const el=document.getElementById('lw-touch-lock'); if(el)el.style.display='flex';
-  const msg=document.getElementById('lw-touch-lock-msg'); if(msg)msg.style.display='block';
+  const msg=document.getElementById('lw-touch-lock-msg'); if(msg)msg.style.display='flex';
 }
 function lwUnlockTouch(){
   if(!LW)return;
@@ -16281,8 +16286,8 @@ function lwBuildOverlay(){
       <div style="font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--t3);text-transform:uppercase;display:flex;align-items:center;gap:6px">
         <span id="lw-gps-dot" style="width:8px;height:8px;border-radius:50%;background:var(--gr);display:inline-block"></span>
         TREINO AO VIVO
-        <span style="margin-left:2px">GPS</span>
-        <span id="lw-gps-signal" style="display:inline-flex;align-items:flex-end;gap:1.5px;height:10px;margin-left:1px">
+        <span id="lw-gps-label" style="margin-left:2px">GPS</span>
+        <span id="lw-gps-signal" style="display:none;align-items:flex-end;gap:1.5px;height:10px;margin-left:1px">
           <span class="lw-sig-bar" style="width:3px;height:3px;background:var(--t3);border-radius:1px;transition:background .2s;display:inline-block"></span>
           <span class="lw-sig-bar" style="width:3px;height:5px;background:var(--t3);border-radius:1px;transition:background .2s;display:inline-block"></span>
           <span class="lw-sig-bar" style="width:3px;height:7px;background:var(--t3);border-radius:1px;transition:background .2s;display:inline-block"></span>
@@ -16303,7 +16308,6 @@ function lwBuildOverlay(){
         <div id="lw-gps-banner-msg" style="font-size:13px;color:var(--t1);font-weight:700;line-height:1.4">GPS desativado.</div>
       </div>
       <div style="display:flex;gap:8px">
-        <button id="lw-gps-banner-retry" onclick="lwGpsBannerActivate()" style="flex:1;height:40px;border-radius:9px;border:none;background:#ff8c00;color:#fff;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit">Tentar de novo</button>
         <button onclick="lwGpsBannerDismiss()" style="flex:1;height:40px;border-radius:9px;border:1px solid var(--bdr2);background:none;color:var(--t2);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Continuar sem GPS</button>
       </div>
     </div>
@@ -16315,9 +16319,7 @@ function lwBuildOverlay(){
       <div id="lw-step-target" style="font-size:16px;font-weight:500;color:var(--t2);margin-top:2px"></div>
     </div>
 
-    <div id="lw-touch-lock-msg" style="display:none;position:absolute;left:16px;right:16px;top:78px;z-index:51;pointer-events:none;text-align:center;padding:9px 14px;border-radius:12px;background:rgba(0,0,0,.72);color:#fff">
-      <svg class="gi" style="font-size:18px;vertical-align:-3px;margin-right:6px"><use href="#i-lock"></use></svg><span style="font-size:15px;font-weight:800">Tela travada</span><span style="font-size:13px;opacity:.85"> — toque duas vezes para destravar</span>
-    </div>
+
 
     <div style="position:relative;display:flex;justify-content:center;margin-bottom:16px">
       <svg width="158" height="158" viewBox="0 0 158 158">
@@ -16358,6 +16360,12 @@ function lwBuildOverlay(){
     </div>
 
     <div style="flex:1"></div>
+
+    <div id="lw-touch-lock-msg" style="display:none;align-items:center;justify-content:center;gap:6px;text-align:center;margin-bottom:10px;padding:8px 12px;border-radius:9px;border:1px solid var(--bdr2);background:var(--s1);color:var(--t2);white-space:nowrap;overflow:hidden;pointer-events:none">
+      <svg class="gi" style="font-size:13px;flex-shrink:0;color:var(--t2)"><use href="#i-lock"></use></svg>
+      <span style="font-size:12px;font-weight:800;color:var(--t1);flex-shrink:0">Tela travada</span>
+      <span style="font-size:11px;color:var(--t3);overflow:hidden;text-overflow:ellipsis"> — toque duas vezes para destravar</span>
+    </div>
 
     <div id="lw-idle-hint" style="display:none;text-align:center;font-size:12.5px;color:var(--acc);font-weight:700;margin-bottom:10px">Toque para iniciar quando estiver pronto</div>
 
@@ -16464,7 +16472,27 @@ function lwUpdateUI(){
   if(paceAvgEl)paceAvgEl.textContent=(distKm>0.01&&totalActiveSec>0)?lwFmtPaceSecPerKm(totalActiveSec/distKm):'--:--';
 
   const paceEl=el('lw-pace'); if(paceEl)paceEl.textContent=(LW.status==='paused')?'--:--':(curPace?lwFmtPaceSecPerKm(curPace):'--:--'); // pausado (manual ou automático) = parado de verdade, não faz sentido mostrar o último pace "congelado" como se ainda estivesse valendo
-  const dot=el('lw-gps-dot'); if(dot)dot.style.background=LW.status==='paused'?'var(--t3)':((LW.lastGoodPoint&&Date.now()-LW.lastGoodPoint.t<LW_GPS_STALE_MS)?'var(--gr)':'var(--rd)');
+  const dot=el('lw-gps-dot');
+  if(dot){
+    // Azul enquanto NUNCA teve nenhum fix ainda (só "procurando", não é bem
+    // um problema) — vermelho só depois de já ter tido um fix bom e
+    // perder (esse sim é o cenário de "GPS caiu de verdade").
+    if(LW.status==='paused')dot.style.background='var(--t3)';
+    else if(LW.lastGoodPoint&&Date.now()-LW.lastGoodPoint.t<LW_GPS_STALE_MS)dot.style.background='var(--gr)';
+    else if(!LW.lastGoodPoint)dot.style.background='#3b82f6';
+    else dot.style.background='var(--rd)';
+  }
+  // Rótulo: "AGUARDANDO GPS" (azul) até o primeiro fix chegar — pedido
+  // explícito, em vez de mostrar "GPS" com as barrinhas zeradas o tempo
+  // todo enquanto ainda nem pegou sinal nenhum. Assim que fixar, vira
+  // "GPS ATIVO" e as barrinhas de sinal aparecem (ficavam escondidas até lá).
+  const gpsLabelEl=el('lw-gps-label');
+  if(gpsLabelEl){
+    if(LW.lastGoodPoint){ gpsLabelEl.textContent='GPS ATIVO'; gpsLabelEl.style.color='var(--gr)'; }
+    else{ gpsLabelEl.textContent='AGUARDANDO GPS'; gpsLabelEl.style.color='#3b82f6'; }
+  }
+  const sigWrapEl=el('lw-gps-signal');
+  if(sigWrapEl)sigWrapEl.style.display=LW.lastGoodPoint?'inline-flex':'none';
   // Barrinhas de sinal de GPS (tipo torre de celular) — quanto menor a
   // "accuracy" (precisão, em metros) que o próprio GPS reporta, melhor o
   // sinal. Se a última leitura for velha demais (sinal parado/perdido),
@@ -16719,7 +16747,6 @@ window.lwSkipStep=lwSkipStep;
 window.lwTogglePaceAlerts=lwTogglePaceAlerts;
 window.lwToggleAutoPause=lwToggleAutoPause;
 window.lwHandleLockTap=lwHandleLockTap;
-window.lwGpsBannerActivate=lwGpsBannerActivate;
 window.lwGpsBannerDismiss=lwGpsBannerDismiss;
 
 </script>
