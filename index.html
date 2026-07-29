@@ -9372,6 +9372,7 @@ function mdoneOnDistInput(){
   else mdoneRecalcTimeFromPace();
 }
 function openShareModal(planId,wIdx,dIdx){
+  _shareLastProcessedFileSig=null; // nova sessão de compartilhamento — libera reprocessar mesmo arquivo de antes
   const plan=savedPlans.find(p=>p.id===planId);if(!plan)return;
   const wk=plan.weeks[wIdx];if(!wk)return;
   const day=wk.days[dIdx];if(!day)return;
@@ -9419,7 +9420,7 @@ function renderShareModalBody(){
     <div style="margin-bottom:.8rem">
       <label style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:8px;font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600">
         <svg class="gi" style="vertical-align:-2px"><use href="#i-add_a_photo"></use></svg> ${f.photoDataUrl?'Trocar foto':'Adicionar foto (opcional)'}
-        <input type="file" accept="image/*" style="display:none" onclick="shareArmFilePickerGuard()" onchange="shareOnPhotoChange(this)"/>
+        <input type="file" accept="image/*" style="display:none" onchange="shareOnPhotoChange(this)"/>
       </label>
       <button onclick="shareCopyStatsImage()" title="Copia só a logo e os dados, com fundo transparente, pra colar em cima de qualquer foto" style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:8px;font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600;background:none;font-family:inherit;margin-left:6px">
         <svg class="gi" style="vertical-align:-2px"><use href="#i-content_copy"></use></svg> Copiar dados
@@ -9529,12 +9530,6 @@ function shareDownscaleImage(dataUrl,maxDim,cb){
   img.src=dataUrl;
 }
 function shareOnPhotoChange(input){
-  // A foto chegou (ou pelo menos o seletor concluiu e disparou o evento) —
-  // desliga a proteção aqui, ponto definitivo de "a troca de app acabou",
-  // em vez de depender de visibilitychange (que pode piscar mais de uma vez
-  // no meio da troca pra câmera/seletor em alguns aparelhos).
-  shareFilePickerPending=false;
-  clearTimeout(_shareFilePickerTimeout);
   const file=input.files&&input.files[0];if(!file||!shareCtx)return;
   const reader=new FileReader();
   reader.onload=e=>{
@@ -10369,6 +10364,7 @@ function openRealizadoDetailModal(logId){
 // ── Abre o modal de compartilhar a partir de um registro de "Realizados"
 // (não depende de planId/wIdx/dIdx existirem mais — usa a cópia gravada).
 function openShareModalFromLog(logId){
+  _shareLastProcessedFileSig=null; // nova sessão de compartilhamento — libera reprocessar mesmo arquivo de antes
   const entry=completedLog.find(e=>e.id===logId);if(!entry)return;
   const stripUnit=v=>v?String(v).replace(/[^\d:.,]/g,''):'';
   shareCtx={
@@ -12458,47 +12454,41 @@ function shareRedrawIfOpen(){
     shareRedrawCanvas();
   }
 }
-// Sinaliza que a perda de foco que está prestes a acontecer é esperada —
-// abrir a câmera ou o seletor de arquivo tira o foco da aba do mesmo jeito
-// que minimizar o app manualmente, mas aqui NÃO é pra fechar a modal (ver
-// visibilitychange abaixo). Sem essa distinção, em navegadores que abrem um
-// seletor de foto "pesado" (troca de app de verdade, ex: Samsung Internet
-// com Câmera ou Meus Arquivos), a modal fechava sozinha ANTES da pessoa
-// conseguir escolher a foto — no Chrome isso não aparecia porque o seletor
-// de fotos dele roda sem tirar o foco da aba.
-let shareFilePickerPending=false;
-let _shareFilePickerTimeout=null;
-// Liga a proteção — chamado no toque em "Adicionar/Trocar foto". Timeout de
-// segurança de 45s: cobre o caso de a pessoa cancelar o seletor sem escolher
-// nada e a aba nunca mais avisar que "voltou" claramente.
-function shareArmFilePickerGuard(){
-  shareFilePickerPending=true;
-  clearTimeout(_shareFilePickerTimeout);
-  _shareFilePickerTimeout=setTimeout(()=>{shareFilePickerPending=false;},45000);
+// Reforço pro caso do 'change' do input de arquivo simplesmente não disparar
+// ao voltar do seletor — visto no Samsung Internet: a modal fica aberta
+// certinho, mas o arquivo escolhido às vezes não chega a avisar o app
+// através do evento normal. Aqui a gente confere na unha se o input já tem
+// um arquivo selecionado que ainda não foi processado, e se tiver, processa
+// manualmente — sem depender do evento em si.
+let _shareLastProcessedFileSig=null;
+function shareCheckPendingPhotoFallback(){
+  const modal=document.getElementById('share-modal'); if(!modal)return;
+  const input=modal.querySelector('input[type="file"]');
+  const file=input&&input.files&&input.files[0]; if(!file)return;
+  const sig=file.name+'|'+file.size+'|'+file.lastModified;
+  if(sig===_shareLastProcessedFileSig)return; // já processamos esse mesmo arquivo
+  _shareLastProcessedFileSig=sig;
+  shareOnPhotoChange(input);
 }
+// A modal de compartilhar NUNCA fecha sozinha ao minimizar/trocar de app —
+// pedido explícito, depois de pesar o risco: um limite de tempo de
+// segurança não protegeria contra o pior caso mesmo (processo da aba
+// realmente encerrado pelo sistema — nesse caso o próprio temporizador
+// também para de existir, então não adianta nada). Duas redes de segurança
+// cobrem os dois cenários reais:
+// 1) Processo continua vivo, só descartou o desenho do canvas: shareRedrawIfOpen
+//    reconstrói tudo do zero sempre que a aba volta a ficar visível, não
+//    importa quanto tempo passou.
+// 2) Processo foi mesmo encerrado (página recarrega do zero): restoreModalState
+//    reabre essa mesma modal sozinha na próxima vez que o app carregar.
 document.addEventListener('visibilitychange',function(){
   if(document.visibilityState==='visible'){
     shareRedrawIfOpen();
     icuAutoCheckOnResume();
-    // NÃO desliga shareFilePickerPending aqui — em alguns aparelhos (visto
-    // no Samsung Internet) a troca pra câmera/seletor pisca oculto→visível→
-    // oculto de novo antes do seletor de verdade abrir na tela; desligar já
-    // nessa primeira piscada desarmava a proteção cedo demais, e a SEGUNDA
-    // vez que ficava oculto (aí sim indo pro seletor) fechava a modal do
-    // mesmo jeito que antes. Agora só desliga quando a foto chega de
-    // verdade (shareOnPhotoChange) ou pelo timeout de segurança acima.
-  }else{
-    if(shareFilePickerPending)return; // foco saiu pra abrir câmera/seletor de foto — não fecha, só redesenha quando voltar
-    // Ao minimizar/trocar de app com a tela de compartilhar aberta, fecha
-    // ela agora — o navegador pode descartar o desenho do canvas em
-    // segundo plano (fica preto/branco/azul do nada ao voltar), e isso é
-    // mais confiável de evitar do que tentar redesenhar depois. Reabrindo
-    // do zero sempre gera a imagem certa, sem risco de tela quebrada.
-    const shareModal=document.getElementById('share-modal');
-    if(shareModal)shareModal.remove();
+    shareCheckPendingPhotoFallback();
   }
 });
-window.addEventListener('pageshow',function(){ shareRedrawIfOpen(); icuAutoCheckOnResume(); });
+window.addEventListener('pageshow',function(){ shareRedrawIfOpen(); icuAutoCheckOnResume(); shareCheckPendingPhotoFallback(); });
 
 // ── Sincronização automática com o relógio ao voltar do segundo plano ──
 // Antes, a checagem automática só rodava uma vez, no login — se a pessoa
@@ -15630,7 +15620,7 @@ function lwHandleLockTap(){
     lwUnlockTouch();
   }else{
     LW.touchLock.lastTapAt=now;
-    showToast('Toque mais uma vez para destravar a tela.');
+    showToast('Toque duas vezes para destravar a tela.');
   }
 }
 
@@ -16379,7 +16369,7 @@ function lwBuildOverlay(){
 
     <div style="flex:1"></div>
 
-    <div id="lw-touch-lock-msg" style="display:none;align-items:center;justify-content:center;gap:6px;text-align:center;margin-bottom:10px;padding:8px 12px;border-radius:9px;border:1px solid var(--bdr2);background:var(--s1);color:var(--t2);white-space:nowrap;overflow:hidden;pointer-events:none">
+    <div id="lw-touch-lock-msg" style="display:none;position:fixed;left:18px;right:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 100px);z-index:51;align-items:center;justify-content:center;gap:6px;text-align:center;padding:9px 14px;border-radius:10px;border:1px solid var(--bdr2);background:var(--s1);color:var(--t2);white-space:nowrap;overflow:hidden;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.35)">
       <svg class="gi" style="font-size:13px;flex-shrink:0;color:var(--t2)"><use href="#i-lock"></use></svg>
       <span style="font-size:12px;font-weight:800;color:var(--t1);flex-shrink:0">Tela travada</span>
       <span style="font-size:11px;color:var(--t3);overflow:hidden;text-overflow:ellipsis"> — toque duas vezes para destravar</span>
