@@ -247,11 +247,13 @@ body{
      fica "uma coisa só" com o resto, sem parecer um cartão flutuando por
      cima. Como agora é opaco e idêntico ao que tem atrás, o blur/saturação
      não tem mais efeito visível nenhum (só faz sentido quando dá pra ver o
-     conteúdo por trás através de transparência) — removido. A linha fina
-     embaixo (border-bottom) continua de propósito: é a única pista visual
-     de que esse cabeçalho fica fixo enquanto os cards rolam por baixo dele. */
+     conteúdo por trás através de transparência) — removido. O border-bottom
+     que existia aqui também foi removido (pedido explícito): estava
+     formando uma "linha dupla" em cima de uma sombra que o próprio Android
+     desenha por baixo da barra de status em alguns aparelhos (fora do
+     controle da página) — sem a nossa linha, sobra no máximo só a do
+     sistema, que sozinha incomoda bem menos. */
   background:var(--bg);
-  border-bottom:1px solid var(--bdr);
   box-shadow:none;
   display:flex;
   align-items:center;
@@ -1188,6 +1190,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-upcoming-scroll{
   display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;margin:8px -2px 0;
   scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
 }
 .cs-upcoming-scroll::-webkit-scrollbar{display:none}
 .cs-upcoming-card{
@@ -1201,9 +1204,9 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-upcoming-details{width:100%;height:26px;margin-top:2px;border:none;background:none;padding:0;color:var(--t3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;text-decoration:underline;text-underline-offset:2px}
 .cs-upcoming-done{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:800;color:var(--gr);margin-top:10px}
 .cs-upcoming-btn{
-  width:100%;height:32px;margin-top:10px;border:none;border-radius:7px;
-  background:var(--acc);color:var(--on-acc);font-size:12px;font-weight:800;
-  cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;
+  height:26px;margin-top:8px;padding:0 12px;border:none;border-radius:6px;
+  background:var(--acc);color:var(--on-acc);font-size:11px;font-weight:800;
+  cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;
 }
 .cs-today-meta{font-size:13px;color:var(--t3);margin-bottom:9px}
 .cs-today-body{font-size:14.5px;color:var(--t2);line-height:1.55}
@@ -3936,12 +3939,16 @@ function buildTodayMini(plan){
     </div>`:''}
   </div>`+unplannedMiniHtml;
 }
-// Carrossel horizontal "Próximos treinos" — mostra os dias com treino de
-// verdade (pula descanso/caminhada) entre amanhã e 7 dias à frente, com a
-// mesma opção de "Iniciar" que o card de hoje já tem. Limitado a 7 dias de
-// propósito: é o que já cabe numa semana da planilha, e evita desenhar cards
-// demais à toa — os dados já estão todos na memória (a planilha inteira já
-// foi carregada), então isso não pesa nada, é só filtrar o que já existe.
+// Carrossel horizontal "Próximos treinos" — mostra os próximos 5 treinos de
+// verdade (pula descanso/caminhada), com a mesma opção de "Iniciar" que o
+// card de hoje já tem. Por QUANTIDADE (não por dias fixos) pra manter
+// sempre o mesmo tamanho de rolagem, independente de a semana ter mais ou
+// menos treinos — mas com um teto de 14 dias à frente, pra nunca puxar algo
+// muito distante numa semana bem fraca em volume (ex: recuperação). Os
+// dados já estão todos na memória (a planilha inteira já foi carregada),
+// então isso não pesa nada, é só filtrar o que já existe.
+const CS_UPCOMING_MAX_ITEMS=5;
+const CS_UPCOMING_MAX_DAYS=14;
 function buildUpcomingCarousel(plan){
   if(!plan||!plan.weeks)return'';
   const today=new Date();today.setHours(0,0,0,0);
@@ -3955,15 +3962,17 @@ function buildUpcomingCarousel(plan){
       scheduledAt.setDate(weekStart.getDate()+dIdx);
       scheduledAt.setHours(0,0,0,0);
       const diffDays=Math.round((scheduledAt-today)/86400000);
-      // 1 a 7: começa AMANHÃ (hoje já tem o card próprio, maior, logo acima)
-      // e vai até 7 dias à frente — não mais que isso, de propósito.
-      if(diffDays<1||diffDays>7)return;
+      // 1 até o teto de dias: começa AMANHÃ (hoje já tem o card próprio,
+      // maior, logo acima) — o corte por QUANTIDADE (5) acontece depois de
+      // ordenar, aqui é só o teto de dias pra não vasculhar a planilha
+      // inteira à toa.
+      if(diffDays<1||diffDays>CS_UPCOMING_MAX_DAYS)return;
       items.push({wIdx,dIdx,day,scheduledAt});
     });
   });
   if(!items.length)return'';
   items.sort((a,b)=>a.scheduledAt-b.scheduledAt);
-  const cardsHtml=items.map(it=>buildUpcomingCard(plan,it)).join('');
+  const cardsHtml=items.slice(0,CS_UPCOMING_MAX_ITEMS).map(it=>buildUpcomingCard(plan,it)).join('');
   return`<div class="cs-upcoming-wrap">
     <div class="cs-eyebrow"><svg class="gi"><use href="#i-schedule"></use></svg> Próximos treinos</div>
     <div class="cs-upcoming-scroll">${cardsHtml}</div>
