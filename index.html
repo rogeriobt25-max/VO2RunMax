@@ -3978,10 +3978,18 @@ function renderCalcSummary(){
     // apresentação com um botão grande "Gerar Planilha" — uma tela inicial
     // de verdade, distinta do assistente, que o botão voltar já sabe tratar
     // corretamente (ver vo2SyncWizardHistory).
-    const nothingToShow=!standaloneCardHtml;
+    const returning=isReturningUser();
+    // nothingToShow não pode depender só de buildStandaloneHomeCard() —
+    // essa função usa os mesmos dados assíncronos (VO2/recordes/progresso)
+    // que isReturningUser() também usa, e que ainda não chegaram no
+    // instante bem cedo em que o assistente é restaurado ao recarregar a
+    // página. Sem checar "returning" aqui também, nothingToShow continuava
+    // true mesmo pra quem tinha planilha de verdade — e como ele entra no
+    // "OU" da linha de baixo, a apresentação completa (calc-hero) aparecia
+    // de qualquer jeito, mesmo já tendo corrigido isReturningUser() sozinho.
+    const nothingToShow=!standaloneCardHtml&&!returning;
     const showWizardArea=wzBuildingNew;
     if(wzWrap)wzWrap.style.display=showWizardArea?'':'none';
-    const returning=isReturningUser();
     const heroEl=document.getElementById('calc-hero');
     if(heroEl)heroEl.style.display=(nothingToShow||(showWizardArea&&!returning))?'':'none';
     if(!returning||nothingToShow)positionCalcHero(true);
