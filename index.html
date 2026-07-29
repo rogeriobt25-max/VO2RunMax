@@ -16491,12 +16491,13 @@ function lwUpdateUI(){
 
   const paceEl=el('lw-pace'); if(paceEl)paceEl.textContent=(LW.status==='paused')?'--:--':(curPace?lwFmtPaceSecPerKm(curPace):'--:--'); // pausado (manual ou automático) = parado de verdade, não faz sentido mostrar o último pace "congelado" como se ainda estivesse valendo
   const dot=el('lw-gps-dot');
+  const hasFreshFix=!!(LW.lastGoodPoint&&Date.now()-LW.lastGoodPoint.t<LW_GPS_STALE_MS);
   if(dot){
     // Azul enquanto NUNCA teve nenhum fix ainda (só "procurando", não é bem
     // um problema) — vermelho só depois de já ter tido um fix bom e
     // perder (esse sim é o cenário de "GPS caiu de verdade").
     if(LW.status==='paused')dot.style.background='var(--t3)';
-    else if(LW.lastGoodPoint&&Date.now()-LW.lastGoodPoint.t<LW_GPS_STALE_MS)dot.style.background='var(--gr)';
+    else if(hasFreshFix)dot.style.background='var(--gr)';
     else if(!LW.lastGoodPoint)dot.style.background='#3b82f6';
     else dot.style.background='var(--rd)';
   }
@@ -16504,13 +16505,19 @@ function lwUpdateUI(){
   // explícito, em vez de mostrar "GPS" com as barrinhas zeradas o tempo
   // todo enquanto ainda nem pegou sinal nenhum. Assim que fixar, vira
   // "GPS ATIVO" e as barrinhas de sinal aparecem (ficavam escondidas até lá).
+  // IMPORTANTE: usa hasFreshFix (mesmo critério da bolinha), não só "já
+  // teve fix alguma vez" — sem isso, se o GPS caísse NO MEIO do treino
+  // (já tinha tido fix antes), o rótulo ficava preso em "GPS ATIVO" pra
+  // sempre, mesmo com o sinal perdido e o banner laranja já visível. Agora
+  // volta pra "AGUARDANDO GPS" sempre que perder, e pra "GPS ATIVO" de novo
+  // assim que voltar — sem depender de ser a primeira vez ou não.
   const gpsLabelEl=el('lw-gps-label');
   if(gpsLabelEl){
-    if(LW.lastGoodPoint){ gpsLabelEl.textContent='GPS ATIVO'; gpsLabelEl.style.color='var(--gr)'; }
+    if(hasFreshFix){ gpsLabelEl.textContent='GPS ATIVO'; gpsLabelEl.style.color='var(--gr)'; }
     else{ gpsLabelEl.textContent='AGUARDANDO GPS'; gpsLabelEl.style.color='#3b82f6'; }
   }
   const sigWrapEl=el('lw-gps-signal');
-  if(sigWrapEl)sigWrapEl.style.display=LW.lastGoodPoint?'inline-flex':'none';
+  if(sigWrapEl)sigWrapEl.style.display=hasFreshFix?'inline-flex':'none';
   // Barrinhas de sinal de GPS (tipo torre de celular) — quanto menor a
   // "accuracy" (precisão, em metros) que o próprio GPS reporta, melhor o
   // sinal. Se a última leitura for velha demais (sinal parado/perdido),
