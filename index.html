@@ -12321,12 +12321,52 @@ function closeOnboarding(){
 // não precisa mexer em mais nada.
 var PLAY_STORE_URL=null;
 var _deferredInstallPrompt=null;
+// Detecta iOS/iPadOS — iPadOS 13+ se disfarça de "Mac" no user-agent, mas
+// tem tela de toque (um Mac de verdade não tem), daí o segundo teste.
+function lwIsIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+}
+function showIOSInstallInstructions(){
+  const m=document.getElementById('ios-install-modal'); if(m)m.style.display='flex';
+}
+function closeIOSInstallInstructions(){
+  const m=document.getElementById('ios-install-modal'); if(m)m.style.display='none';
+}
+window.showIOSInstallInstructions=showIOSInstallInstructions;
+window.closeIOSInstallInstructions=closeIOSInstallInstructions;
 function initInstallBanner(){
   // Se já está rodando instalado (aberto a partir do ícone na tela inicial),
   // não faz sentido mostrar nenhum botão de instalar — nem o banner, nem o
   // do header.
   var alreadyInstalled=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
   if(alreadyInstalled)return;
+  if(lwIsIOS()){
+    // iOS/Safari NUNCA dispara beforeinstallprompt — não existe essa API lá
+    // (decisão da Apple, não tem contorno). Mostra o chip/banner direto,
+    // sem esperar nenhum evento, já que "instalar" ali sempre é possível
+    // via Compartilhar → Adicionar à Tela de Início — só que é sempre
+    // manual, então o botão abre um passo a passo em vez de instalar
+    // sozinho.
+    var chipEl=document.getElementById('install-chip-home');
+    if(chipEl){
+      chipEl.style.display='inline-flex';
+      chipEl.setAttribute('onclick','showIOSInstallInstructions()');
+    }
+    if(!lsGet('vo2_install_dismissed')){
+      setTimeout(function(){
+        var banner=document.getElementById('install-banner');
+        if(!banner)return;
+        var titleEl=banner.querySelector('.install-banner-title');
+        var subEl=banner.querySelector('.install-banner-sub');
+        var btnEl=document.getElementById('install-btn');
+        if(titleEl)titleEl.textContent='Instalar como app';
+        if(subEl)subEl.textContent='No Safari: Compartilhar → Adicionar à Tela de Início';
+        if(btnEl){ btnEl.textContent='Ver como'; btnEl.onclick=function(){ showIOSInstallInstructions(); }; }
+        banner.classList.add('show');
+      },3000);
+    }
+    return; // não registra os listeners abaixo — beforeinstallprompt/appinstalled nunca disparam no iOS
+  }
   // Capture the beforeinstallprompt event
   window.addEventListener('beforeinstallprompt',function(e){
     e.preventDefault();
@@ -12984,6 +13024,24 @@ function icuAutoCheckOnResume(){
   </div>
   <button class="install-banner-btn" id="install-btn">Instalar</button>
   <button class="install-banner-close" onclick="dismissInstallBanner()"><svg class="gi"><use href="#i-close"></use></svg></button>
+</div>
+
+<!-- Passo a passo de instalação no iOS/Safari — não existe nenhum jeito
+     automático lá (Apple não oferece essa API pros sites), então em vez de
+     um botão que instala, mostramos o caminho manual. -->
+<div class="modal-bg" id="ios-install-modal" style="display:none" onclick="if(event.target===this)closeIOSInstallInstructions()">
+  <div class="modal-box" style="max-width:340px">
+    <div class="modal-title">Instalar como app (iPhone/iPad)</div>
+    <div style="font-size:13.5px;color:var(--t2);line-height:1.6;margin:.6rem 0 1rem">
+      No Safari, o "instalar" é feito direto pelo próprio navegador, em 3 passos:
+      <ol style="margin:.6rem 0 0 1.1rem;padding:0">
+        <li style="margin-bottom:6px">Toque no botão <b>Compartilhar</b> <svg class="gi" style="font-size:14px;vertical-align:-2px"><use href="#i-share"></use></svg> (barra de baixo ou de cima do Safari).</li>
+        <li style="margin-bottom:6px">Role as opções e toque em <b>"Adicionar à Tela de Início"</b>.</li>
+        <li>Confirme tocando em <b>"Adicionar"</b> no canto superior direito.</li>
+      </ol>
+    </div>
+    <button class="btn-modal-ok" style="width:100%" onclick="closeIOSInstallInstructions()">Entendi</button>
+  </div>
 </div>
 
 <!-- ══ BOTTOM TAB BAR (native mobile) ══ -->
