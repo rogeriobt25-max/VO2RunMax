@@ -45,6 +45,12 @@
   var isDark=t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   var tc=document.querySelector('meta[name="theme-color"]');
   if(tc)tc.setAttribute('content',isDark?'#000000':'#eceff2');
+  // Mesmo motivo do setAppTheme (ver lá): grava na meta color-scheme (não só
+  // no estilo do <html>) já no primeiro paint, pra navegadores tipo Samsung
+  // Internet não decidirem forçar o dark mode deles antes do app terminar
+  // de carregar.
+  var csMeta=document.querySelector('meta[name="color-scheme"]');
+  if(csMeta)csMeta.setAttribute('content',t==='dark'?'dark':t==='light'?'light':'light dark');
 }catch(e){}})();</script>
 <title>VO2 RunMax</title>
 <link rel="manifest" href="manifest.json"/>
@@ -324,11 +330,13 @@ body{
   z-index:100;
   height:var(--nav-safe);
   padding-bottom:env(safe-area-inset-bottom, 0px);
-  background:var(--nav-glass);
-  -webkit-backdrop-filter:blur(20px) saturate(1.8);
-  backdrop-filter:blur(20px) saturate(1.8);
-  border-top:1px solid var(--bdr);
-  box-shadow:var(--shadow-nav);
+  /* Mesma cor do fundo da página (--bg), igual já era feito no .app-nav lá
+     em cima — fica "uma coisa só" com o resto da tela, sem parecer uma
+     barra flutuando por cima. Sem blur/saturação (não tem mais efeito
+     visível com fundo opaco idêntico ao que tem atrás), sem borda e sem
+     sombra — só os cards brancos se destacam, a barra não. */
+  background:var(--bg);
+  box-shadow:none;
   display:flex;
   align-items:stretch;
 }
@@ -2587,6 +2595,16 @@ function setAppTheme(mode){
   const isDark=mode==='dark'||(mode==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tc=document.querySelector('meta[name="theme-color"]');
   if(tc)tc.setAttribute('content',isDark?'#000000':'#eceff2');
+  // Atualiza também a meta color-scheme (não só o estilo do <html> acima) —
+  // é esse valor que navegadores baseados em Chromium (Samsung Internet
+  // incluído) checam pra decidir se aplicam o "modo escuro forçado" deles
+  // por cima do site. Deixando como só 'light' ou só 'dark' (em vez de
+  // 'light dark') quando a pessoa escolhe um tema fixo no app, o navegador
+  // entende que a página já decidiu sozinha e não tenta inverter as cores
+  // por conta própria — sem isso, mesmo escolhendo "claro" aqui dentro,
+  // alguns navegadores continuavam forçando o tema escuro deles por cima.
+  const csMeta=document.querySelector('meta[name="color-scheme"]');
+  if(csMeta)csMeta.setAttribute('content',mode==='dark'?'dark':mode==='light'?'light':'light dark');
   updateThemeButtons();
 }
 window.setAppTheme=setAppTheme;
