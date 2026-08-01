@@ -16190,17 +16190,6 @@ async function startLiveWorkout(planId,wIdx,dIdx){
 
   if(!('geolocation'in navigator)){showToast('Seu navegador não suporta GPS.');return;}
 
-  // Pede tela cheia (Fullscreen API) assim que confirma que o treino vai
-  // começar de verdade — esconde tanto a barra de cima quanto a de baixo do
-  // navegador (a de baixo não tinha como travar antes, só a de cima reagia
-  // ao tema). Precisa ser chamado AQUI, antes de qualquer "await" — os
-  // navegadores só aceitam pedir tela cheia (e mostrar o pedido de
-  // permissão de GPS, logo abaixo) enquanto ainda está "colado" no toque
-  // que originou a ação; depois de um await (ex: esperar resposta de rede
-  // ou uma modal), o navegador já não considera mais um toque genuíno e
-  // recusa/segura os dois pedidos em silêncio.
-  try{ if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){}
-
   let rawSteps=null;
   try{rawSteps=dayToGarminSteps(day,plan);}catch(e){rawSteps=null;}
   let steps=lwFlattenSteps(rawSteps);
@@ -16239,7 +16228,17 @@ async function startLiveWorkout(planId,wIdx,dIdx){
     if(LW.audioCtx.state==='suspended')LW.audioCtx.resume();
   }catch(e){}
   lwStartKeepAlive();
-  lwStartGPS(); // liga o GPS AQUI, ainda dentro do mesmo toque em "Iniciar Treino" — é o que faz o navegador exibir o pedido de permissão de localização na hora, igual à tela cheia acima. Se isso rodasse depois de um await (como acontecia antes), o navegador segurava o pedido em silêncio até o próximo toque
+  // Liga o GPS ANTES da tela cheia, de propósito — as duas APIs disputam a
+  // mesma "cota" de gesto do toque original, e pedir tela cheia primeiro
+  // estava "gastando" essa cota, fazendo o pedido de permissão de
+  // localização (mais importante que a tela cheia) ser silenciosamente
+  // recusado/adiado no primeiro toque em "Iniciar Treino". Pedindo o GPS
+  // primeiro, ele fica garantido; se a tela cheia falhar por causa disso,
+  // não tem problema — ela não é essencial pro treino funcionar.
+  lwStartGPS();
+  // Pede tela cheia (Fullscreen API) logo em seguida, ainda dentro do mesmo
+  // toque — esconde tanto a barra de cima quanto a de baixo do navegador.
+  try{ if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){}
   lwStartTimer(); // já roda durante a espera também, só pra manter a tela (bolinha do GPS, banner) atualizada — não conta distância/tempo/pace ainda
   lwStartLockWatcher();
   lwRequestWakeLock(); // mantém a tela ligada já durante a espera também — sem isso, se a pessoa demorasse pra tocar em "Iniciar", a tela podia apagar sozinha nesse meio tempo
