@@ -16188,57 +16188,18 @@ async function startLiveWorkout(planId,wIdx,dIdx){
   const wk=plan.weeks[wIdx]; if(!wk)return;
   const day=wk.days[dIdx]; if(!day||day.rest)return;
 
+  if(!('geolocation'in navigator)){showToast('Seu navegador não suporta GPS.');return;}
+
   // Pede tela cheia (Fullscreen API) assim que confirma que o treino vai
   // começar de verdade — esconde tanto a barra de cima quanto a de baixo do
   // navegador (a de baixo não tinha como travar antes, só a de cima reagia
   // ao tema). Precisa ser chamado AQUI, antes de qualquer "await" — os
-  // navegadores só aceitam pedir tela cheia enquanto ainda está "colado" no
-  // toque que originou a ação; depois de um await (ex: esperar resposta de
-  // rede), o navegador já não considera mais um toque genuíno e recusa.
+  // navegadores só aceitam pedir tela cheia (e mostrar o pedido de
+  // permissão de GPS, logo abaixo) enquanto ainda está "colado" no toque
+  // que originou a ação; depois de um await (ex: esperar resposta de rede
+  // ou uma modal), o navegador já não considera mais um toque genuíno e
+  // recusa/segura os dois pedidos em silêncio.
   try{ if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){}
-  // Explica a tela cheia só na PRIMEIRA vez (o aviso nativo do navegador some
-  // rápido demais pra dar tempo de ler) — pode ser "await" aqui numa boa,
-  // sem risco: a tela cheia já foi pedida na linha de cima, ficar nela não
-  // exige mais nenhum toque contínuo, só o PEDIDO inicial precisava disso.
-  if(!lsGet('vo2-seen-fullscreen-tip')){
-    lsSet('vo2-seen-fullscreen-tip','1');
-    await lwAlertModal('Treino em tela cheia','Durante o treino, o app fica em tela cheia — sem a barra de endereço nem a barra de navegação do celular — pra evitar toques acidentais que fechem ou saiam do treino sem querer.<br><br>Para sair a qualquer momento, arraste a partir da borda de cima ou de baixo da tela.','Entendi');
-  }
-
-  // Mesma checagem que "Concluir treino" já faz com o intervals.icu: se
-  // esse dia já tem uma atividade real sincronizada (ex: veio do relógio),
-  // pergunta antes de simplesmente marcar como concluído sozinho — a pessoa
-  // pode querer mesmo assim rastrear ao vivo (ex: testando, ou o relógio
-  // pegou um treino errado) e sobrescrever esse registro ao finalizar.
-  const key=`${wIdx}-${dIdx}`;
-  let allowOverwrite=false;
-  if(!plan.done[key]){
-    const apiKey=icuGetApiKey(),athleteId=icuGetAthleteId();
-    if(apiKey&&athleteId){
-      try{
-        const r=await icuCheckPlanCompletions(plan,apiKey,athleteId,undefined,true);
-        if(r&&r.error){
-          showToast(r.error==='auth'
-            ? 'Não foi possível conectar ao intervals.icu — verifique sua API Key e Athlete ID.'
-            : 'Não foi possível conectar ao intervals.icu agora.');
-        }
-      }catch(e){}
-    }
-  }
-  if(plan.done[key]){
-    const choice=await lwConfirmModal(
-      'Treino já registrado',
-      'Encontramos um treino realizado no relógio (intervals.icu) para este dia.',
-      'Vincular com o relógio','Iniciar mesmo assim');
-    if(choice!=='b'){
-      finishToggleDoneUI(planId,wIdx,dIdx);
-      showToast('Vinculado ao treino já realizado.');
-      return;
-    }
-    allowOverwrite=true;
-  }
-
-  if(!('geolocation'in navigator)){showToast('Seu navegador não suporta GPS.');return;}
 
   let rawSteps=null;
   try{rawSteps=dayToGarminSteps(day,plan);}catch(e){rawSteps=null;}
@@ -16264,7 +16225,7 @@ async function startLiveWorkout(planId,wIdx,dIdx){
     autoPaused:false,autoPauseStillSince:null,autoPauseAnchor:null,
     paceOutOfZoneSince:null,paceOutOfZoneDir:null,lastPaceAlertAt:null,geoPermWatching:false,gpsDismissed:false,geoUnavailableSince:null,gpsRetriedOnce:false,gpsBannerSpokenAt:null,lastSilentGpsRetryAt:null,lastAccuracy:null,lastAccuracyAt:null,
     touchLock:{active:false,lastActivityAt:Date.now(),lastTapAt:0},
-    allowOverwrite
+    allowOverwrite:false // só vira true mais abaixo, se a pessoa confirmar que quer sobrescrever um treino já registrado no relógio
   };
 
   lwBuildOverlay();
@@ -16278,11 +16239,59 @@ async function startLiveWorkout(planId,wIdx,dIdx){
     if(LW.audioCtx.state==='suspended')LW.audioCtx.resume();
   }catch(e){}
   lwStartKeepAlive();
-  lwStartGPS(); // já liga o GPS agora, em segundo plano — assim, quando a pessoa tocar em "Iniciar" de verdade, o sinal já teve chance de resolver sem brigar com a fala de abertura
+  lwStartGPS(); // liga o GPS AQUI, ainda dentro do mesmo toque em "Iniciar Treino" — é o que faz o navegador exibir o pedido de permissão de localização na hora, igual à tela cheia acima. Se isso rodasse depois de um await (como acontecia antes), o navegador segurava o pedido em silêncio até o próximo toque
   lwStartTimer(); // já roda durante a espera também, só pra manter a tela (bolinha do GPS, banner) atualizada — não conta distância/tempo/pace ainda
   lwStartLockWatcher();
   lwRequestWakeLock(); // mantém a tela ligada já durante a espera também — sem isso, se a pessoa demorasse pra tocar em "Iniciar", a tela podia apagar sozinha nesse meio tempo
   lwUpdateUI();
+
+  // Daqui pra baixo pode ter "await" à vontade — tela cheia e GPS já foram
+  // pedidos lá em cima, ainda dentro do toque original, então não corre
+  // mais risco do navegador recusar/segurar os dois por "toque expirado".
+
+  // Explica a tela cheia só na PRIMEIRA vez (o aviso nativo do navegador some
+  // rápido demais pra dar tempo de ler).
+  if(!lsGet('vo2-seen-fullscreen-tip')){
+    lsSet('vo2-seen-fullscreen-tip','1');
+    await lwAlertModal('Treino em tela cheia','Durante o treino, o app fica em tela cheia — sem a barra de endereço nem a barra de navegação do celular — pra evitar toques acidentais que fechem ou saiam do treino sem querer.<br><br>Para sair a qualquer momento, arraste a partir da borda de cima ou de baixo da tela.','Entendi');
+    if(!LW)return; // pode ter sido cancelado (ex: botão "voltar") enquanto a modal estava aberta
+  }
+
+  // Mesma checagem que "Concluir treino" já faz com o intervals.icu: se
+  // esse dia já tem uma atividade real sincronizada (ex: veio do relógio),
+  // pergunta antes de simplesmente marcar como concluído sozinho — a pessoa
+  // pode querer mesmo assim rastrear ao vivo (ex: testando, ou o relógio
+  // pegou um treino errado) e sobrescrever esse registro ao finalizar.
+  const key=`${wIdx}-${dIdx}`;
+  if(!plan.done[key]){
+    const apiKey=icuGetApiKey(),athleteId=icuGetAthleteId();
+    if(apiKey&&athleteId){
+      try{
+        const r=await icuCheckPlanCompletions(plan,apiKey,athleteId,undefined,true);
+        if(!LW)return; // cancelado enquanto esperava a resposta de rede
+        if(r&&r.error){
+          showToast(r.error==='auth'
+            ? 'Não foi possível conectar ao intervals.icu — verifique sua API Key e Athlete ID.'
+            : 'Não foi possível conectar ao intervals.icu agora.');
+        }
+      }catch(e){}
+    }
+  }
+  if(plan.done[key]){
+    if(!LW)return;
+    const choice=await lwConfirmModal(
+      'Treino já registrado',
+      'Encontramos um treino realizado no relógio (intervals.icu) para este dia.',
+      'Vincular com o relógio','Iniciar mesmo assim');
+    if(!LW)return; // cancelado enquanto a modal estava aberta
+    if(choice!=='b'){
+      lwDoCancelWorkoutCleanup(); // desfaz o GPS/tela cheia/overlay que já tinham sido ligados lá em cima
+      finishToggleDoneUI(planId,wIdx,dIdx);
+      showToast('Vinculado ao treino já realizado.');
+      return;
+    }
+    LW.allowOverwrite=true;
+  }
 }
 // Chamado quando a pessoa toca no botão "Iniciar" de verdade (com o treino
 // ainda em 'idle', só a tela montada e o GPS já tentando pegar sinal em
