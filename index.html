@@ -1645,6 +1645,7 @@ details[open] summary::after{transform:rotate(90deg)}
             <div style="flex:1 1 auto;min-width:0">
               <div style="font-size:14px;font-weight:800;color:var(--t1);margin-bottom:2px">Quero calcular por um teste</div>
               <div style="font-size:12.5px;color:var(--t3);line-height:1.4">Cooper 12 min · Corrida 1.600m · 2,4 km · 3 km</div>
+              <div style="margin-top:6px"><span style="display:inline-flex;align-items:center;gap:5px;background:var(--acc);color:var(--on-acc);font-size:10.5px;font-weight:800;letter-spacing:.03em;border-radius:6px;padding:3px 9px"><svg class="gi" style="font-size:12px"><use href="#i-location_on"></use></svg> Com opção de realizar o teste ao vivo, com GPS</span></div>
             </div>
           </button>
 
@@ -1677,27 +1678,95 @@ details[open] summary::after{transform:rotate(90deg)}
         <button onclick="wzBackToOptions()" style="background:none;border:none;color:var(--acc);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:.75rem;padding:0;display:flex;align-items:center;gap:5px">← Voltar</button>
         <p style="font-size:13px;color:var(--t2);margin-bottom:.75rem">Escolha o método de teste:</p>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <button class="wz-test-opt-btn" onclick="wzGoToTest('cooper')" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;width:100%">
+          <div class="wz-test-opt-btn" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);text-align:left;font-family:inherit;width:100%">
             <span style="font-size:22px"><svg class="gi"><use href="#i-directions_run"></use></svg></span>
-            <div><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste Cooper — 12 minutos</div><div style="font-size:12.5px;color:var(--t3)">Corra o máximo possível em 12 min e anote a distância</div></div>
-          </button>
-          <button class="wz-test-opt-btn" onclick="wzGoToTest('1600')" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;width:100%">
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste Cooper — 12 minutos</div><div style="font-size:12.5px;color:var(--t3)">Corra o máximo possível em 12 min e anote a distância</div>
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                <button onclick="vtShowLocationNotice('cooper')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
+                <button onclick="wzGoToTest('cooper')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
+              </div>
+            </div>
+          </div>
+          <div class="wz-test-opt-btn" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);text-align:left;font-family:inherit;width:100%">
             <span style="font-size:22px"><svg class="gi"><use href="#i-directions_walk"></use></svg></span>
-            <div><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste 1.600m (1 milha)</div><div style="font-size:12.5px;color:var(--t3)">Corra 1.600m o mais rápido possível e anote o tempo</div><div style="margin-top:4px"><span style="display:inline-block;background:var(--s3);color:var(--t3);font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:6px;padding:2px 8px">Indicado para iniciantes</span></div></div>
-          </button>
-          <button class="wz-test-opt-btn" onclick="wzGoToTest('2400')" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;width:100%">
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste 1.600m (1 milha)</div><div style="font-size:12.5px;color:var(--t3)">Corra 1.600m o mais rápido possível e anote o tempo</div><div style="margin-top:4px"><span style="display:inline-block;background:var(--s3);color:var(--t3);font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:6px;padding:2px 8px">Indicado para iniciantes</span></div>
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                <button onclick="vtShowLocationNotice('m1600')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
+                <button onclick="wzGoToTest('1600')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
+              </div>
+            </div>
+          </div>
+          <div class="wz-test-opt-btn" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);text-align:left;font-family:inherit;width:100%">
             <span style="font-size:22px"><svg class="gi"><use href="#i-straighten"></use></svg></span>
-            <div><div style="font-size:13px;font-weight:800;color:var(--t1)">Corrida 2,4 km</div><div style="font-size:12.5px;color:var(--t3)">Corra 2,4 km o mais rápido possível e anote o tempo</div></div>
-          </button>
-          <button class="wz-test-opt-btn" onclick="wzGoToTest('3km')" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);cursor:pointer;text-align:left;font-family:inherit;transition:all .2s;width:100%">
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:var(--t1)">Corrida 2,4 km</div><div style="font-size:12.5px;color:var(--t3)">Corra 2,4 km o mais rápido possível e anote o tempo</div>
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                <button onclick="vtShowLocationNotice('km24')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
+                <button onclick="wzGoToTest('2400')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
+              </div>
+            </div>
+          </div>
+          <div class="wz-test-opt-btn" style="display:flex;align-items:center;gap:12px;padding:.85rem 1rem;border:1.5px solid var(--bdr2);border-radius:var(--r);background:var(--s2);text-align:left;font-family:inherit;width:100%">
             <span style="font-size:22px"><svg class="gi"><use href="#i-sports_score"></use></svg></span>
-            <div><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste 3 km</div><div style="font-size:12.5px;color:var(--t3)">Corra 3 km o mais rápido possível e anote o tempo</div></div>
-          </button>
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste 3 km</div><div style="font-size:12.5px;color:var(--t3)">Corra 3 km o mais rápido possível e anote o tempo</div>
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                <button onclick="vtShowLocationNotice('km3')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
+                <button onclick="wzGoToTest('3km')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Confirmação pós-teste calculado (opção B, após calcular) -->
       <div id="wz-calc-confirm" style="display:none"></div>
+    </div>
+
+    <!-- Modal de orientação de local, antes de iniciar o teste de VO2 ao vivo -->
+    <div id="modal-vt-location-notice" class="modal-bg" style="display:none;z-index:850">
+      <div class="modal-box" style="max-width:360px">
+        <div style="font-size:32px;text-align:center;margin-bottom:.5rem"><svg class="gi" style="font-size:32px;color:var(--acc)"><use href="#i-location_on"></use></svg></div>
+        <div style="text-align:center;font-size:15px;font-weight:800;color:var(--t1);margin-bottom:.5rem">Antes de começar</div>
+        <div style="font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:1.2rem">
+          Pra um resultado mais preciso, prefira realizar o teste numa <strong>pista de atletismo</strong> ou num trecho <strong>plano e reto</strong>, com pouco movimento de gente ou trânsito — como é um esforço rápido e no limite, terrenos irregulares ou muitas paradas podem atrapalhar o tempo/distância e distorcer o resultado do VO2.
+        </div>
+        <button class="btn-modal-ok" style="width:100%" onclick="vtLocationNoticeConfirmed()">Entendi, começar teste</button>
+      </div>
+    </div>
+
+    <!-- Modal de peso (necessário só pro teste de Corrida 2,4km) -->
+    <div id="modal-vt-weight" class="modal-bg" style="display:none;z-index:850">
+      <div class="modal-box" style="max-width:340px">
+        <div style="text-align:center;font-size:15px;font-weight:800;color:var(--t1);margin-bottom:.4rem">Antes de começar</div>
+        <div style="text-align:center;font-size:12.5px;color:var(--t3);line-height:1.4;margin-bottom:1rem">Necessário pra fórmula de VO₂ desse teste específico.</div>
+        <div class="ig" style="margin-bottom:.9rem">
+          <label>Peso <span style="font-size:11.5px;color:var(--t3)">(kg)</span></label>
+          <input type="number" id="vt-weight-input" placeholder="kg" min="35" max="150" onkeydown="if(event.key==='Enter')vtWeightConfirm()"/>
+        </div>
+        <div class="ig" style="margin-bottom:1.2rem">
+          <label>Sexo <span style="font-size:11.5px;color:var(--t3)">(biológico, usado só na fórmula)</span></label>
+          <div style="display:flex;gap:8px">
+            <button id="vt-sexo-m" onclick="vtSetSexo('M')" class="on" style="flex:1;height:44px;border-radius:9px;border:1.5px solid var(--acc);background:var(--acc);color:var(--on-acc);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit">Masculino</button>
+            <button id="vt-sexo-f" onclick="vtSetSexo('F')" style="flex:1;height:44px;border-radius:9px;border:1.5px solid var(--bdr2);background:none;color:var(--t2);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit">Feminino</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button onclick="vtWeightCancel()" style="flex:1;height:44px;border-radius:9px;border:1.5px solid var(--bdr2);background:none;color:var(--t2);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit">Cancelar</button>
+          <button onclick="vtWeightConfirm()" class="btn-modal-ok" style="flex:1;height:44px">OK, começar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de resultado do teste de VO2 ao vivo -->
+    <div id="modal-vt-result" class="modal-bg" style="display:none;z-index:850">
+      <div class="modal-box" style="max-width:360px;text-align:center">
+        <div style="font-size:32px;margin-bottom:.3rem"><svg class="gi" style="font-size:32px;color:var(--gr)"><use href="#i-check_circle"></use></svg></div>
+        <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:.9rem">Teste concluído!</div>
+        <div style="font-size:12px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Seu VO₂ Máximo estimado</div>
+        <div id="modal-vt-result-value" style="font-size:44px;font-weight:900;color:var(--acc);line-height:1;margin-bottom:.3rem">—</div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:1.2rem">ml/kg/min</div>
+        <div style="font-size:12.5px;color:var(--t2);line-height:1.5;margin-bottom:1.2rem">Esse valor será aplicado ao seu perfil e usado nas próximas planilhas geradas — até que você calcule um novo VO₂.</div>
+        <button class="btn-modal-ok" style="width:100%" onclick="vtConfirmResult()">OK, aplicar ao meu perfil</button>
+      </div>
     </div>
 
     <!-- ETAPA 3: Distância -->
@@ -1808,6 +1877,10 @@ details[open] summary::after{transform:rotate(90deg)}
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px">
         <span class="hero-feat-ico"><svg class="gi"><use href="#i-check"></use></svg></span>
+        <div style="font-size:14px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1);display:block">Calcule seu VO₂ com teste ao vivo</strong> Cronômetro e GPS, direto pelo app.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span class="hero-feat-ico"><svg class="gi"><use href="#i-check"></use></svg></span>
         <div style="font-size:14px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1);display:block">Inicie seus treinos pelo próprio aplicativo</strong> acompanhando o tempo, distância e pace em tempo real.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px">
@@ -1816,7 +1889,7 @@ details[open] summary::after{transform:rotate(90deg)}
       </div>
     </div>
     <div class="hero-stats">
-      <div class="hero-stat"><div class="hero-stat-dot b"></div>3 métodos de teste</div>
+      <div class="hero-stat"><div class="hero-stat-dot b"></div>4 métodos de teste</div>
       <div class="hero-stat"><div class="hero-stat-dot g"></div>5 zonas de treino</div>
       <div class="hero-stat"><div class="hero-stat-dot p"></div>Planilhas 10km, 21km e 42km</div>
     </div>
@@ -3657,7 +3730,7 @@ function jumpTo(target){
   // religar o comportamento suave pra outras rolagens.
   setTimeout(()=>{html.style.scrollBehavior=prevBehavior||'smooth';},150);
 }
-function showToast(msg,variant){
+function showToast(msg,variant,durationMs){
   const t=document.getElementById('toast');
   if(!t)return;
   clearTimeout(toastTimer);
@@ -3666,11 +3739,21 @@ function showToast(msg,variant){
   t.classList.remove('show','warm');
   t.textContent=msg;
   if(variant==='warm')t.classList.add('warm');
+  // Duração automática baseada no tamanho da mensagem — mensagens curtas
+  // (tipo "Salvo!") continuam rápidas/ágeis, perto do padrão de sempre;
+  // mensagens longas (tipo o aviso de GPS em segundo plano) ficam mais
+  // tempo na tela, dando tempo real de ler, sem precisar configurar isso
+  // manualmente toda vez que um toast novo for criado. Se durationMs for
+  // passado explicitamente, ele sempre tem prioridade sobre esse cálculo.
+  const words=(msg||'').trim().split(/\s+/).filter(Boolean).length;
+  const autoDur=Math.max(2200,Math.min(6000,2200+Math.max(0,words-4)*140));
+  const dur=durationMs||autoDur;
+  t.style.animationDuration=(dur/1000)+'s';
   void t.offsetWidth; // força o navegador a "recalcular" antes de reativar a animação
   t.classList.add('show');
-  // Timer em JS como reforço (a animação CSS já esconde sozinha em 2.8s,
-  // isso aqui garante que a classe some do DOM mesmo em casos extremos).
-  toastTimer=setTimeout(()=>t.classList.remove('show','warm'),2900);
+  // Timer em JS como reforço (a animação CSS já esconde sozinha, isso aqui
+  // garante que a classe some do DOM mesmo em casos extremos).
+  toastTimer=setTimeout(()=>t.classList.remove('show','warm'),dur+100);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -4256,7 +4339,7 @@ function renderCalcSummary(){
       <div class="prog-segbar" id="home-prog-fill-${plan.id}">${buildProgSegments(progHome.pct,plan.weeks?plan.weeks.length:0)}</div>
       <span style="font-size:11px;font-weight:700;color:var(--t3);white-space:nowrap"><span id="home-prog-lbl-${plan.id}">${progHome.done}/${progHome.total} treinos</span> <span style="font-size:7px;vertical-align:middle">●</span> <span id="home-prog-pct-${plan.id}">${progHome.pct}%</span></span>
     </div>`:''}
-    ${(plan&&planNeedsVo2Refresh(plan))?`<div class="cs-note"><span><svg class="gi"><use href="#i-info"></use></svg></span><div>Esta planilha foi gerada com um VO₂ estimado pelo nível. Você possui um VO₂ real calculado.<div style="margin-top:6px"><button onclick="recalcPlanVo2(${plan.id})" style="background:none;border:none;padding:0;font-size:14px;font-weight:700;color:var(--acc);text-decoration:underline;cursor:pointer;font-family:inherit">Atualizar planilha com VO₂ real →</button></div></div></div>`:''}
+    ${(plan&&planNeedsVo2Refresh(plan))?`<div class="cs-note"><span><svg class="gi"><use href="#i-info"></use></svg></span><div>${plan.vo2IsReal?`Seu VO₂ real foi atualizado desde que esta planilha foi gerada (era ${plan.vo2}, agora é ${Math.round(lastRealTest.vo2*10)/10}).`:'Esta planilha foi gerada com um VO₂ estimado pelo nível. Você possui um VO₂ real calculado.'}<div style="margin-top:6px"><button onclick="recalcPlanVo2(${plan.id})" style="background:none;border:none;padding:0;font-size:14px;font-weight:700;color:var(--acc);text-decoration:underline;cursor:pointer;font-family:inherit">Atualizar planilha com VO₂ real →</button></div></div></div>`:''}
     ${plan?buildTodayMini(plan):''}
     ${plan?buildUpcomingCarousel(plan):''}
     <div class="cs-actions-discrete">
@@ -4927,6 +5010,253 @@ function wzCalc3km(){
   wzFinishTest(vo2,vo2/3.5,`3km — ${min}:${String(Math.round(sec)).padStart(2,'0')}`,'physiological');
 }
 
+/* ══════════════════════════════════════════════════════════
+   TESTE DE VO2 AO VIVO — reaproveita a mesma infraestrutura da
+   tela de treino ao vivo (GPS, cronômetro, overlay, tela cheia,
+   wake lock) já testada, com um "LW" de 1 etapa só (o que já
+   ativa sozinho o modo "treino direto"/isDireto do lwUpdateUI —
+   círculo mostra distância, campo de baixo mostra tempo total,
+   exatamente o pedido). O que muda de verdade fica isolado em
+   LW.isVo2Test: sem alerta de ritmo (lwStartTimer já desvia pra
+   vtCheckCompletion em vez de lwCheckStepCompletion/lwCheckPaceAlert
+   quando esse flag está ligado), condição de parada própria
+   (tempo fixo pro Cooper, distância-alvo pros outros 3), e um
+   cálculo de VO2 ao final em vez de tocar/registrar como treino.
+   As mesmas fórmulas dos testes manuais (wzCalcCooper/1600/2400/3km)
+   são reaproveitadas aqui, só que a partir da distância/tempo
+   REAIS medidos pelo GPS, em vez de digitados.
+══════════════════════════════════════════════════════════ */
+const VT_TESTS={
+  cooper:{mode:'time',targetSec:720,label:'Teste Cooper — 12 minutos',needsWeight:false},
+  m1600:{mode:'dist',targetKm:1.6,label:'Teste 1.600m (1 milha)',needsWeight:false},
+  km24:{mode:'dist',targetKm:2.4,label:'Corrida 2,4 km',needsWeight:true},
+  km3:{mode:'dist',targetKm:3,label:'Teste 3 km',needsWeight:false},
+};
+let _vtPendingType=null;
+function vtShowLocationNotice(type){
+  _vtPendingType=type;
+  document.getElementById('modal-vt-location-notice').style.display='flex';
+}
+function vtLocationNoticeConfirmed(){
+  document.getElementById('modal-vt-location-notice').style.display='none';
+  const type=_vtPendingType; _vtPendingType=null;
+  if(!type)return;
+  const cfg=VT_TESTS[type]; if(!cfg)return;
+  if(cfg.needsWeight){
+    _vtPendingWeightType=type;
+    const inp=document.getElementById('vt-weight-input');
+    if(inp){inp.value='';}
+    vtSetSexo('M'); // reseta o seletor pro padrão toda vez que a modal abre
+    document.getElementById('modal-vt-weight').style.display='flex';
+    setTimeout(()=>{ if(inp)inp.focus(); },100);
+  }else{
+    vtStartTest(type,null);
+  }
+}
+let _vtPendingWeightType=null;
+let _vtSexo='M';
+function vtSetSexo(s){
+  _vtSexo=s;
+  const btnM=document.getElementById('vt-sexo-m'),btnF=document.getElementById('vt-sexo-f');
+  if(btnM){btnM.style.background=s==='M'?'var(--acc)':'none';btnM.style.borderColor=s==='M'?'var(--acc)':'var(--bdr2)';btnM.style.color=s==='M'?'var(--on-acc)':'var(--t2)';}
+  if(btnF){btnF.style.background=s==='F'?'var(--acc)':'none';btnF.style.borderColor=s==='F'?'var(--acc)':'var(--bdr2)';btnF.style.color=s==='F'?'var(--on-acc)':'var(--t2)';}
+}
+window.vtSetSexo=vtSetSexo;
+function vtWeightCancel(){
+  document.getElementById('modal-vt-weight').style.display='none';
+  _vtPendingWeightType=null;
+}
+function vtWeightConfirm(){
+  const type=_vtPendingWeightType; if(!type)return;
+  const raw=document.getElementById('vt-weight-input')?.value||'';
+  const weight=parseFloat(raw.replace(',','.'));
+  if(!weight||weight<35||weight>150){showToast('Peso inválido — informe um valor entre 35 e 150kg.');return;}
+  document.getElementById('modal-vt-weight').style.display='none';
+  _vtPendingWeightType=null;
+  vtStartTest(type,weight,_vtSexo);
+}
+window.vtWeightCancel=vtWeightCancel;
+window.vtWeightConfirm=vtWeightConfirm;
+async function vtStartTest(type,weight,sexo){
+  if(!requireLoginFor('Crie uma conta grátis para realizar o teste de VO2 ao vivo.'))return;
+  if(LW&&(LW.status==='running'||LW.status==='paused')){lwShowOverlay();return;}
+  if(!('geolocation'in navigator)){showToast('Seu navegador não suporta GPS.');return;}
+  const cfg=VT_TESTS[type]; if(!cfg)return;
+
+  const step={
+    kind:'active',
+    label:cfg.label,
+    freeMode:false,
+    endType:cfg.mode==='time'?'time':'distance',
+    endValue:cfg.mode==='time'?cfg.targetSec:cfg.targetKm*1000,
+    paceMinMps:null,paceMaxMps:null, // sem alvo de ritmo — é esforço máximo, não tem "zona" pra alertar
+    repIdx:null,repTotal:null,
+  };
+
+  LW={
+    planId:null,wIdx:null,dIdx:null,day:null,plan:null,
+    isVo2Test:true,testType:type,testWeight:weight,testSexo:sexo||'M', // campos que diferenciam de um treino normal
+    steps:[step],stepIdx:0,
+    status:'idle',
+    startedAt:null,pausedAt:null,pausedAccumMs:0,
+    totalDistM:0,lastGoodPoint:null,recentSamples:[],
+    segStartDistM:0,segStartElapsedMs:0,
+    watchId:null,timerId:null,wakeLock:null,wakeLockRequesting:false,
+    stepHistory:[],lastBeepKey:null,audioCtx:null,
+    stepPending:true,stepPendingClearedAt:null,stepGen:0,
+    totalPendingMs:0,pendingStartElapsedMs:0,
+    initialPendingMs:0,initialActivationDone:false,
+    paceAlertsEnabled:false,
+    autoPauseEnabled:false, // autopausa não faz sentido num teste de esforço máximo cronometrado
+    autoPaused:false,autoPauseStillSince:null,autoPauseAnchor:null,
+    paceOutOfZoneSince:null,paceOutOfZoneDir:null,lastPaceAlertAt:null,geoPermWatching:false,gpsDismissed:false,geoUnavailableSince:null,gpsRetriedOnce:false,gpsBannerSpokenAt:null,lastSilentGpsRetryAt:null,lastAccuracy:null,lastAccuracyAt:null,
+    touchLock:{active:false,lastActivityAt:Date.now(),lastTapAt:0},
+    allowOverwrite:false
+  };
+
+  lwBuildOverlay();
+  lwShowOverlay();
+  try{
+    LW.audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(LW.audioCtx.state==='suspended')LW.audioCtx.resume();
+  }catch(e){}
+  lwStartKeepAlive();
+  lwStartGPS(); // GPS antes da tela cheia — mesmo motivo já resolvido no treino normal (disputa de gesto do toque)
+  try{ if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{}); }catch(e){}
+  lwStartTimer();
+  lwStartLockWatcher();
+  lwRequestWakeLock();
+  lwUpdateUI();
+}
+window.vtShowLocationNotice=vtShowLocationNotice;
+window.vtLocationNoticeConfirmed=vtLocationNoticeConfirmed;
+
+// Chamado pelo tick do cronômetro (lwStartTimer) no lugar de
+// lwCheckStepCompletion/lwCheckPaceAlert quando LW.isVo2Test — checa se já
+// bateu a condição de parada do teste (tempo fixo ou distância-alvo) e, se
+// sim, finaliza sozinho. Toca os mesmos bipes de contagem regressiva (5-4-3-2
+// + sininho no 1) que já existem no fim de etapa do treino normal — mesma
+// lógica de lwCheckStepCompletion, só que aqui a "etapa" é o teste inteiro.
+function vtCheckCompletion(){
+  if(!LW||!LW.isVo2Test||LW.stepPending)return;
+  const cfg=VT_TESTS[LW.testType]; if(!cfg)return;
+  const elapsedSec=(lwElapsedMs()-(LW.initialPendingMs||0))/1000;
+  if(cfg.mode==='time'){
+    const remaining=cfg.targetSec-elapsedSec;
+    const remInt=Math.ceil(remaining);
+    if(remInt<=5&&remInt>=1){
+      const beepKey=`vt-${remInt}`;
+      if(LW.lastBeepKey!==beepKey){
+        LW.lastBeepKey=beepKey;
+        if(remInt===1)lwStepEndChime();
+        else lwBeep(900,160,0.24);
+        lwVibrate(remInt===1?350:140);
+      }
+    }
+    if(elapsedSec>=cfg.targetSec)vtFinishTest();
+  }else{
+    const remainingM=cfg.targetKm*1000-LW.totalDistM;
+    const curSec=lwEffectivePaceSecPerKm(); // segundos por km, no ritmo atual — mesma estimativa usada nas etapas por distância do treino normal
+    if(curSec!=null&&remainingM>0){
+      const remaining=remainingM*(curSec/1000);
+      const remInt=Math.ceil(remaining);
+      if(remInt<=5&&remInt>=1){
+        const beepKey=`vt-${remInt}`;
+        if(LW.lastBeepKey!==beepKey){
+          LW.lastBeepKey=beepKey;
+          if(remInt===1)lwStepEndChime();
+          else lwBeep(900,160,0.24);
+          lwVibrate(remInt===1?350:140);
+        }
+      }
+    }else if(remainingM<=15&&remainingM>0){
+      // Sem amostra de ritmo confiável ainda pra estimar segundos — garante
+      // ao menos o sininho final baseado em distância pura.
+      const beepKey='vt-distfallback';
+      if(LW.lastBeepKey!==beepKey){
+        LW.lastBeepKey=beepKey;
+        lwStepEndChime();
+        lwVibrate(350);
+      }
+    }
+    if(LW.totalDistM>=cfg.targetKm*1000)vtFinishTest();
+  }
+}
+
+// Calcula o VO2 a partir da distância/tempo REAIS do teste ao vivo, usando
+// exatamente as mesmas fórmulas dos testes manuais (wzCalcCooper/1600/2400/3km).
+function vtCalcVo2(type,distM,elapsedSec,weight,sexo){
+  if(type==='cooper'){
+    const vo2=(distM-504.9)/44.73;
+    return{vo2,label:`Cooper (ao vivo) — 12 min · ${Math.round(distM)}m`};
+  }
+  if(type==='m1600'){
+    const speedMmin=1600/(elapsedSec/60);
+    const vo2=speedMmin<134?(0.1*speedMmin+3.5):(0.2*speedMmin+3.5);
+    return{vo2,label:`1.600m (ao vivo) — ${lwFmtDurationDisplay(elapsedSec)}`};
+  }
+  if(type==='km24'){
+    const totalMin=elapsedSec/60;
+    // Mesma fórmula ACSM do teste manual (wzCalc2400) — o termo 3.716 só
+    // entra pra sexo masculino, soma 0 pro feminino. Corrigido: antes essa
+    // versão "ao vivo" esquecia esse ajuste e sempre somava o termo,
+    // ficando incorreta pra quem informasse "Feminino".
+    const vo2=88.02-0.1656*weight-2.76*totalMin+3.716*(sexo==='M'?1:0);
+    return{vo2,label:`2,4km (ao vivo) — ${lwFmtDurationDisplay(elapsedSec)} · ${weight}kg · ${sexo==='M'?'M':'F'}`};
+  }
+  if(type==='km3'){
+    const speedMmin=3000/(elapsedSec/60);
+    const vo2=speedMmin<134?(0.1*speedMmin+3.5):(0.2*speedMmin+3.5);
+    return{vo2,label:`3km (ao vivo) — ${lwFmtDurationDisplay(elapsedSec)}`};
+  }
+  return{vo2:0,label:'Teste ao vivo'};
+}
+
+let _vtLastResult=null;
+async function vtFinishTest(){
+  if(!LW||!LW.isVo2Test)return;
+  const type=LW.testType,weight=LW.testWeight,sexo=LW.testSexo||'M';
+  const cfg=VT_TESTS[type];
+  const distM=LW.totalDistM;
+  const elapsedSec=Math.max(1,(lwElapsedMs()-(LW.initialPendingMs||0))/1000);
+  try{ if(LW.audioCtx)lwFinishBeep(LW.audioCtx); }catch(e){} // bipe de fim, reaproveitado do fim de treino normal
+  lwVibrate([150,80,150,80,400]);
+  const{vo2,label}=vtCalcVo2(type,distM,elapsedSec,weight,sexo);
+  if(!vo2||vo2<15||vo2>90){
+    lwDoCancelWorkoutCleanup(); // fecha a tela do teste primeiro — esse aviso já aparece por cima da tela normal
+    // Modal (não toast) — precisa de toque explícito pra fechar, pra não
+    // sumir rápido demais e a pessoa não entender o que aconteceu (relatado
+    // depois de um teste onde a distância percorrida ficou bem abaixo do
+    // esperado pros 12 minutos do Cooper).
+    await lwAlertModal(
+      'Resultado fora do esperado',
+      cfg&&cfg.mode==='time'
+        ?`A distância percorrida nesses ${Math.round(cfg.targetSec/60)} minutos ficou abaixo do esperado pra calcular um VO₂ válido — pode ter sido um problema de GPS, ou o esforço não foi mantido do início ao fim. Tente novamente, se possível num local aberto.`
+        :`O tempo registrado pra essa distância ficou fora da faixa válida — pode ter sido um problema de GPS, ou o esforço não foi mantido do início ao fim. Tente novamente, se possível num local aberto.`,
+      'Entendi');
+    return;
+  }
+  _vtLastResult={vo2,vVO2calc:vo2/3.5,label,type};
+  lwDoCancelWorkoutCleanup(); // desliga GPS/timer/tela cheia e fecha o overlay do teste — a modal de resultado abre por cima da tela normal
+  vtShowResultModal();
+}
+function vtShowResultModal(){
+  if(!_vtLastResult)return;
+  const{vo2}=_vtLastResult;
+  const box=document.getElementById('modal-vt-result-value');
+  if(box)box.textContent=`${Math.round(vo2*10)/10}`;
+  document.getElementById('modal-vt-result').style.display='flex';
+}
+function vtConfirmResult(){
+  if(!_vtLastResult)return;
+  const{vo2,vVO2calc,label,type}=_vtLastResult;
+  document.getElementById('modal-vt-result').style.display='none';
+  wzFinishTest(vo2,vVO2calc,label,'physiological'); // mesmo caminho dos testes manuais — salva, atualiza o card da tela inicial, tudo igual
+  _vtLastResult=null;
+  showToast('VO2 calculado e aplicado ao seu perfil!');
+}
+window.vtConfirmResult=vtConfirmResult;
+
 function wzFinishTest(vo2,vVO2calc,label,type){
   vo2G=vo2;vVO2G=vVO2calc;
   customPaces={};usingCustom=false;
@@ -4956,7 +5286,15 @@ function wzFinishTest(vo2,vVO2calc,label,type){
     // sair da tela sem clicar em Continuar, o painel inicial já ficaria com
     // o VO2 novo mesmo assim (via saveLastTest acima), então perguntar já
     // aqui evita perder esse momento de decidir sobre a planilha também.
-    const curPlan=(typeof wzSummaryPlanId!=='undefined'&&wzSummaryPlanId)?savedPlans.find(p=>p.id===wzSummaryPlanId):null;
+    // IMPORTANTE: só pergunta no fluxo dedicado "Calcular novo VO2"
+    // (wzVo2OnlyMode) — quando o teste acontece como parte de criar uma
+    // PLANILHA NOVA (+ Nova Planilha), não faz sentido interromper esse
+    // fluxo com uma pergunta sobre atualizar uma planilha diferente e já
+    // existente. O VO2 novo já fica salvo de qualquer forma (saveLastTest
+    // acima); quando a pessoa terminar de criar a planilha nova e voltar
+    // pra tela inicial, o aviso "Atualizar planilha com VO2 real" já
+    // aparece sozinho no card da planilha antiga (planNeedsVo2Refresh).
+    const curPlan=(wzVo2OnlyMode&&typeof wzSummaryPlanId!=='undefined'&&wzSummaryPlanId)?savedPlans.find(p=>p.id===wzSummaryPlanId):null;
     if(curPlan&&wzState.usedRealVo2&&planSupportsVo2Recalc(curPlan)&&Math.round(vo2*10)/10!==curPlan.vo2){
       openVo2UpdateModal(curPlan.id,Math.round(vo2*10)/10,curPlan.vo2);
     }
@@ -5813,6 +6151,19 @@ function getRaceSpeed(race){
     const distKm=10,obj=planObj10k,pct=[.83,.90,.92];
     if(obj==='target'){const h=parseFloat(document.getElementById('target-h-10k')?.value)||0,m=parseFloat(document.getElementById('target-m-10k')?.value)||0,s=parseFloat(document.getElementById('target-s-10k')?.value)||0,t=h*60+m+s/60;return t>0?distKm/(t/60):v*pct[1]}
     if(obj==='improve'){const h=parseFloat(document.getElementById('curr-h-10k')?.value)||0,m=parseFloat(document.getElementById('curr-m-10k')?.value)||0,s=parseFloat(document.getElementById('curr-s-10k')?.value)||0,t=h*60+m+s/60;return t>0?distKm/((t*.97)/60):v*pct[2]}
+    // "Completar prova" com VO2 NÃO informado (usou o valor padrão de
+    // referência do perfil — que não mexemos, pois calibra bem os paces de
+    // treino diário): em vez de derivar o tempo de prova de uma % do VO2
+    // padrão (o que amarrava o tempo de prova ao mesmo número usado pros
+    // paces de treino, gerando conflito entre as duas coisas), usa um
+    // TEMPO-ALVO fixo por perfil pra essa estimativa específica. Só entra
+    // aqui quando o VO2 não é real — informando um VO2 de verdade, volta a
+    // usar o cálculo normal (v*pct[0]), respeitando a aptidão real da
+    // pessoa.
+    if(!wzState.usedRealVo2){
+      const targetMin10k={init:65,inter:57,avance:50}[wzState.profile];
+      if(targetMin10k)return distKm/(targetMin10k/60);
+    }
     return v*pct[0];
   }
   const distKm=race==='42'?42.195:21.0975,obj=race==='21'?planObj21:planObj42,pct=race==='42'?[.65,.72,.74]:[.70,.80,.82];
@@ -8128,25 +8479,41 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
     return Math.round(pk*(taperPos===0?0.70:0.50));
   }
 
+  // 10km: progressão do longão diferenciada por perfil (combinado com o
+  // usuário) — antes era igual pra Iniciante/Intermediário/Avançado, o que
+  // fazia um iniciante puro (nem VO2 real informado) já pegar 8km de longão
+  // na semana 1, indo até 16km de pico — agressivo demais pra quem está
+  // começando. 5km mantido como estava (já era mais moderado).
+  const longCfg10k={
+    init:{baseStart:5,buildStart:6,cbTaper:6,peak:10,easyDay:5},
+    inter:{baseStart:6,buildStart:7,cbTaper:8,peak:12,easyDay:7},
+    avance:{baseStart:7,buildStart:8,cbTaper:9,peak:14,easyDay:8},
+  }[profKey]||{baseStart:6,buildStart:7,cbTaper:8,peak:12,easyDay:7};
   function getLong(w){
     const p=phaseName(w);
     const cb=isCutback(w);
-    const maxLong=is10k?16:10;
-    const minLong=is10k?8:5;
-    if(p==='base') return Math.min(maxLong,Math.round((is10k?8:5)*(1+0.1*(w-ph.base[0]))));
+    const maxLong=is10k?longCfg10k.peak:10;
+    const minLong=is10k?5:5;
+    if(p==='base') return Math.min(maxLong,Math.round((is10k?longCfg10k.baseStart:5)*(1+0.1*(w-ph.base[0]))));
     if(p==='build'){
-      if(cb) return is10k?10:6;
+      if(cb) return is10k?longCfg10k.cbTaper:6;
       const pos=w-ph.build[0];
       const buildDur=ph.build[1]-ph.build[0];
-      return Math.min(maxLong,Math.round((is10k?9:6)*(1+0.08*pos)));
+      return Math.min(maxLong,Math.round((is10k?longCfg10k.buildStart:6)*(1+0.08*pos)));
     }
-    return is10k?10:6; // taper
+    return is10k?longCfg10k.cbTaper:6; // taper
   }
 
   function dayPlan(w,d){
     const p=phaseName(w),km=weekKm(w),cb=isCutback(w);
     const isInit=prof.label==='Iniciante';
     const isInter=prof.label==='Intermediário';
+    // Trava de segurança: nenhum outro dia da semana pode ultrapassar o
+    // longão de sábado (que deve ser sempre a corrida mais longa da
+    // semana) — sem isso, em algumas combinações de perfil/duração de
+    // plano, um dia de qualidade/recuperação podia sair maior que o
+    // próprio longão daquela semana.
+    const lkmCap=is10k?getLong(w):99;
 
     if(d===0) return{type:'Descanso',rest:true}; // SEG
     if(d===4) return{type:'Descanso',rest:true}; // SEX
@@ -8196,7 +8563,7 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
       // entre blocos) — evita empilhar dois dias intensos seguidos (TER+QUA) numa
       // faixa etária/nível que ainda está construindo base aeróbica.
       if(isInit&&block%2===1){
-        const d2=Math.max(is10k?5:4,Math.round(km*.20));
+        const d2=Math.min(lkmCap,Math.max(is10k?5:4,Math.round(km*.20)));
         const{bandStr}=easyByTime(d2,ez);
         return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,
           detail:`Z1-Z2 · ${bandStr} fácil — semana de foco no tempo run (QUA), sem acumular 2 dias intensos seguidos`};
@@ -8244,7 +8611,7 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
     if(d===2){
       if(p==='base') return{type:'Descanso',rest:true};
       if(p==='taper'){
-        const d2=is10k?7:5;
+        const d2=is10k?Math.min(lkmCap,longCfg10k.easyDay):5;
         if(isInit){const{bandStr}=easyByTime(d2,ez);return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,detail:`Z1-Z2 · ${bandStr} no taper — pernas soltas`};}
         return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,detail:'Z1-Z2 · leve no taper'};
       }
@@ -8257,13 +8624,14 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
       // Iniciante: espelha a alternância do TER — na semana em que o intervalado
       // já rodou na terça (block%2===0), a quarta fica leve em vez de empilhar tempo run.
       if(isInit&&block%2===0){
-        const d2=is10k?7:5;
+        const d2=is10k?Math.min(lkmCap,longCfg10k.easyDay):5;
         const{bandStr}=easyByTime(d2,ez);
         return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,
           detail:`Z1-Z2 · ${bandStr} fácil — semana de foco no intervalado (TER), sem acumular 2 dias intensos seguidos`};
       }
+      const tempoKmTable={init:[5,6,7,8],inter:[6,8,9,10],avance:[7,9,11,13]}[profKey]||[6,8,9,10];
       const tempoKm=is10k?
-        [8,10,12,14][Math.min(block,3)]:
+        Math.min(lkmCap,tempoKmTable[Math.min(block,3)]):
         [5,6,7,8][Math.min(block,3)];
       const warmCoolKmT=Math.round(ez*1200/3.6)/1000;
       const seg=Math.max(is10k?4:3,Math.round((tempoKm-warmCoolKmT)*10)/10);
@@ -8276,17 +8644,17 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
       if(p==='base'){
         // Sessão que antes ficava na quarta — agora aqui, deixando a quarta de descanso
         // entre a terça (qualidade/fartlek) e a quinta (aeróbico leve).
-        const d2=Math.max(is10k?5:4,Math.round(km*.18));
+        const d2=Math.min(lkmCap,Math.max(is10k?5:4,Math.round(km*.18)));
         if(isInit){const{bandStr}=easyByTime(d2,ez);return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,detail:`Z1-Z2 · ${bandStr} fácil — construção aeróbica`};}
         return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,detail:'Z1-Z2 · aeróbico fácil · base'};
       }
       if(cb){
         // Idem: recuperação da semana de recuo passa da quarta pra quinta.
-        const d2=is10k?7:5;
+        const d2=is10k?Math.min(lkmCap,longCfg10k.easyDay):5;
         if(isInit){const{bandStr}=easyByTime(d2,ez);return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,timeLabel:bandStr,detail:`Z1-Z2 · ${bandStr} recuo — recuperação ativa`};}
         return{type:'Corrida leve',pace:s2p(ez),dist:`${d2}km`,detail:'Z1-Z2 · corrida leve de recuo'};
       }
-      const d2=Math.max(is10k?5:4,Math.round(km*.15));
+      const d2=Math.min(lkmCap,Math.max(is10k?5:4,Math.round(km*.15)));
       if(isInit){
         // Corrida leve de verdade — recuperação real antes do longão de sábado,
         // já que o Iniciante roda só 1 dia de qualidade por semana (TER ou QUA).
@@ -8377,7 +8745,7 @@ function renderPlanShort(race,planWeeks,profKey){
   const mt=document.getElementById(`method-tag-${race}`);
   const obj=is10k?planObj10k:planObj5k;
   const objLabel=obj==='target'?'<svg class="gi"><use href="#i-schedule"></use></svg> Tempo alvo':obj==='improve'?'<svg class="gi"><use href="#i-trending_up"></use></svg> Melhorar PR':'Completar';
-  if(mt)mt.innerHTML=`${prof.method} <span style="opacity:.5;font-weight:400">· ${distLabel} · ${objLabel}</span>`;
+  if(mt)mt.innerHTML=`VO2 RunMax · progressão própria <span style="opacity:.5;font-weight:400">· ${distLabel} · ${objLabel}</span>`;
   const intensityDist=calcIntensityDist(weeks);
   const intensityBoxHtml=buildIntensityBoxHTML(intensityDist,false);
 
@@ -8427,7 +8795,7 @@ function renderPlanShort(race,planWeeks,profKey){
         <div class="mc"><p class="mc-lbl">Pace intervalado</p><p class="mc-val" style="color:var(--rd)">${s2p(intv)} <span class="mc-unit">min/km</span></p></div>
       </div>
       <div class="info-box" style="margin-top:.75rem;margin-bottom:0">
-        <strong>Metodologia:</strong> ${prof.method} — ${prof.label.toLowerCase()} adaptado para ${distLabel}. Fases: Base aeróbica → Desenvolvimento (intervalados + Tempo runs) → Afunilamento. <strong>Taper de 2 semanas</strong> com intensidade mantida na 1ª semana. Sessão de qualidade na TER (intervalado) + Tempo run na QUA + Longão no SAB.
+        <strong>Metodologia:</strong> Progressão própria VO₂ RunMax para 10km — as tabelas de Daniels e Pfitzinger usadas nos planos de 21km/42km não têm uma progressão de longão específica para essa distância, então aqui usamos uma progressão gradual própria, baseada em práticas comuns de treino para 10km, adaptada ao perfil ${prof.label.toLowerCase()}. Fases: Base aeróbica → Desenvolvimento (intervalados + Tempo runs) → Afunilamento. <strong>Taper de 2 semanas</strong> com intensidade mantida na 1ª semana. Sessão de qualidade na TER (intervalado) + Tempo run na QUA + Longão no SAB.
       </div>
     </div>
     <p class="footnote" style="margin-bottom:1.5rem">Sábado = treino longo. TER = qualidade. QUA = Tempo run. Clique nos cards do Longão para mais detalhes.</p>`;
@@ -8637,7 +9005,14 @@ async function confirmSave(){
   }
   const obj=is42?planObj42:race==='21'?planObj21:race==='5k'?planObj5k:planObj10k;
   let weeks,lp;
-  if(isShort){({weeks}=buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed));lp={peak:race==='5k'?10:16};}
+  if(isShort){
+    ({weeks}=buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed));
+    // Pico real entregue pelo engine (agora varia por perfil pro 10km) — em
+    // vez de um número fixo que ficava desatualizado toda vez que a
+    // progressão do longão mudasse.
+    const realPeakLongShort=Math.max(...weeks.filter(w=>!w.isRace).map(w=>w.lkm));
+    lp={peak:realPeakLongShort};
+  }
   else{({weeks,lp}=buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj));}
   const totalWorkouts=weeks.reduce((acc,wk)=>acc+wk.days.filter(d=>!d.rest).length,0);
   const intensityDist=calcIntensityDist(weeks);
@@ -10841,17 +11216,19 @@ function renderSavedList(){
         ${(()=>{
           const _is42=plan.race==='42';
           const _is10k=plan.race==='10k';
-          if(_is10k){
-            const _raceMin10=Math.round(10/plan.raceSpeed*60);
+          const _is5k=plan.race==='5k';
+          if(_is10k||_is5k){
+            const _distKmShort=_is10k?10:5;
+            const _raceMin10=Math.round(_distKmShort/plan.raceSpeed*60);
             const _rh10=Math.floor(_raceMin10/60),_rm10=_raceMin10%60;
             const _prof10=PROFILES[plan.profKey]||PROFILES['inter'];
             return`<div class="card sum-card-10k" style="margin-top:1rem">
-            <p class="sec-lbl">Resumo Corrida 10km</p>
+            <p class="sec-lbl">Resumo Corrida ${_distKmShort}km</p>
             <div class="mc-grid">
               <div class="mc"><p class="mc-lbl">Pace de prova</p><p class="mc-val" style="color:var(--acc)">${s2p(plan.raceSpeed)} <span class="mc-unit">min/km</span></p></div>
               <div class="mc"><p class="mc-lbl">Tempo estimado</p><p class="mc-val">${_rh10>0?_rh10+'h':''}${_rm10.toString().padStart(_rh10>0?2:1,'0')} <span class="mc-unit">min</span></p></div>
             </div>
-            <div class="info-box" style="margin-top:.75rem;margin-bottom:0"><strong>Metodologia:</strong> ${_prof10.method} — ${_prof10.label.toLowerCase()}.</div>
+            <div class="info-box" style="margin-top:.75rem;margin-bottom:0"><strong>Metodologia:</strong> Progressão própria VO₂ RunMax para 10km (perfil ${_prof10.label.toLowerCase()}) — não segue a tabela de longão do Daniels/Pfitzinger usada nos planos de 21km/42km, que não cobrem essa distância.</div>
           </div>`;
           }
           const _raceMin=Math.round((_is42?42.195:21.0975)/plan.raceSpeed*60);
@@ -10896,8 +11273,13 @@ function exportSavedXLSX(id){
     const _prof=PROFILES[plan.profKey]||PROFILES['inter'];
     const _is42=plan.race==='42';
     const _is10k=plan.race==='10k';
-    const _raceMin=Math.round((_is42?42.195:_is10k?10:21.0975)/plan.raceSpeed*60);
+    const _is5k=plan.race==='5k';
+    const _isShortXlsx=_is10k||_is5k;
+    const _raceMin=Math.round((_is42?42.195:_is10k?10:_is5k?5:21.0975)/plan.raceSpeed*60);
     const _rh=Math.floor(_raceMin/60),_rm=_raceMin%60;
+    const _methodologyLabelXlsx=_isShortXlsx
+      ?`Progressão própria VO2 RunMax para 10km (não segue a tabela de longão do Daniels/Pfitzinger, usada só nos planos de 21km/42km)`
+      :_prof.method;
     const ws3=XLSX.utils.aoa_to_sheet([
       ['RESUMO DA PLANILHA'],
       [''],
@@ -10906,7 +11288,7 @@ function exportSavedXLSX(id){
       ['Pace longo (Z1-Z2)',s2p(plan.ez),'min/km'],
       ['Longão máximo',plan.lp?.peak||'—','km'],
       ['Perfil',_prof.label,''],
-      ['Metodologia',_prof.method,''],
+      ['Metodologia',_methodologyLabelXlsx,''],
       [''],
       ['DISTRIBUIÇÃO DE INTENSIDADE'],
       [''],
@@ -15013,12 +15395,14 @@ function lwSaveSnapshot(force){
   try{
     localStorage.setItem(LW_SNAPSHOT_KEY,JSON.stringify({
       planId:LW.planId,wIdx:LW.wIdx,dIdx:LW.dIdx,
+      isVo2Test:LW.isVo2Test||false,testType:LW.testType||null,testWeight:LW.testWeight||null,testSexo:LW.testSexo||null,
       steps:LW.steps,stepIdx:LW.stepIdx,
       status:LW.status,
       startedAt:LW.startedAt,pausedAt:LW.pausedAt,pausedAccumMs:LW.pausedAccumMs,
       totalDistM:LW.totalDistM,
       segStartDistM:LW.segStartDistM,segStartElapsedMs:LW.segStartElapsedMs,
       totalPendingMs:LW.totalPendingMs,
+      initialPendingMs:LW.initialPendingMs,
       stepHistory:LW.stepHistory,
       allowOverwrite:LW.allowOverwrite,
       paceAlertsEnabled:LW.paceAlertsEnabled,
@@ -15045,13 +15429,14 @@ async function lwTryResumeSnapshot(){
   if(!snap||!snap.steps||!snap.steps.length){ lwClearSnapshot(); return; }
   if(Date.now()-(snap.savedAt||0)>LW_SNAPSHOT_MAX_AGE_MS){ lwClearSnapshot(); return; }
   const choice=await lwConfirmModal(
-    'Continuar treino em andamento?',
-    'Encontramos um treino ao vivo que não foi finalizado (a página deve ter recarregado ou o app foi fechado no meio). Deseja continuar de onde parou?',
-    'Continuar treino','Descartar');
+    snap.isVo2Test?'Continuar teste de VO₂ em andamento?':'Continuar treino em andamento?',
+    snap.isVo2Test?'Encontramos um teste de VO₂ ao vivo que não foi finalizado (a página deve ter recarregado ou o app foi fechado no meio). Deseja continuar de onde parou?':'Encontramos um treino ao vivo que não foi finalizado (a página deve ter recarregado ou o app foi fechado no meio). Deseja continuar de onde parou?',
+    snap.isVo2Test?'Continuar teste':'Continuar treino','Descartar');
   if(choice!=='a'){ lwClearSnapshot(); return; }
   if(!('geolocation'in navigator)){ showToast('Seu navegador não suporta GPS — não foi possível retomar o treino.'); lwClearSnapshot(); return; }
   LW={
     planId:snap.planId,wIdx:snap.wIdx,dIdx:snap.dIdx,
+    isVo2Test:snap.isVo2Test||false,testType:snap.testType||null,testWeight:snap.testWeight||null,testSexo:snap.testSexo||null,
     steps:snap.steps,stepIdx:snap.stepIdx||0,
     status:snap.status==='paused'?'paused':'running',
     startedAt:snap.startedAt,pausedAt:snap.status==='paused'?(snap.pausedAt||Date.now()):null,pausedAccumMs:snap.pausedAccumMs||0,
@@ -15061,6 +15446,7 @@ async function lwTryResumeSnapshot(){
     stepHistory:snap.stepHistory||[],lastBeepKey:null,audioCtx:null,
     stepPending:false,stepPendingClearedAt:null,stepGen:0,
     totalPendingMs:snap.totalPendingMs||0,pendingStartElapsedMs:0,
+    initialPendingMs:snap.initialPendingMs||0,initialActivationDone:true,
     paceAlertsEnabled:snap.paceAlertsEnabled!==false,
     autoPauseEnabled:snap.autoPauseEnabled===true,
     autoPaused:false,autoPauseStillSince:null,autoPauseAnchor:null,
@@ -15310,6 +15696,16 @@ function lwActivateStep(gen){
   LW.segStartDistM=LW.totalDistM;
   LW.segStartElapsedMs=lwElapsedMs();
   LW.totalPendingMs=(LW.totalPendingMs||0)+Math.max(0,LW.segStartElapsedMs-(LW.pendingStartElapsedMs||0)); // soma quanto essa espera durou, pra descontar do "tempo total" mostrado na tela
+  if(!LW.initialActivationDone){
+    // Só na PRIMEIRA vez que uma etapa é ativada (a contagem em bipes antes
+    // da etapa 1 de verdade começar) — guarda esse tempo à parte pra
+    // descontar do "Tempo total" pro resto do treino inteiro. Trocas de
+    // etapa depois disso NÃO devem descontar nada (comportamento já pedido
+    // e validado: o relógio continua contando durante os bipes entre
+    // etapas, só não durante os bipes iniciais antes de começar de vez).
+    LW.initialPendingMs=Math.max(0,LW.segStartElapsedMs-(LW.pendingStartElapsedMs||0));
+    LW.initialActivationDone=true;
+  }
   LW.stepPending=false;
   LW.stepPendingClearedAt=Date.now(); // usado por lwSpeechBusy pra confiar no speechSynthesis.speaking só por uma janela curta depois daqui (cobre o finalzinho do anúncio, sem risco de travar pra sempre se o navegador bugar esse estado)
   LW.lastBeepKey=null;
@@ -15409,7 +15805,7 @@ document.addEventListener('visibilitychange',()=>{
       LW.lastGoodPoint=null; // evita contar o "salto" pro ponto atual como deslocamento
       lwStartGPS();
       if(gapSec>=8&&LW.status==='running'){
-        showToast(`O app ficou ${gapSec}s em segundo plano — parte da distância desse período pode não ter sido registrada.`);
+        showToast(`O app ficou ${gapSec}s em segundo plano — parte da distância desse período pode não ter sido registrada.`,null,5000);
       }
     }
     if(!LW.wakeLock)lwRequestWakeLock();
@@ -15443,10 +15839,12 @@ window.lwToggleFullscreen=lwToggleFullscreen;
 function lwUpdateFullscreenBtn(){
   const icon=document.getElementById('lw-fullscreen-btn-icon');
   const label=document.getElementById('lw-fullscreen-btn-label');
+  const btn=document.getElementById('lw-fullscreen-btn');
   if(!icon||!label)return;
   const isFs=!!document.fullscreenElement;
   icon.innerHTML=`<use href="#${isFs?'i-fullscreen_exit':'i-fullscreen'}"></use>`;
   label.textContent=isFs?'Sair da tela cheia':'Tela cheia';
+  if(btn)btn.title=label.textContent;
 }
 document.addEventListener('fullscreenchange',lwUpdateFullscreenBtn);
 window.addEventListener('beforeunload',(e)=>{
@@ -15661,7 +16059,13 @@ function lwOnPosition(pos){
     LW.lastGoodPoint={lat,lng,t};
     return;
   }
-  const isMoving=d>=2;
+  // Limiar de "é movimento de verdade" — 2m pegava ruído demais de GPS
+  // parado (ex: um gesto do braço já bastava pra registrar alguns metros
+  // fantasmas). 3m filtra melhor esse ruído sem arriscar cortar corrida ou
+  // caminhada real — mesmo em ritmos bem lentos (~1,2-1,5m/s de caminhada),
+  // o intervalo entre leituras do GPS (1-3s) já entrega bem mais que 3m de
+  // deslocamento genuíno.
+  const isMoving=d>=3;
   if(autoPausedNow){
     // Atualiza o ponto de referência mesmo autopausado (só por consistência
     // — não é mais usado pra decidir a retomada, que agora compara com o
@@ -15730,8 +16134,12 @@ function lwStartTimer(){
     const idleNow=LW.status==='idle'; // esperando o toque em "Iniciar" — o GPS já está tentando pegar sinal, só precisa atualizar a tela (bolinha/banner) periodicamente
     if(LW.status!=='running'&&!autoPausedNow&&!idleNow)return; // pausa manual: GPS desligado, nada a fazer
     if(LW.status==='running'){
-      lwCheckStepCompletion();
-      lwCheckPaceAlert();
+      if(LW.isVo2Test){
+        vtCheckCompletion(); // modo teste: sem alerta de ritmo, condição de parada própria (tempo ou distância-alvo)
+      }else{
+        lwCheckStepCompletion();
+        lwCheckPaceAlert();
+      }
     }
     lwCheckGpsStale(); // cão de guarda: avisa mesmo se nenhum callback de erro chegar (alguns navegadores ficam "mudos" em vez de disparar erro quando o GPS é desligado no meio do treino) — vale também autopausado e no idle
     if(!LW.wakeLock)lwRequestWakeLock(); // detectou que o wake lock caiu sozinho (SO/navegador) — tenta reconseguir na hora, sem esperar o app ficar oculto/visível de novo; também vale autopausado, pra tela não apagar enquanto espera a pessoa voltar a correr
@@ -16227,6 +16635,7 @@ async function startLiveWorkout(planId,wIdx,dIdx){
     stepHistory:[],lastBeepKey:null,audioCtx:null,
     stepPending:true,stepPendingClearedAt:null,stepGen:0,
     totalPendingMs:0,pendingStartElapsedMs:0, // acumula quanto tempo (no total) foi gasto esperando avisos falados, pra descontar do "tempo total" — sem isso, cada troca de etapa fazia o tempo total pular alguns segundos assim que a fala acabava, igual acontecia no treino livre antes do ajuste
+    initialPendingMs:0,initialActivationDone:false, // só o tempo dos bipes ANTES da etapa 1 de verdade começar é descontado do "Tempo total" — depois disso, cada troca de etapa continua contando normalmente (comportamento já validado como correto)
     paceAlertsEnabled:(()=>{ try{return localStorage.getItem('vo2-lw-pace-alerts')!=='0';}catch(e){return true;} })(),
     autoPauseEnabled:(()=>{ try{return localStorage.getItem('vo2-lw-autopause')==='1';}catch(e){return false;} })(), // desligada por padrão — só liga se a pessoa já tiver ativado antes
     autoPaused:false,autoPauseStillSince:null,autoPauseAnchor:null,
@@ -16504,6 +16913,21 @@ async function lwCancelWorkoutBtn(){
 window.lwCancelWorkoutBtn=lwCancelWorkoutBtn;
 async function lwSkipStep(){
   if(!LW)return;
+  if(LW.isVo2Test){
+    // O botão "Pular etapa"/"Finalizar treino" é o mesmo do treino normal
+    // (reaproveitado), mas nenhum dos dois faz sentido num teste de VO2: não
+    // tem "próxima etapa" pra pular, e "finalizar" com o tempo/distância
+    // incompletos geraria um VO2 errado (as fórmulas assumem que o
+    // tempo/distância-alvo foi cumprido de verdade). Por isso, aqui esse
+    // botão vira "cancelar o teste" — nunca tenta calcular com dados
+    // incompletos.
+    const choice=await lwConfirmModal(
+      'Encerrar teste antes da hora?',
+      'O VO₂ só é calculado corretamente quando o teste completa o tempo/distância definidos. Encerrar agora vai CANCELAR o teste, sem calcular nada.',
+      'Cancelar teste','Continuar teste');
+    if(choice==='a'){ lwDoCancelWorkoutCleanup(); showToast('Teste cancelado.'); }
+    return;
+  }
   if(LW.stepIdx>=LW.steps.length){
     // Aqui o botão já virou "finalizar de verdade" (não tem mais etapa pra
     // pular pra frente) — pede confirmação pra evitar que um toque sem
@@ -16620,7 +17044,6 @@ function lwBuildOverlay(){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div style="font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--t3);text-transform:uppercase;display:flex;align-items:center;gap:6px">
         <span id="lw-gps-dot" style="width:8px;height:8px;border-radius:50%;background:var(--gr);display:inline-block"></span>
-        TREINO AO VIVO
         <span id="lw-gps-label" style="margin-left:2px">GPS</span>
         <span id="lw-gps-signal" style="display:none;align-items:flex-end;gap:1.5px;height:10px;margin-left:1px">
           <span class="lw-sig-bar" style="width:3px;height:3px;background:var(--t3);border-radius:1px;transition:background .2s;display:inline-block"></span>
@@ -16637,13 +17060,17 @@ function lwBuildOverlay(){
       Mantenha tela ligada para não parar o GPS.
     </div>
 
-    <!-- Botão manual de tela cheia — pedido explícito, já que a tentativa
-         automática de reentrar sozinho ao voltar de minimizado nem sempre é
-         aceita pelo navegador (precisa de um toque "fresco" de verdade). O
-         ícone e o texto trocam sozinhos conforme o estado atual (ver
-         lwUpdateFullscreenBtn, chamado no fullscreenchange). -->
-    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-      <button id="lw-fullscreen-btn" onclick="lwToggleFullscreen()" style="background:none;border:1px solid var(--bdr2);border-radius:8px;color:var(--t3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;padding:5px 10px;display:flex;align-items:center;gap:5px">
+    <!-- Linha com o rótulo "TESTE VO2 AO VIVO" (destacado, só aparece em modo
+         teste) de um lado, e o botão de tela cheia do outro — junta os dois
+         na mesma linha em vez de cada um ocupar uma linha própria. -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;min-height:28px">
+      ${LW.isVo2Test?`<span style="font-size:12px;font-weight:800;letter-spacing:.03em;color:var(--acc);text-transform:uppercase">TESTE VO₂ AO VIVO</span>`:'<span></span>'}
+      <!-- Botão manual de tela cheia — pedido explícito, já que a tentativa
+           automática de reentrar sozinho ao voltar de minimizado nem sempre é
+           aceita pelo navegador (precisa de um toque "fresco" de verdade). O
+           ícone e o texto trocam sozinhos conforme o estado atual (ver
+           lwUpdateFullscreenBtn, chamado no fullscreenchange). -->
+      <button id="lw-fullscreen-btn" onclick="lwToggleFullscreen()" style="background:none;border:1px solid var(--bdr2);border-radius:8px;color:var(--t3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;padding:5px 10px;display:flex;align-items:center;gap:5px;flex-shrink:0">
         <svg id="lw-fullscreen-btn-icon" class="gi" style="font-size:13px"><use href="#i-fullscreen"></use></svg>
         <span id="lw-fullscreen-btn-label">Tela cheia</span>
       </button>
@@ -16733,7 +17160,7 @@ function lwBuildOverlay(){
       </div>
     </div>
 
-    <button id="lw-settings-btn" onclick="lwOpenSettingsModal()" style="width:100%;background:none;border:none;border-top:1px solid var(--bdr2);color:var(--t3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;padding:14px 4px;display:flex;align-items:center;justify-content:center;gap:6px">
+    <button id="lw-settings-btn" onclick="lwOpenSettingsModal()" style="width:100%;background:none;border:none;border-top:1px solid var(--bdr2);color:var(--t3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;padding:14px 4px;display:${LW.isVo2Test?'none':'flex'};align-items:center;justify-content:center;gap:6px">
       <svg class="gi" style="font-size:14px"><use href="#i-settings"></use></svg> Configurações
     </button>
 
@@ -16802,7 +17229,13 @@ function lwUpdateUI(){
   // etapas — os totais (km e tempo) ficam sempre rodando durante o treino
   // inteiro, e só param de contar de verdade quando a pessoa pausa
   // manualmente (lwElapsedMs() já desconta pausa real via pausedAccumMs).
-  const totalActiveSec=Math.max(0,lwElapsedMs()/1000);
+  // Enquanto ainda está nos bipes ANTES da etapa 1 começar de vez (stepIdx
+  // ainda 0 e stepPending=true — só acontece uma vez, bem no início do
+  // treino), o "Tempo total" fica parado em zero — só corre depois do
+  // último bipe. Trocas de etapa depois disso continuam contando normal
+  // durante os bipes (subtrai só o desconto fixo guardado em
+  // initialPendingMs, que não muda mais depois da primeira etapa ativar).
+  const totalActiveSec=(LW.stepPending&&LW.stepIdx===0)?0:Math.max(0,(lwElapsedMs()-(LW.initialPendingMs||0))/1000);
   const timeTotalEl=el('lw-time-total'); if(timeTotalEl)timeTotalEl.textContent=lwFmtDurationDisplay(totalActiveSec);
   const totalRowEl=el('lw-total-row'); if(totalRowEl)totalRowEl.style.display=showAsDireto?'none':'grid';
   // Ritmo médio do treino inteiro (não da etapa) — já dá pra calcular com o
@@ -16907,7 +17340,10 @@ function lwUpdateUI(){
   // treino em vez de pular — troca o texto/ícone pra deixar isso claro
   // (em vez de continuar parecendo "Pular etapa").
   const skipBtnIcon=el('lw-skip-btn-icon'), skipBtnLbl=el('lw-skip-btn-label');
-  if(LW.stepIdx>=LW.steps.length){
+  if(LW.isVo2Test){
+    if(skipBtnLbl)skipBtnLbl.textContent='Cancelar teste';
+    if(skipBtnIcon)skipBtnIcon.innerHTML='<use href="#i-close"></use>';
+  }else if(LW.stepIdx>=LW.steps.length){
     if(skipBtnLbl)skipBtnLbl.textContent='Finalizar treino';
     if(skipBtnIcon)skipBtnIcon.innerHTML='<use href="#i-check_circle"></use>';
   }else{
