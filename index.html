@@ -2944,15 +2944,6 @@ function initAuth(){
     const prevUid=currentUser?currentUser.uid:null;
     currentUser=user;
     if(user){
-      // Login (ou troca de conta): descarta qualquer planilha "solta" que
-      // estava em memória sem estar vinculada a essa conta — seja porque
-      // foi gerada como visitante (sem login) ou porque sobrou de uma
-      // conta diferente logada antes nesta mesma aba/sessão. Sem isso, essa
-      // planilha "vazava" para dentro de "Meus Treinos" e podia até
-      // continuar marcada como "Planilha atual" na tela inicial no lugar
-      // da planilha de verdade da conta que acabou de logar.
-      savedPlans=[];
-      wzClearSummaryState();
       // Preenche savedPlans NA HORA com o cache local desta conta (chave é
       // por uid, então nunca mistura com outra conta) — evita esperar a
       // rede só pra reabrir a planilha que estava aberta antes de
@@ -2962,8 +2953,29 @@ function initAuth(){
       // em restoreLastNavState, feito pra permitir essa segunda chamada).
       const cachedPlans=loadSavedPlansLocalCache(user.uid);
       if(cachedPlans&&cachedPlans.length){
+        // Já existe cache local DESTA MESMA conta neste aparelho — ou seja,
+        // isso não é login novo nem troca de conta, é só a mesma sessão de
+        // sempre continuando (ex: fechou e reabriu o app). NÃO limpa
+        // savedPlans nem o resumo (wz_summary_state) nesse caso: apagar e
+        // recriar esses dados bem aqui, cedo demais (antes da nuvem
+        // responder), fazia a tela inicial "piscar" o card de criar
+        // planilha nova por um instante toda vez que o app era fechado e
+        // reaberto, mesmo já tendo planilha/perfil salvos — porque esse
+        // reset sempre roda de novo numa página nova (onAuthStateChanged
+        // dispara a cada carregamento), diferente de só minimizar, que
+        // mantém a página viva e não passa por aqui de novo.
         savedPlans=cachedPlans;
         restoreLastNavState();
+      }else{
+        // Sem NENHUM cache local pra essa conta neste aparelho: ou é login
+        // de verdade (conta nova neste aparelho), ou troca de conta dentro
+        // da mesma aba/sessão. Nesses casos sim, descarta qualquer
+        // planilha "solta" em memória (de visitante ou de conta anterior)
+        // antes de seguir — sem isso ela podia "vazar" pra dentro de "Meus
+        // Treinos" ou aparecer como "Planilha atual" no lugar da planilha
+        // de verdade da conta que acabou de logar.
+        savedPlans=[];
+        wzClearSummaryState();
       }
       // Uma leitura só do doc do usuário, reaproveitada abaixo (planilhas,
       // último teste, config do intervals.icu) — antes eram 3 leituras
