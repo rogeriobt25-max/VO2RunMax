@@ -8548,10 +8548,15 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
   // fazia um iniciante puro (nem VO2 real informado) já pegar 8km de longão
   // na semana 1, indo até 16km de pico — agressivo demais pra quem está
   // começando. 5km mantido como estava (já era mais moderado).
+  // Tetos de pico (16/08/26): alinhados à faixa típica real de longão por
+  // nível pra 10km — Iniciante 8-12km, Intermediário 12-16km, Avançado
+  // 14-18km (raramente até 20km, não usado aqui como padrão) — o Iniciante
+  // já estava dentro da faixa (10km), só Intermediário/Avançado subiram
+  // pro topo da faixa (12→16, 14→18).
   const longCfg10k={
     init:{baseStart:5,buildStart:6,cbTaper:6,peak:10,easyDay:5},
-    inter:{baseStart:6,buildStart:7,cbTaper:8,peak:12,easyDay:7},
-    avance:{baseStart:7,buildStart:8,cbTaper:9,peak:14,easyDay:8},
+    inter:{baseStart:6,buildStart:7,cbTaper:8,peak:16,easyDay:7},
+    avance:{baseStart:7,buildStart:8,cbTaper:9,peak:18,easyDay:8},
   }[profKey]||{baseStart:6,buildStart:7,cbTaper:8,peak:12,easyDay:7};
   function getLong(w){
     const p=phaseName(w);
@@ -8563,7 +8568,16 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
       if(cb) return is10k?longCfg10k.cbTaper:6;
       const pos=w-ph.build[0];
       const buildDur=ph.build[1]-ph.build[0];
-      return Math.min(maxLong,Math.round((is10k?longCfg10k.buildStart:6)*(1+0.08*pos)));
+      if(is10k){
+        // Interpolação linear de buildStart até peak ao longo da fase de
+        // desenvolvimento — a fórmula antiga (multiplicador de crescimento)
+        // nunca chegava perto do teto real em planos mais longos (ex: um
+        // Intermediário de 12 semanas parava em ~10-11km mesmo com o teto
+        // em 16km). Agora sempre atinge o pico exatamente na última semana
+        // de desenvolvimento, não importa a duração do plano escolhida.
+        return Math.round(longCfg10k.buildStart+(longCfg10k.peak-longCfg10k.buildStart)*(pos/Math.max(1,buildDur)));
+      }
+      return Math.min(maxLong,Math.round(6*(1+0.08*pos)));
     }
     return is10k?longCfg10k.cbTaper:6; // taper
   }
@@ -8592,12 +8606,64 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
         return{type:'Longo',pace:s2p(ez),dist:`${is10k?6:4}km`,isLong:true,
           detail:`Z1-Z2 · ${is10k?6:4}km bem leve · pernas frescas para a prova amanhã (ou esta semana)`};
       }
+      // Variantes de longão (Progressivo/Steady State/Final Forte/Ritmo de
+      // Prova) — mesmo sistema de badge+detalhe já usado nos planos de
+      // 21km/42km (a renderização do "Longão" já lê subtype/subtypeBadge
+      // de forma genérica, então não precisou mexer em mais nada pra
+      // aparecer certo na tela). Só entram na fase de Desenvolvimento
+      // fora de semana de recuo — Base e Afunilamento continuam só
+      // "Leve". Iniciante fica limitado a Leve/Progressivo (sem ritmo de
+      // prova nem final forte no longão — mais seguro pra quem começou
+      // a treinar agora).
+      if(is10k&&p==='build'&&!cb){
+        const buildPos=w-ph.build[0];
+        const buildDur=ph.build[1]-ph.build[0];
+        const left=buildDur-buildPos; // semanas restantes de desenvolvimento (0 = última)
+        let variant='leve';
+        if(isInit){
+          variant=(left<=1)?'progressivo':'leve';
+        }else if(isInter){
+          if(left<=1)variant='final_forte';
+          else if(left===2)variant='steady';
+          else if(left===3)variant='progressivo';
+        }else{ // Avançado
+          if(left<=0)variant='final_forte';
+          else if(left===1)variant='prova';
+          else if(left===2)variant='final_forte';
+          else if(left===3)variant='steady';
+          else if(left===4)variant='progressivo';
+        }
+        if(variant!=='leve'){
+          const paceMod=s2p(mod),paceProva=s2p(raceSpeed);
+          const warmCoolKm=Math.round(ez*300/3.6)/1000; // 5min aquec. + 5min desaq., por tempo
+          const mainKm=Math.max(4,Math.round((lkm-warmCoolKm)*10)/10);
+          const halfKm=Math.round(mainKm/2*10)/10;
+          const restKm=Math.round((mainKm-halfKm)*10)/10;
+          let subtype,pace,detail;
+          if(variant==='progressivo'){
+            subtype='Progressivo';pace=paceMod;
+            detail=`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${halfKm}km Z1-Z2 (${paceBand(ez,20)}) → ${restKm}km Z3 progressivo (${paceBand(mod,15)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · segunda metade mais rápida que a primeira · não force o início`;
+          }else if(variant==='steady'){
+            subtype='Steady State';pace=s2p(ez*.90);
+            detail=`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${mainKm}km Z3-Z4 constante (${paceBand(ez*.90,10)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · pace uniforme do início ao fim · não acelere nem diminua`;
+          }else if(variant==='final_forte'){
+            subtype='Final Forte';pace=paceMod;
+            detail=`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${halfKm}km Z1-Z2 (${paceBand(ez,20)}) → ${restKm}km Z3 forte (${paceBand(mod,15)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · simula fadiga de prova · não inicie rápido — guarde energia para o final`;
+          }else{ // prova
+            subtype='Ritmo de Prova';pace=paceProva;
+            detail=`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${mainKm}km pace de prova (${paceBand(raceSpeed,10)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · estímulo específico de 10km · requer 48h de recuperação após`;
+          }
+          const subtypeBadge=` <span style="font-size:8.5px;font-weight:900;background:rgba(255,184,48,0.25);color:#c88800;padding:1px 5px;border-radius:6px;margin-left:3px;vertical-align:middle">${subtype.toUpperCase()}</span>`;
+          return{type:'Longo',subtype,pace,dist:`${lkm}km`,isLong:true,isPeak:is10k&&lkm>=longCfg10k.peak,longDetail:detail,detail,subtypeBadge};
+        }
+      }
       const detail=cb?`Z1-Z2 · ${lkm}km recuo — regenerativo, pace bem confortável`:
         p==='taper'?`Z1-Z2 · ${lkm}km leve de afunilamento`:
         p==='base'?`Z1-Z2 · ${lkm}km aeróbico · construção de base`:
         `Z2 · ${lkm}km · deve se sentir controlado o tempo todo`;
-      if(isInit){const{bandStr}=easyByTime(lkm,ez);return{type:'Longo',pace:s2p(ez),dist:`${lkm}km`,timeLabel:bandStr,isLong:true,detail};}
-      return{type:'Longo',pace:s2p(ez),dist:`${lkm}km`,isLong:true,detail};
+      const isPeak=is10k&&lkm>=longCfg10k.peak;
+      if(isInit){const{bandStr}=easyByTime(lkm,ez);return{type:'Longo',pace:s2p(ez),dist:`${lkm}km`,timeLabel:bandStr,isLong:true,isPeak,detail};}
+      return{type:'Longo',pace:s2p(ez),dist:`${lkm}km`,isLong:true,isPeak,detail};
     }
 
     // TER = sessão de qualidade principal
@@ -8772,12 +8838,18 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
   for(let w=1;w<=planWeeks;w++){
     const isRace=w===planWeeks,isCB=!isRace&&isCutback(w);
     const km=Math.round(weekKm(w)),lkm=getLong(w);
+    // Selo "PICO" — mesmo conceito já usado no 21km/42km, agora também no
+    // 10km (fazia sentido faltar antes, quando o longão não tinha um teto
+    // real definido por perfil; agora que tem, o selo passa a ter
+    // significado de verdade). O 5km continua sem isso, como já estava —
+    // não tem um teto de longão tão definido quanto o 10km.
+    const isPeak=is10k&&!isRace&&phaseName(w)==='build'&&lkm>=longCfg10k.peak;
     const days=[];
     for(let d=0;d<7;d++){
       days.push(isRace?raceWeekDay(d):dayPlan(w,d));
     }
     const activeDays=days.filter(d=>!d.rest).length;
-    weeks.push({w,km,lkm,isRace,isCB,
+    weeks.push({w,km,lkm,isPeak,isRace,isCB,
       phase:isRace?'prova':phaseName(w),
       phaseLabel:isRace?'Prova!':phaseLabel(w),
       days,activeDays});
@@ -8858,8 +8930,9 @@ function renderPlanShort(race,planWeeks,profKey){
         <div class="mc"><p class="mc-lbl">Pace fácil (Z2)</p><p class="mc-val">${s2p(ez)} <span class="mc-unit">min/km</span></p></div>
         <div class="mc"><p class="mc-lbl">Pace intervalado</p><p class="mc-val" style="color:var(--rd)">${s2p(intv)} <span class="mc-unit">min/km</span></p></div>
       </div>
+      ${(60/ez)>8?`<div class="info-box" style="margin-top:.75rem;margin-bottom:0;font-style:italic">Esse ritmo fácil mais lento é esperado e correto pro seu nível atual — treinar mais devagar aqui é o que permite render mais forte nos treinos de qualidade, sem esforço demais no dia a dia. Ele vai ficando mais rápido conforme seu condicionamento evolui.</div>`:''}
       <div class="info-box" style="margin-top:.75rem;margin-bottom:0">
-        <strong>Metodologia:</strong> Progressão própria VO₂ RunMax para 10km — as tabelas de Daniels e Pfitzinger usadas nos planos de 21km/42km não têm uma progressão de longão específica para essa distância, então aqui usamos uma progressão gradual própria, baseada em práticas comuns de treino para 10km, adaptada ao perfil ${prof.label.toLowerCase()}. Fases: Base aeróbica → Desenvolvimento (intervalados + Tempo runs) → Afunilamento. <strong>Taper de 2 semanas</strong> com intensidade mantida na 1ª semana. Sessão de qualidade na TER (intervalado) + Tempo run na QUA + Longão no SAB.
+        <strong>Metodologia:</strong> Inspirado nos princípios de Jack Daniels (ritmos por VO₂/limiar) e Pete Pfitzinger (periodização e progressão de longão) para 8K/10K, adaptada ao perfil ${prof.label.toLowerCase()}. Fases: Base aeróbica → Desenvolvimento (intervalados progressivos + Tempo runs contínuos + longão com variantes de intensidade — progressivo, steady state, final forte${prof.label==='Avançado'?', ritmo de prova':''}) → Afunilamento. <strong>Taper de 2 semanas</strong> com intensidade mantida na 1ª semana. Sessão de qualidade na TER (intervalado) + Tempo run na QUA + Longão no SAB. Paces de treino ajustados de forma mais conservadora para perfis menos experientes — além do que a tabela padrão indicaria — priorizando segurança e adaptação estrutural (tendões, articulações), já que o VO₂ Máx sozinho não captura isso.
       </div>
     </div>
     <p class="footnote" style="margin-bottom:1.5rem">Sábado = treino longo. TER = qualidade. QUA = Tempo run. Clique nos cards do Longão para mais detalhes.</p>`;
@@ -11324,7 +11397,7 @@ function renderSavedList(){
               <div class="mc"><p class="mc-lbl">Pace de prova</p><p class="mc-val" style="color:var(--acc)">${s2p(plan.raceSpeed)} <span class="mc-unit">min/km</span></p></div>
               <div class="mc"><p class="mc-lbl">Tempo estimado</p><p class="mc-val">${_rh10>0?_rh10+'h':''}${_rm10.toString().padStart(_rh10>0?2:1,'0')} <span class="mc-unit">min</span></p></div>
             </div>
-            <div class="info-box" style="margin-top:.75rem;margin-bottom:0"><strong>Metodologia:</strong> Progressão própria VO₂ RunMax para 10km (perfil ${_prof10.label.toLowerCase()}) — não segue a tabela de longão do Daniels/Pfitzinger usada nos planos de 21km/42km, que não cobrem essa distância.</div>
+            <div class="info-box" style="margin-top:.75rem;margin-bottom:0"><strong>Metodologia:</strong> Inspirado nos princípios de Jack Daniels e Pete Pfitzinger para 8K/10K (perfil ${_prof10.label.toLowerCase()}) — inclui variantes de longão (progressivo, steady state, final forte) na fase de desenvolvimento, adaptadas ao perfil.</div>
           </div>`;
           }
           const _raceMin=Math.round((_is42?42.195:21.0975)/plan.raceSpeed*60);
@@ -11374,7 +11447,7 @@ function exportSavedXLSX(id){
     const _raceMin=Math.round((_is42?42.195:_is10k?10:_is5k?5:21.0975)/plan.raceSpeed*60);
     const _rh=Math.floor(_raceMin/60),_rm=_raceMin%60;
     const _methodologyLabelXlsx=_isShortXlsx
-      ?`Progressão própria VO2 RunMax para 10km (não segue a tabela de longão do Daniels/Pfitzinger, usada só nos planos de 21km/42km)`
+      ?`Inspirado nos princípios de Jack Daniels e Pete Pfitzinger para 8K/10K — com variantes de longão (progressivo, steady state, final forte) na fase de desenvolvimento`
       :_prof.method;
     const ws3=XLSX.utils.aoa_to_sheet([
       ['RESUMO DA PLANILHA'],
@@ -15655,7 +15728,7 @@ function lwConfirmModal(title,message,btnALabel,btnBLabel){
     const old=document.getElementById('lw-confirm-modal'); if(old)old.remove();
     const div=document.createElement('div');
     div.id='lw-confirm-modal';
-    div.style.cssText='position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px';
+    div.style.cssText='position:fixed;inset:0;z-index:970;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px';
     div.innerHTML=`
       <div style="background:var(--bg);border-radius:16px;padding:22px 20px;max-width:360px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.35)">
         <div style="font-size:16px;font-weight:800;color:var(--t1);margin-bottom:8px">${title}</div>
@@ -15679,7 +15752,7 @@ function lwAlertModal(title,message,okLabel){
     const old=document.getElementById('lw-alert-modal'); if(old)old.remove();
     const div=document.createElement('div');
     div.id='lw-alert-modal';
-    div.style.cssText='position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px';
+    div.style.cssText='position:fixed;inset:0;z-index:970;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px';
     div.innerHTML=`
       <div style="background:var(--bg);border-radius:16px;padding:22px 20px;max-width:360px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.35)">
         <div style="font-size:16px;font-weight:800;color:var(--t1);margin-bottom:8px">${title}</div>
