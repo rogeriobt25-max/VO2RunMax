@@ -101,7 +101,7 @@
   --bdr:rgba(20,30,45,0.26);--bdr2:rgba(20,30,45,0.10);--bdr-day:rgba(20,30,45,0.32);
   --t1:#1a2733;--t2:#5b6b7c;--t3:#8d99a8;
   --pure-fg:#000;
-  --acc:#0079b3;--acc2:#005f8f;--acc3:rgba(0,121,179,0.10);--acc4:rgba(0,121,179,0.06);
+  --acc:#0079b3;--acc2:#005f8f;--acc3:rgba(0,121,179,0.10);--acc4:rgba(0,121,179,0.06);--acc-glow:rgba(0,121,179,0.12);
   --gr:#2e9f51;--gr2:rgba(46,159,81,0.10);
   --am:#c97a1f;--am2:rgba(201,122,31,0.10);
   --rd:#d64550;--rd2:rgba(214,69,80,0.10);
@@ -129,7 +129,7 @@
   --dbg:#000000;--ds1:#1c1c1e;--ds2:#1e1e1e;--ds3:#262626;
   --dbdr:rgba(255,255,255,0.30);--dbdr2:rgba(255,255,255,0.13);--dbdr-day:rgba(255,255,255,0.38);
   --dt1:#ffffff;--dt2:#c2cdd6;--dt3:#98a3ae;
-  --dacc:#2ab0f0;--dacc2:#5bc6f5;--dacc3:rgba(42,176,240,0.16);--dacc4:rgba(42,176,240,0.10);
+  --dacc:#2ab0f0;--dacc2:#5bc6f5;--dacc3:rgba(42,176,240,0.16);--dacc4:rgba(42,176,240,0.10);--dacc-glow:rgba(42,176,240,0.55);
   --dgr:#3fc46a;--dgr2:rgba(63,196,106,0.14);
   --dam:#e0a13f;--dam2:rgba(224,161,63,0.14);
   --drd:#e8636d;--drd2:rgba(232,99,109,0.14);
@@ -149,7 +149,7 @@
     --bdr:var(--dbdr);--bdr2:var(--dbdr2);--bdr-day:var(--dbdr-day);
     --t1:var(--dt1);--t2:var(--dt2);--t3:var(--dt3);
     --pure-fg:#fff;
-    --acc:var(--dacc);--acc2:var(--dacc2);--acc3:var(--dacc3);--acc4:var(--dacc4);
+    --acc:var(--dacc);--acc2:var(--dacc2);--acc3:var(--dacc3);--acc4:var(--dacc4);--acc-glow:var(--dacc-glow);
     --gr:var(--dgr);--gr2:var(--dgr2);
     --am:var(--dam);--am2:var(--dam2);
     --rd:var(--drd);--rd2:var(--drd2);
@@ -168,7 +168,7 @@ html[data-theme="dark"]{
   --bdr:var(--dbdr);--bdr2:var(--dbdr2);--bdr-day:var(--dbdr-day);
   --t1:var(--dt1);--t2:var(--dt2);--t3:var(--dt3);
   --pure-fg:#fff;
-  --acc:var(--dacc);--acc2:var(--dacc2);--acc3:var(--dacc3);--acc4:var(--dacc4);
+  --acc:var(--dacc);--acc2:var(--dacc2);--acc3:var(--dacc3);--acc4:var(--dacc4);--acc-glow:var(--dacc-glow);
   --gr:var(--dgr);--gr2:var(--dgr2);
   --am:var(--dam);--am2:var(--dam2);
   --rd:var(--drd);--rd2:var(--drd2);
@@ -405,15 +405,16 @@ body{
 .hero{margin-bottom:1.25rem;padding:1.4rem 1.25rem 1.6rem;background:var(--bg);border-radius:0;border:none;border-bottom:1px solid var(--bdr);position:relative;overflow:hidden;box-shadow:none}
 .hero::before{content:'';display:none}
 .hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--acc);opacity:.9;border-radius:0 0 var(--rc) var(--rc);pointer-events:none}
-.hero h1{font-size:clamp(20px,6vw,32px);font-weight:900;letter-spacing:-.03em;text-transform:uppercase;color:var(--t1);margin-bottom:10px;line-height:1.1;text-shadow:none;word-break:break-word}
-.hero h1 span{background:var(--acc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:var(--acc);display:inline-block;text-shadow:none}
+.hero h1{font-family:'Oswald',sans-serif;font-size:clamp(24px,8vw,42px);font-weight:700;letter-spacing:0;text-transform:uppercase;color:var(--t1);margin-bottom:10px;line-height:1.1;text-shadow:none;word-break:break-word}
+.hero h1 span{background:var(--acc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:var(--acc);display:inline-block;text-shadow:0 0 22px var(--acc-glow),0 0 8px var(--acc-glow)}
+.hero h1 span sub{font-size:.55em;bottom:-.15em}
 .hero p{font-size:13px;color:var(--t2);margin-bottom:0}
 .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .hero-stats .hero-stat:last-child{grid-column:1/-1}
-.hero-stat{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:5px 11px;font-size:11.5px;font-weight:700;color:var(--t2)}
+.hero-stat{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--mc-bg);border:1px solid var(--bdr2);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:5px 11px;font-size:11.5px;font-weight:700;color:var(--t2)}
 .hero-stat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .hero-stat-dot.g{background:var(--gr)}.hero-stat-dot.b{background:var(--acc)}.hero-stat-dot.p{background:var(--pu)}
-.hero-feat-ico{width:17px;height:17px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:var(--t1);margin-top:1px}
+.hero-feat-ico{width:19px;height:19px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:16.5px;font-weight:900;color:var(--t1);margin-top:1px}
 
 /* METHOD TABS */
 .mtabs{display:flex;gap:6px;margin-bottom:1.4rem;flex-wrap:wrap}
@@ -773,7 +774,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .btn-modal-ok{padding:8px 20px;border:none;border-radius:var(--rb);background:var(--acc);color:var(--on-acc);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
 
 @media(max-width:360px),(max-device-width:360px){
-  .hero h1{font-size:17px}
+  .hero h1{font-size:23px}
   .hero-stats{display:none}
   .auth-btn .auth-name,.auth-btn span:not(.nav-badge){display:none}
   #auth-reg-btn{display:none}
@@ -790,7 +791,7 @@ details[open] summary::after{transform:rotate(90deg)}
   .mc-grid{grid-template-columns:1fr 1fr}
   .auth-btn{font-size:10px;padding:0 10px}
   .auth-name{max-width:70px}
-  .hero h1{font-size:clamp(18px,5vw,26px)}
+  .hero h1{font-size:clamp(24px,8vw,34px)}
   .hero{padding:1.3rem 1.1rem}
   .race-tabs{gap:4px}
   .race-tab{font-size:12.5px;height:38px}
@@ -1131,7 +1132,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .auth-google-btn:hover{background:var(--s2)}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--t3);font-size:12px}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--bdr2)}
-.auth-tabs{display:flex;border:1px solid var(--bdr2);border-radius:6px;overflow:hidden;margin-bottom:1.4rem}
+.auth-tabs{display:flex;border:1px solid var(--bdr2);border-radius:var(--rb);overflow:hidden;margin-bottom:1.4rem}
 .auth-tab{flex:1;height:36px;border:none;background:transparent;color:var(--t3);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;transition:all .2s}
 .auth-tab.on{background:var(--s3);color:var(--acc)}
 .auth-field{display:flex;flex-direction:column;gap:5px;margin-bottom:.85rem}
@@ -1218,13 +1219,15 @@ details[open] summary::after{transform:rotate(90deg)}
    inicial) — mesmo estilo visual do anel de VO2, pra ficar "da mesma
    família". Fica na coluna direita, na mesma altura do anel de VO2. */
 .wk-progress{flex-shrink:0;text-align:center}
-.wk-progress-streak{cursor:pointer;display:inline-block;font-size:10px;font-weight:800;color:var(--t1);white-space:nowrap;background:var(--s1);border:1.5px solid var(--warm);padding:2px 8px;border-radius:20px;box-sizing:border-box;margin-bottom:8px}
-.wk-ring{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;box-shadow:0 0 0 2px var(--acc3)}
+.wk-progress-streak{cursor:pointer;display:inline-block;font-size:10px;font-weight:800;color:var(--t1);white-space:nowrap;background:var(--s1);border:1.5px solid var(--warm);padding:2px 8px;border-radius:20px;box-sizing:border-box;margin:6px 0}
+.wk-ring{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 6px}
 .wk-ring-in{width:48px;height:48px;border-radius:50%;background:var(--mc-bg);display:flex;flex-direction:column;align-items:center;justify-content:center}
 .wk-ring-num{font-size:13px;font-weight:800;color:var(--t1);line-height:1}
 .wk-ring-unit{font-size:7.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.03em;margin-top:3px}
 .wk-progress-lbl{font-size:11px;font-weight:700;color:var(--t3);white-space:nowrap}
 .cs-vo2-txt{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-vo2-lbl{font-size:15px;font-weight:700;color:var(--t1)}
+.cs-vo2-fit{font-size:13px;font-weight:600;color:var(--t3);margin-top:2px}
 .cs-note{display:flex;align-items:flex-start;gap:6px;font-size:14px;color:var(--t3);line-height:1.45;padding:.75rem 0 0;margin:.75rem 0 0;border-top:1px solid var(--bdr)}
 .cs-today{padding:1rem 1.2rem;margin:1rem 0 0;background:var(--mc-bg);border-radius:var(--r2);box-shadow:var(--mc-shadow)}
 .cs-today-eyebrow{font-size:14.5px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--t1);margin-bottom:6px}
@@ -1402,6 +1405,22 @@ details[open] summary::after{transform:rotate(90deg)}
 <svg style="display:none" aria-hidden="true">
 <symbol id="i-warning" viewBox="0 -960 960 960"><path d="M92-120q-9 0-15.5-4T66-135q-4-7-4.5-14.5T66-165l388-670q5-8 11.5-11.5T480-850q8 0 14.5 3.5T506-835l388 670q5 8 4.5 15.5T894-135q-4 7-10.5 11t-15.5 4H92Zm413.5-125.5Q514-254 514-267t-8.5-21.5Q497-297 484-297t-21.5 8.5Q454-280 454-267t8.5 21.5Q471-237 484-237t21.5-8.5Zm0-111Q514-365 514-378v-164q0-13-8.5-21.5T484-572q-13 0-21.5 8.5T454-542v164q0 13 8.5 21.5T484-348q13 0 21.5-8.5Z"/></symbol>
 <symbol id="i-check_circle" viewBox="0 -960 960 960"><path d="m421-389-98-98q-9-9-22-9t-23 10q-9 9-9 22t9 22l122 123q9 9 21 9t21-9l239-239q10-10 10-23t-10-23q-10-9-23.5-8.5T635-603L421-389Zm59 309q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Z"/></symbol>
+<!-- Coração com linha de eletrocardiograma: mesmo coração sólido (Tabler)
+     já usado no canvas da imagem de compartilhamento, com uma linha de
+     pulso "vazada" no meio via fill-rule evenodd (a linha em zigue-zague
+     é um buraco geométrico de verdade no preenchimento do coração, não
+     um traço por cima — mesma técnica já usada no pino de distância). -->
+<!-- Só o coração sólido — mesmo path já usado no ícone de FC média da
+     imagem de compartilhamento, sem nenhuma linha de pulso por cima.
+     Cor normal (currentColor), igual aos outros ícones da lista — fica
+     branco no modo escuro automaticamente, sem precisar fixar cor. -->
+<!-- Linha de eletrocardiograma/pulso, no lugar do coração — contorno com
+     cantos arredondados (mesmo estilo do ícone "activity" do Feather
+     Icons, licença livre). Usa stroke:currentColor (não fill), então
+     acompanha a cor do texto ao redor sozinho: escuro no tema claro,
+     claro no tema escuro — igual aos outros ícones da lista. -->
+<symbol id="i-heart_pulse" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+
 <symbol id="i-check" viewBox="0 -960 960 960"><path d="m378-332 363-363q9-9 21.5-9t21.5 9q9 9 9 21.5t-9 21.5L399-267q-9 9-21 9t-21-9L175-449q-9-9-8.5-21.5T176-492q9-9 21.5-9t21.5 9l159 160Z"/></symbol>
 <symbol id="i-cancel" viewBox="0 -960 960 960"><path d="m480-438 129 129q9 9 21 9t21-9q9-9 9-21t-9-21L522-480l129-129q9-9 9-21t-9-21q-9-9-21-9t-21 9L480-522 351-651q-9-9-21-9t-21 9q-9 9-9 21t9 21l129 129-129 129q-9 9-9 21t9 21q9 9 21 9t21-9l129-129Zm0 358q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Z"/></symbol>
 <symbol id="i-close" viewBox="0 -960 960 960"><path d="M480-438 270-228q-9 9-21 9t-21-9q-9-9-9-21t9-21l210-210-210-210q-9-9-9-21t9-21q9-9 21-9t21 9l210 210 210-210q9-9 21-9t21 9q9 9 9 21t-9 21L522-480l210 210q9 9 9 21t-9 21q-9 9-21 9t-21-9L480-438Z"/></symbol>
@@ -1869,38 +1888,32 @@ details[open] summary::after{transform:rotate(90deg)}
 
   </div><!-- fim wz-wrap -->
 
-  <div class="hero" id="calc-hero" style="margin-top:1.25rem;display:none">
+  <div class="hero" id="calc-hero" style="margin-top:.35rem;display:none">
   <!-- Escondido por padrão pelo mesmo motivo do wz-wrap (ver comentário lá
        em cima): sem isso, esse cabeçalho de boas-vindas ("Planilhas
        Personalizadas") aparecia por um instante em toda reabertura do app,
        mesmo pra quem já tem conta/planilha, até o JS decidir escondê-lo. -->
-    <h1 style="text-align:left"><span>Planilhas</span> Personalizadas</h1>
-    <div class="hero-feature-list" style="margin:14px 0 4px;display:flex;flex-direction:column;gap:12px">
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <span class="hero-feat-ico"><svg class="gi"><use href="#i-check"></use></svg></span>
-        <div style="font-size:14px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1);display:block">Crie sua planilha personalizada</strong> com base no seu objetivo e perfil de corredor.</div>
+    <h1 style="text-align:left">Treine baseado<br>no seu <span>VO<sub>2</sub> Máx</span></h1>
+    <p style="font-size:14.5px;line-height:1.55;color:var(--t2);margin:0 0 4px">Descubra seu VO₂ Máx com testes realizados pelo próprio aplicativo e gere uma planilha personalizada com ritmos ajustados automaticamente.</p>
+    <div class="hero-feature-list" style="margin:22px 0 4px;display:flex;flex-direction:column;gap:11px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="hero-feat-ico"><svg class="gi"><use href="#i-heart_pulse"></use></svg></span>
+        <span style="font-size:16px;font-weight:700;color:var(--t1)">Calcule seu VO₂ Máx pelo celular</span>
       </div>
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <span class="hero-feat-ico"><svg class="gi"><use href="#i-check"></use></svg></span>
-        <div style="font-size:14px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1);display:block">Acompanhe o progresso da sua planilha</strong> e sua evolução ao longo dos treinos.</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="hero-feat-ico"><svg class="gi"><use href="#i-bolt"></use></svg></span>
+        <span style="font-size:16px;font-weight:700;color:var(--t1)">Ritmos ajustados automaticamente</span>
       </div>
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <span class="hero-feat-ico"><svg class="gi"><use href="#i-check"></use></svg></span>
-        <div style="font-size:14px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1);display:block">Calcule seus ritmos com precisão</strong> utilizando seu VO₂ Máximo (opcional).</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="hero-feat-ico"><svg class="gi"><use href="#i-directions_run"></use></svg></span>
+        <span style="font-size:16px;font-weight:700;color:var(--t1)">Treine ao vivo pelo aplicativo</span>
       </div>
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <span class="hero-feat-ico"><svg class="gi"><use href="#i-check"></use></svg></span>
-        <div style="font-size:14px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1);display:block">Calcule seu VO₂ com teste ao vivo</strong> Cronômetro e GPS, direto pelo app.</div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <span class="hero-feat-ico"><svg class="gi"><use href="#i-check"></use></svg></span>
-        <div style="font-size:14px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1);display:block">Inicie seus treinos pelo próprio aplicativo</strong> acompanhando o tempo, distância e pace em tempo real.</div>
-      </div>
-      <div style="display:flex;align-items:flex-start;gap:10px">
-        <span class="hero-feat-ico"><svg class="gi"><use href="#i-check"></use></svg></span>
-        <div style="font-size:14px;line-height:1.5;color:var(--t2)"><strong style="color:var(--t1);display:block">Sincronize os treinos via Intervals.icu</strong> direto para o seu relógio de corrida.<div style="font-size:12.5px;font-style:italic;color:var(--t3);margin-top:2px">Consulte a compatibilidade no site do intervals.icu</div></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="hero-feat-ico"><svg class="gi"><use href="#i-sync"></use></svg></span>
+        <span style="font-size:16px;font-weight:700;color:var(--t1)">Envie para o relógio via Intervals.icu</span>
       </div>
     </div>
+    <div style="font-size:12.5px;font-style:italic;color:var(--t3);margin:2px 0 18px">Não sabe seu VO<sub style="font-size:.75em">2</sub> Máx? O aplicativo também permite começar sem ele.</div>
     <div class="hero-stats">
       <div class="hero-stat"><div class="hero-stat-dot b"></div>4 métodos de teste</div>
       <div class="hero-stat"><div class="hero-stat-dot g"></div>5 zonas de treino</div>
@@ -4203,7 +4216,7 @@ function buildVo2RingHtml(vo2){
   const vo2DotColor=pct<12?'#ff4466':pct<24?'#ff7828':pct<40?'#ffb830':pct<60?'#00ff88':'#00e5ff';
   return`<div class="cs-row cs-row-vo2">
       <div class="cs-vo2-ring" style="background:${vo2GaugeBg}"><div class="cs-vo2-pointer" style="transform:rotate(${pct*3.6}deg);--dot-color:${vo2DotColor}"></div><div class="cs-vo2-ring-in">${Math.round(vo2*10)/10}</div></div>
-      <span class="cs-vo2-txt">VO₂ Máx <span style="color:var(--t3);font-weight:600;font-size:14px">· ${fit.l}</span></span>
+      <div class="cs-vo2-txt"><div class="cs-vo2-lbl">VO₂ Máx</div><div class="cs-vo2-fit">${fit.l}</div></div>
     </div>`;
 }
 // Card standalone da tela inicial — mostra VO₂ Máx/Zonas, Recordes Pessoais
@@ -4373,9 +4386,9 @@ function renderCalcSummary(){
     <button onclick="wzCalcRealVo2()" style="align-self:flex-start;text-align:left;background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
   const nomeUsuario=(typeof currentUser!=='undefined'&&currentUser)?(currentUser.displayName||currentUser.email||'').split(' ')[0]:'';
   box.innerHTML=`
-    ${nomeUsuario?`<div class="cs-greeting">Olá, ${nomeUsuario}!</div>`:''}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
       <div style="flex:1;min-width:0">
+        ${nomeUsuario?`<div class="cs-greeting">Olá, ${nomeUsuario}!</div>`:''}
         <div class="cs-eyebrow"><svg class="gi"><use href="#i-list_alt"></use></svg> Planilha atual</div>
         <div class="cs-rows">
           ${profVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${profVal}</span></div>`:''}
@@ -4385,8 +4398,7 @@ function renderCalcSummary(){
         </div>
       </div>
       ${progHome?`<div class="wk-progress" id="home-wkprog-${plan.id}">
-        ${streakHome>=1?`<div onclick="openStreakInfoModal()" class="wk-progress-streak">🔥 ${streakHome} semana${streakHome>1?'s':''} seguida${streakHome>1?'s':''} <svg class="gi" style="font-size:10px;vertical-align:-1px"><use href="#i-info"></use></svg></div>`:''}
-        ${buildWeekProgressWidget(plan,progHome)}
+        ${buildWeekProgressWidget(plan,progHome,streakHome)}
       </div>`:''}
     </div>
     ${(plan&&planNeedsVo2Refresh(plan))?`<div class="cs-note"><span><svg class="gi"><use href="#i-info"></use></svg></span><div>${plan.vo2IsReal?`Seu VO₂ real foi atualizado desde que esta planilha foi gerada (era ${plan.vo2}, agora é ${Math.round(lastRealTest.vo2*10)/10}).`:'Esta planilha foi gerada com um VO₂ estimado pelo nível. Você possui um VO₂ real calculado.'}<div style="margin-top:6px"><button onclick="recalcPlanVo2(${plan.id})" style="background:none;border:none;padding:0;font-size:14px;font-weight:700;color:var(--acc);text-decoration:underline;cursor:pointer;font-family:inherit">Atualizar planilha com VO₂ real →</button></div></div></div>`:''}
@@ -9367,7 +9379,7 @@ function buildProgSegments(pct,weekCount){
 // Reaproveita getTodayInfo(plan) só pra saber a semana atual — não repete
 // nem substitui o cálculo de progresso geral (prog), que continua vindo
 // de calcProgress(plan) como antes.
-function buildWeekProgressWidget(plan,prog){
+function buildWeekProgressWidget(plan,prog,streak){
   const totalWeeks=plan.weeks?plan.weeks.length:(plan.planWeeks||0);
   if(!totalWeeks)return'';
   const info=getTodayInfo(plan);
@@ -9377,10 +9389,17 @@ function buildWeekProgressWidget(plan,prog){
   else curWeekNum=1;
   const ringPct=Math.max(0,Math.min(100,prog.pct));
   const ringColor=ringPct>=100?'var(--gr)':'var(--acc)';
+  // Trilha (parte ainda não preenchida) em var(--bdr) — visível mesmo com
+  // pouco progresso, em vez de var(--s3) que ficava quase invisível/
+  // "apagada" contra o fundo do card. Sem box-shadow/glow ao redor: o
+  // brilho azul translúcido (var(--acc3)) sobre fundo escuro virava um
+  // contorno meio "azul-marinho" sujo, em vez de um brilho bonito.
+  const streakHtml=streak>=1?`<div onclick="openStreakInfoModal()" class="wk-progress-streak">🔥 ${streak} semana${streak>1?'s':''} seguida${streak>1?'s':''} <svg class="gi" style="font-size:10px;vertical-align:-1px"><use href="#i-info"></use></svg></div>`:'';
   return`
-    <div class="wk-ring" style="background:conic-gradient(${ringColor} 0 ${ringPct}%,var(--s3) ${ringPct}% 100%)">
+    <div class="wk-ring" style="background:conic-gradient(${ringColor} 0 ${ringPct}%,var(--bdr) ${ringPct}% 100%)">
       <div class="wk-ring-in"><div class="wk-ring-num">${curWeekNum}/${totalWeeks}</div><div class="wk-ring-unit">semanas</div></div>
     </div>
+    ${streakHtml}
     <div class="wk-progress-lbl">${prog.done}/${prog.total} treinos · ${prog.pct}%</div>`;
 }
 
@@ -9436,8 +9455,7 @@ function finishToggleDoneUI(planId,wIdx,dIdx){
   const homeWk=document.getElementById(`home-wkprog-${planId}`);
   if(homeWk){
     const streakNow=calcWeekStreak(plan);
-    const streakHtml=streakNow>=1?`<div onclick="openStreakInfoModal()" class="wk-progress-streak">🔥 ${streakNow} semana${streakNow>1?'s':''} seguida${streakNow>1?'s':''} <svg class="gi" style="font-size:10px;vertical-align:-1px"><use href="#i-info"></use></svg></div>`:'';
-    homeWk.innerHTML=streakHtml+buildWeekProgressWidget(plan,prog);
+    homeWk.innerHTML=buildWeekProgressWidget(plan,prog,streakNow);
   }
   /* update week prog */
   const wk=plan.weeks[wIdx];const weekDone=wk.days.filter((d,di)=>!d.rest&&plan.done[`${wIdx}-${di}`]).length;const weekTotal=wk.days.filter(d=>!d.rest).length;const wkLbl=document.getElementById(`wprog-${planId}-${wIdx}`);if(wkLbl)wkLbl.textContent=`${weekDone}/${weekTotal}`;
@@ -17108,7 +17126,7 @@ function lwBuildOverlay(){
   // AMOLED (fundo preto puro). Reaproveita a mesma paleta escura (--d*) já
   // usada pelo tema escuro do app, só que fixada localmente neste overlay
   // — não muda o tema do resto do app.
-  div.style.cssText='position:fixed;inset:0;--bg:var(--dbg);--s1:var(--ds1);--s2:var(--ds2);--s3:var(--ds3);--bdr:var(--dbdr);--bdr2:var(--dbdr2);--bdr-day:var(--dbdr-day);--t1:var(--dt1);--t2:var(--dt2);--t3:var(--dt3);--pure-fg:#fff;--acc:var(--dacc);--acc2:var(--dacc2);--acc3:var(--dacc3);--acc4:var(--dacc4);--gr:var(--dgr);--gr2:var(--dgr2);--am:var(--dam);--am2:var(--dam2);--rd:var(--drd);--rd2:var(--drd2);--pu:var(--dpu);--pu2:var(--dpu2);--shadow-card:var(--dshadow-card);--shadow-card-hover:var(--dshadow-card-hover);--stat-bg:var(--ds1);--stat-bdr:var(--bdr2);--on-acc:var(--don-acc);--mc-bg:var(--ds1);--mc-border:none;--warm:var(--dwarm);--warm2:var(--dwarm2);--on-warm:var(--don-warm);color-scheme:dark;background:var(--bg);z-index:500;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 34px) 18px calc(env(safe-area-inset-bottom,0px) + 18px);overflow-y:auto';
+  div.style.cssText='position:fixed;inset:0;--bg:var(--dbg);--s1:var(--ds1);--s2:var(--ds2);--s3:var(--ds3);--bdr:var(--dbdr);--bdr2:var(--dbdr2);--bdr-day:var(--dbdr-day);--t1:var(--dt1);--t2:var(--dt2);--t3:var(--dt3);--pure-fg:#fff;--acc:var(--dacc);--acc2:var(--dacc2);--acc3:var(--dacc3);--acc4:var(--dacc4);--acc-glow:var(--dacc-glow);--gr:var(--dgr);--gr2:var(--dgr2);--am:var(--dam);--am2:var(--dam2);--rd:var(--drd);--rd2:var(--drd2);--pu:var(--dpu);--pu2:var(--dpu2);--shadow-card:var(--dshadow-card);--shadow-card-hover:var(--dshadow-card-hover);--stat-bg:var(--ds1);--stat-bdr:var(--bdr2);--on-acc:var(--don-acc);--mc-bg:var(--ds1);--mc-border:none;--warm:var(--dwarm);--warm2:var(--dwarm2);--on-warm:var(--don-warm);color-scheme:dark;background:var(--bg);z-index:500;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 34px) 18px calc(env(safe-area-inset-bottom,0px) + 18px);overflow-y:auto';
   div.innerHTML=`
     <!-- Padding de cima aumentado (+34px em vez de +18px) — pedido explícito:
          no Samsung Internet em tela cheia, o "TREINO AO VIVO / GPS ATIVO"
