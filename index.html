@@ -2553,6 +2553,7 @@ async function doLogout(){
   if(outgoingUid){
     try{ localStorage.removeItem(`${LS_TEST_KEY}_${outgoingUid}`); }catch(e){}
     try{ localStorage.removeItem(`${LS_REAL_TEST_KEY}_${outgoingUid}`); }catch(e){}
+    try{ localStorage.removeItem(`${LS_TEST_HISTORY_KEY}_${outgoingUid}`); }catch(e){}
     try{ localStorage.removeItem(`vo2_ignored_activities_${outgoingUid}`); }catch(e){}
     try{ localStorage.removeItem(`vo2_personal_records_${outgoingUid}`); }catch(e){}
   }
@@ -3045,12 +3046,13 @@ function initAuth(){
       wzClearSummaryState();
       completedLog=[];
       completedLogCursor=null;completedLogHasMore=true;
-      lastRealTest=null;lastTestResult=null;
+      lastRealTest=null;lastTestResult=null;vo2TestHistory=[];
       personalRecords={longestDist:null,bestPace:null,longestDuration:null,km10:null,halfMara:null,fullMara:null};
       renderWzVo2RealNote();
       if(prevUid){
         try{localStorage.removeItem(`${LS_TEST_KEY}_${prevUid}`);}catch(e){}
         try{localStorage.removeItem(`${LS_REAL_TEST_KEY}_${prevUid}`);}catch(e){}
+        try{localStorage.removeItem(`${LS_TEST_HISTORY_KEY}_${prevUid}`);}catch(e){}
       }
       try{localStorage.removeItem('vo2_completed_log');}catch(e){}
     }
@@ -3172,10 +3174,16 @@ var lastTestResult=null; // {vo2, vVO2, methodLabel, methodType, profKey, date}
 // exemplo, quando a pessoa só clicou no aviso da tela inicial e recalculou,
 // sem gerar uma planilha nova a partir dali. Ver uso em deletePlan().
 var lastRealTest=null; // {vo2, vVO2, methodLabel, methodType, profKey, date}
+// Histórico de testes REAIS de VO2 (nunca inclui cálculo "sem informar" por
+// nível) — cada entrada: {vo2, methodLabel, date}. Mais recente primeiro
+// (unshift). Usado na tela inicial (últimos 5) e no histórico completo
+// paginado (20 em 20) — ver buildVo2HistoryPanelGrid/openVo2HistoryModal.
+var vo2TestHistory=[];
 
 /* ── Persistência do último teste ── */
 const LS_TEST_KEY='vo2_last_test';
 const LS_REAL_TEST_KEY='vo2_last_real_test';
+const LS_TEST_HISTORY_KEY='vo2_test_history';
 // Com conta logada, guarda numa chave por UID — sem isso, se duas contas
 // diferentes (ex: dois logins Google diferentes) usarem o MESMO navegador,
 // a segunda conta podia herdar o resultado de VO2 que ficou salvo da
@@ -3198,6 +3206,16 @@ function saveLastTest(vo2,vVO2,methodLabel,methodType,profKey){
     if(currentUser&&fbDb){
       try{fbDb.collection('users').doc(currentUser.uid).set({lastRealTest:data},{merge:true});}catch(e){}
     }
+    // Histórico de testes: guarda TODO teste real feito, não só o último.
+    // Mais recente primeiro. Salva o array inteiro (não tem "push" nativo
+    // no Firestore sem usar arrayUnion, e como o array é pequeno — ver
+    // conta de tamanho no chat — regravar tudo de uma vez é simples e
+    // seguro, mesmo padrão já usado pra savedPlans).
+    vo2TestHistory.unshift({vo2,methodLabel,date:data.date});
+    lsSet(userScopedKey(LS_TEST_HISTORY_KEY),JSON.stringify(vo2TestHistory));
+    if(currentUser&&fbDb){
+      try{fbDb.collection('users').doc(currentUser.uid).set({vo2TestHistory},{merge:true});}catch(e){}
+    }
   }
 }
 
@@ -3206,6 +3224,10 @@ function loadLastTestFromStorage(){
     const rawReal=lsGet(userScopedKey(LS_REAL_TEST_KEY));
     if(rawReal)lastRealTest=JSON.parse(rawReal);
   }catch(e){}
+  try{
+    const rawHist=lsGet(userScopedKey(LS_TEST_HISTORY_KEY));
+    vo2TestHistory=rawHist?(JSON.parse(rawHist)||[]):[];
+  }catch(e){ vo2TestHistory=[]; }
   renderWzVo2RealNote();
   try{
     const raw=lsGet(userScopedKey(LS_TEST_KEY));
@@ -3218,12 +3240,16 @@ async function loadLastTestFromCloud(uid,presetData){
   // Sempre zera antes de checar a nuvem dessa conta — sem isso, uma conta
   // nova (sem teste nenhum salvo) continuaria mostrando o resultado que
   // tinha ficado na memória de uma conta anterior usada no mesmo navegador.
-  lastRealTest=null; lastTestResult=null;
+  lastRealTest=null; lastTestResult=null; vo2TestHistory=[];
   try{
     const data=presetData!==undefined?presetData:await fetchUserDocFromCloud(uid);
     if(data&&data.lastRealTest){
       lastRealTest=data.lastRealTest;
       try{lsSet(userScopedKey(LS_REAL_TEST_KEY),JSON.stringify(lastRealTest));}catch(e){}
+    }
+    if(data&&data.vo2TestHistory){
+      vo2TestHistory=data.vo2TestHistory;
+      try{lsSet(userScopedKey(LS_TEST_HISTORY_KEY),JSON.stringify(vo2TestHistory));}catch(e){}
     }
     renderWzVo2RealNote();
     if(data&&data.lastTest){
@@ -4255,7 +4281,12 @@ function buildStandaloneHomeCard(){
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--warm)"><use href="#i-track_changes"></use></svg> Melhores Marcas</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
-    <div id="marks-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}`;
+    <div id="marks-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
+    ${vo2TestHistory.length?`<button class="cs-vo2zones-btn" id="vo2history-toggle-btn" onclick="toggleVo2HistoryPanel()">
+      <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-schedule"></use></svg> Histórico de VO₂</span>
+      <span class="cs-vo2zones-arrow">▼</span>
+    </button>
+    <div id="vo2history-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}`;
 }
 // Reposiciona a introdução "Planilhas Personalizadas": ACIMA do assistente
 // só pra quem nunca teve nada no app (primeiríssima vez de verdade — sem
@@ -4299,7 +4330,7 @@ function renderCalcSummary(){
   const wzWrap=document.getElementById('wz-wrap');
   const ra=document.getElementById('result-area');
   if(!wzSummaryPlanId||wzBuildingNew){
-    closeVo2ZonesPanel();closeRecordsPanel();closeMarksPanel();
+    closeVo2ZonesPanel();closeRecordsPanel();closeMarksPanel();closeVo2HistoryPanel();
     // Sem planilha nenhuma (ou todas foram apagadas) — mesmo assim, se
     // existir um VO₂ já calculado e/ou recordes já registrados, mantém
     // essas seções visíveis na tela inicial, acima da área de montar uma
@@ -4428,10 +4459,15 @@ function renderCalcSummary(){
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--warm)"><use href="#i-track_changes"></use></svg> Melhores Marcas</span>
       <span class="cs-vo2zones-arrow">▼</span>
     </button>
-    <div id="marks-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}`;
+    <div id="marks-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
+    ${vo2TestHistory.length?`<button class="cs-vo2zones-btn" id="vo2history-toggle-btn" onclick="toggleVo2HistoryPanel()">
+      <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-schedule"></use></svg> Histórico de VO₂</span>
+      <span class="cs-vo2zones-arrow">▼</span>
+    </button>
+    <div id="vo2history-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}`;
   box.style.display=wzBuildingNew?'none':'';
   closeVo2ZonesPanel();
-  closeRecordsPanel();closeMarksPanel();
+  closeRecordsPanel();closeMarksPanel();closeVo2HistoryPanel();
   const heroEl=document.getElementById('calc-hero');if(heroEl)heroEl.style.display='none';
   const cancelLink=document.getElementById('wz-cancel-link');if(cancelLink)cancelLink.style.display=wzBuildingNew?'':'none';
   positionCalcHero(false);
@@ -4523,7 +4559,7 @@ function toggleVo2ZonesPanel(){
   // qualquer outra seção expansível já aberta (Recordes/Melhores Marcas),
   // pra nunca acumular conteúdo aberto na tela.
   closeCreationFlowIfOpen();
-  closeRecordsPanel();closeMarksPanel();
+  closeRecordsPanel();closeMarksPanel();closeVo2HistoryPanel();
   const data=getCurrentSummaryVo2();
   panel.innerHTML=data?buildVo2ZonesContent(data.vo2,data.isReal,data.method):`<div style="text-align:center;color:var(--t3);font-size:14px;padding:.5rem 0">Calcule seu VO₂ Máx pra ver suas zonas de treino.</div>`;
   panel.style.display='';
@@ -9376,6 +9412,29 @@ async function deletePlan(id){
    MEUS TREINOS
 ══════════════════════════════════════════════════════════ */
 function calcProgress(plan){const done=Object.values(plan.done).filter(Boolean).length;return{done,total:plan.totalWorkouts,pct:Math.round(done/Math.max(1,plan.totalWorkouts)*100)}}
+// Troca o dia a dia (plan.weeks) de uma planilha CONCLUÍDA por um resumo
+// leve — mesma regra de "concluída" usada em todo o resto do app (100%
+// dos treinos OU já passou 1 dia do último treino real do calendário, ver
+// checkAndReplaceActivePlan/renderSavedList). Mantém `done` e
+// `totalWorkouts` intactos (pequenos, e é o que a barra de progresso usa
+// pra mostrar 100%) — só `weeks` (que carrega o texto detalhado de cada
+// treino, a parte grande de verdade) e `intensityDist` (gráfico derivado
+// das semanas, sem uso depois de compactada) são esvaziados. Roda só uma
+// vez por planilha (`compacted:true` evita repetir). Não mexe na
+// planilha ATIVA (só em planilhas já concluídas).
+function compactCompletedPlanIfNeeded(plan){
+  if(!plan||plan.compacted)return false;
+  if(!plan.weeks||!plan.weeks.length)return false; // já compactada ou nunca teve dias (não deveria acontecer)
+  const prog=calcProgress(plan);
+  const todayInfo=getTodayInfo(plan);
+  const isCompleted=prog.pct>=100||(todayInfo&&todayInfo.status==='finished');
+  if(!isCompleted)return false;
+  plan.weeks=[];
+  plan.intensityDist=null;
+  plan.compacted=true;
+  plan.completedAt=plan.completedAt||new Date().toLocaleDateString('pt-BR');
+  return true;
+}
 // Sequência de semanas seguidas batendo 100% da planilha (tipo "streak" do
 // Strava/Duolingo). Conta de trás pra frente a partir da semana mais
 // recente que já começou: semana já encerrada e incompleta quebra a
@@ -11041,6 +11100,94 @@ function openShareModalFromLog(logId){
   renderShareModalBody();
 }
 
+// Painel "Histórico de VO2" na tela inicial — mesma mecânica de acordeão
+// de Recordes Pessoais/Melhores Marcas (ver ACCORDION_META). Mostra só os
+// 5 testes mais recentes aqui; o histórico completo (que pode crescer ao
+// longo dos anos) fica no modal paginado — ver openVo2HistoryModal.
+function buildVo2HistoryPanelGrid(){
+  if(!vo2TestHistory.length)return`<div style="text-align:center;color:var(--t3);font-size:14px;padding:.5rem 0">Nenhum teste registrado ainda.</div>`;
+  const recent=vo2TestHistory.slice(0,5);
+  const rows=recent.map((t,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--bdr2)">
+      <div style="min-width:0">
+        <div style="font-size:14px;font-weight:800;color:var(--t1)">${Math.round(t.vo2*10)/10} <span style="font-size:11px;font-weight:600;color:var(--t3)">ml/kg/min</span></div>
+        <div style="font-size:11.5px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.methodLabel||''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div style="font-size:12px;color:var(--t3);white-space:nowrap">${t.date}</div>
+        <button onclick="deleteVo2TestEntry(${i})" title="Excluir teste" style="background:none;border:none;padding:2px;color:var(--t3);cursor:pointer;display:flex"><svg class="gi" style="font-size:16px"><use href="#i-delete"></use></svg></button>
+      </div>
+    </div>`).join('');
+  const moreBtn=vo2TestHistory.length>5?`<button onclick="openVo2HistoryModal()" style="width:100%;margin-top:10px;height:38px;border:1px solid var(--bdr2);background:none;border-radius:var(--rb);color:var(--acc);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Ver histórico completo (${vo2TestHistory.length})</button>`:'';
+  return`<div>${rows}</div>${moreBtn}`;
+}
+
+// Modal do histórico completo, paginado de 20 em 20 (botão "Ver mais"
+// adiciona a próxima leva — nunca renderiza tudo de uma vez, mesmo que o
+// histórico cresça bastante ao longo dos anos).
+let vo2HistoryModalShown=20;
+function openVo2HistoryModal(){
+  vo2HistoryModalShown=20;
+  const old=document.getElementById('vo2-history-modal'); if(old)old.remove();
+  const div=document.createElement('div');
+  div.id='vo2-history-modal';
+  div.style.cssText='position:fixed;inset:0;z-index:970;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center';
+  div.innerHTML=`<div style="background:var(--bg);border-radius:16px 16px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 18px);width:100%;max-width:480px;max-height:80vh;overflow-y:auto">
+    <div id="vo2-history-modal-title" style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">Histórico de VO₂ (${vo2TestHistory.length})</div>
+    <div id="vo2-history-modal-list"></div>
+    <button onclick="document.getElementById('vo2-history-modal').remove()" style="width:100%;margin-top:14px;height:44px;border:none;background:var(--s2);border-radius:var(--rb);color:var(--t2);font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit">Fechar</button>
+  </div>`;
+  document.body.appendChild(div);
+  div.addEventListener('click',e=>{ if(e.target===div)div.remove(); });
+  renderVo2HistoryModalList();
+}
+window.openVo2HistoryModal=openVo2HistoryModal;
+// Exclui um teste do histórico pelo índice REAL no array (não da página
+// exibida) — como tanto o painel (últimos 5) quanto o modal usam
+// slice(0,N) a partir do início, o índice dentro da lista visível sempre
+// bate com o índice no array completo, então não precisa de nenhum id
+// separado por entrada.
+function deleteVo2TestEntry(idx){
+  if(idx<0||idx>=vo2TestHistory.length)return;
+  if(!confirm('Excluir este teste do histórico? Essa ação não pode ser desfeita.'))return;
+  vo2TestHistory.splice(idx,1);
+  lsSet(userScopedKey(LS_TEST_HISTORY_KEY),JSON.stringify(vo2TestHistory));
+  if(currentUser&&fbDb){
+    try{fbDb.collection('users').doc(currentUser.uid).set({vo2TestHistory},{merge:true});}catch(e){}
+  }
+  // Atualiza o painel da tela inicial, se estiver aberto
+  const panel=document.getElementById('vo2history-panel');
+  if(panel&&panel.style.display!=='none')panel.innerHTML=buildVo2HistoryPanelGrid();
+  // Atualiza o modal do histórico completo, se estiver aberto
+  if(document.getElementById('vo2-history-modal-list')){
+    const title=document.getElementById('vo2-history-modal-title');
+    if(title)title.textContent=`Histórico de VO₂ (${vo2TestHistory.length})`;
+    renderVo2HistoryModalList();
+  }
+  showToast('Teste removido do histórico.');
+}
+window.deleteVo2TestEntry=deleteVo2TestEntry;
+function renderVo2HistoryModalList(){
+  const wrap=document.getElementById('vo2-history-modal-list');
+  if(!wrap)return;
+  const slice=vo2TestHistory.slice(0,vo2HistoryModalShown);
+  const rows=slice.map((t,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--bdr2)">
+      <div style="min-width:0">
+        <div style="font-size:14px;font-weight:800;color:var(--t1)">${Math.round(t.vo2*10)/10} <span style="font-size:11px;font-weight:600;color:var(--t3)">ml/kg/min</span></div>
+        <div style="font-size:11.5px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.methodLabel||''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div style="font-size:12px;color:var(--t3);white-space:nowrap">${t.date}</div>
+        <button onclick="deleteVo2TestEntry(${i})" title="Excluir teste" style="background:none;border:none;padding:2px;color:var(--t3);cursor:pointer;display:flex"><svg class="gi" style="font-size:16px"><use href="#i-delete"></use></svg></button>
+      </div>
+    </div>`).join('');
+  const hasMore=vo2TestHistory.length>vo2HistoryModalShown;
+  wrap.innerHTML=`${rows}${hasMore?`<button onclick="vo2HistoryModalShown+=20;renderVo2HistoryModalList()" style="width:100%;margin-top:10px;height:38px;border:1px solid var(--bdr2);background:none;border-radius:var(--rb);color:var(--acc);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Ver mais 20</button>`:''}`;
+}
+window.renderVo2HistoryModalList=renderVo2HistoryModalList;
+
+
 // Recordes Pessoais e Melhores Marcas (10/21/42km) — antes ficavam sempre
 // visíveis no topo de "Meus Treinos"; agora vivem na tela inicial, abaixo
 // do VO2 Máx, como duas seções expansíveis (ver toggleRecordsPanel/
@@ -11223,7 +11370,8 @@ window.clearPersonalRecordsGroup=clearPersonalRecordsGroup;
 const ACCORDION_META={
   records:{panel:'records-panel',btn:'records-toggle-btn',icon:'i-emoji_events',label:'Recordes Pessoais',build:buildRecordsPanelGrid},
   marks:{panel:'marks-panel',btn:'marks-toggle-btn',icon:'i-track_changes',label:'Melhores Marcas',build:buildMarksPanelGrid},
-  progress:{panel:'progress-panel',btn:'progress-toggle-btn',icon:'i-trending_up',label:'Progresso',build:buildProgressPanelGrid}
+  progress:{panel:'progress-panel',btn:'progress-toggle-btn',icon:'i-trending_up',label:'Progresso',build:buildProgressPanelGrid},
+  vo2history:{panel:'vo2history-panel',btn:'vo2history-toggle-btn',icon:'i-schedule',label:'Histórico de VO₂',build:buildVo2HistoryPanelGrid}
 };
 function closeAccordionSection(kind){
   const m=ACCORDION_META[kind];if(!m)return;
@@ -11275,10 +11423,26 @@ function toggleMarksPanel(){toggleAccordionSection('marks');}
 window.toggleMarksPanel=toggleMarksPanel;
 function toggleProgressPanel(){toggleAccordionSection('progress');}
 window.toggleProgressPanel=toggleProgressPanel;
+function closeVo2HistoryPanel(){closeAccordionSection('vo2history');}
+window.closeVo2HistoryPanel=closeVo2HistoryPanel;
+function toggleVo2HistoryPanel(){toggleAccordionSection('vo2history');}
+window.toggleVo2HistoryPanel=toggleVo2HistoryPanel;
 
 function renderSavedList(){
   renderSavedCloudBanner();
   const wrap=document.getElementById('saved-list-wrap');if(!wrap)return;
+  // Compacta qualquer planilha recém-concluída ANTES de montar a lista —
+  // troca o dia a dia (weeks, que é o que pesa de verdade — cheio de texto
+  // detalhado por treino) por um resumo leve. Não perde nenhum recorde
+  // (Recordes Pessoais/Melhores Marcas já são calculados e guardados à
+  // parte no momento em que cada treino é concluído — não dependem da
+  // planilha continuar salva, ver updatePersonalRecords). Também não
+  // afeta o botão "Abrir planilha", que já vem desabilitado pra planilha
+  // concluída de qualquer forma. Só roda uma vez por planilha (marca
+  // `compacted:true`), e só persiste se algo realmente mudou.
+  let anyCompacted=false;
+  savedPlans.forEach(plan=>{ if(compactCompletedPlanIfNeeded(plan))anyCompacted=true; });
+  if(anyCompacted){ saveSavedPlansLocalCache(); persistAccountPlans(); }
   if(savedPlans.length===0){
     wrap.innerHTML=`<div class="saved-empty"><div class="saved-empty-icon"><svg class="gi"><use href="#i-list_alt"></use></svg></div><h3>Nenhuma planilha salva ainda</h3><p>Calcule seu VO2 Máx, configure uma planilha<br>e clique em <strong style="color:var(--gr)">"Salvar em Meus Treinos"</strong>.</p></div>`;return;
   }
@@ -11323,6 +11487,8 @@ function renderSavedList(){
             <span>${profLabel}</span>
             <span>VO2: ${plan.vo2}${planNeedsVo2Refresh(plan)?` · <button onclick="event.stopPropagation();recalcPlanVo2(${plan.id})" style="background:none;border:none;padding:0;font-size:inherit;font-weight:700;color:var(--acc);text-decoration:underline;cursor:pointer;font-family:inherit">Atualizar planilha com VO₂ real (${Math.round(lastRealTest.vo2*10)/10}) →</button>`:''}</span>
             <span style="color:var(--t3)">Criado ${plan.createdAt}</span>
+            ${plan.startTimestamp?`<span style="color:var(--t3)">Início ${fmtDateFull(new Date(plan.startTimestamp))}</span>`:''}
+            ${plan.completedAt?`<span style="color:var(--gr)">Concluída em ${plan.completedAt}</span>`:''}
           </div>
         </div>
         <div class="saved-item-actions">
@@ -11340,6 +11506,7 @@ function renderSavedList(){
       </div>
 
       <div class="saved-weeks-panel" id="swpanel-${plan.id}">
+        ${plan.compacted?`<div style="text-align:center;color:var(--t3);font-size:13px;padding:1rem 0;line-height:1.6">Esta planilha foi concluída — o dia a dia dela não fica mais salvo em detalhe (seus recordes e progresso continuam guardados normalmente).</div>`:`
         ${plan.intensityDist?buildIntensityBoxHTML(plan.intensityDist,plan.race==='42'):''}
         ${plan.weeks.map((wk,wIdx)=>{
           const weekDone=wk.days.filter((d,di)=>!d.rest&&plan.done[`${wIdx}-${di}`]).length;
@@ -11383,7 +11550,7 @@ function renderSavedList(){
               }).join('')}
             </div>
           </div>`;
-        }).join('')}
+        }).join('')}`}
         ${(()=>{
           const _is42=plan.race==='42';
           const _is10k=plan.race==='10k';
