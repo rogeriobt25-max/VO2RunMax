@@ -108,7 +108,7 @@
   --pu:#6a5fc4;--pu2:rgba(106,95,196,0.10);
   --shadow-card:0 1px 2px rgba(20,30,45,0.05),0 1px 8px rgba(20,30,45,0.05);
   --shadow-card-hover:0 2px 4px rgba(20,30,45,0.06),0 4px 14px rgba(20,30,45,0.07);
-  --r:6px;--r2:8px;--rc:8px;--rb:6px;
+  --r:10px;--r2:14px;--rc:16px;--rb:12px;
   /* Card de destaque neutro (recordes, "realizado", etc) — fundo sólido +
      faixa lateral na cor de destaque, em vez do antigo fundo translúcido
      azul + borda da mesma cor (que no escuro ficava com efeito "neon"). */
@@ -126,7 +126,7 @@
   --shadow-nav:0 -1px 8px rgba(20,30,45,0.04);--shadow-modal:0 8px 30px rgba(20,30,45,0.14);
 
   /* ── Paleta escura (fonte única — usada tanto no modo automático quanto na escolha manual) ── */
-  --dbg:#000000;--ds1:#161616;--ds2:#1e1e1e;--ds3:#262626;
+  --dbg:#000000;--ds1:#1c1c1e;--ds2:#1e1e1e;--ds3:#262626;
   --dbdr:rgba(255,255,255,0.30);--dbdr2:rgba(255,255,255,0.13);--dbdr-day:rgba(255,255,255,0.38);
   --dt1:#ffffff;--dt2:#c2cdd6;--dt3:#98a3ae;
   --dacc:#2ab0f0;--dacc2:#5bc6f5;--dacc3:rgba(42,176,240,0.16);--dacc4:rgba(42,176,240,0.10);
@@ -279,18 +279,17 @@ body{
   z-index:100;
   height:var(--hdr-safe);
   padding-top:env(safe-area-inset-top, 0px);
-  /* Pedido explícito: cabeçalho na mesma cor do fundo da página (--bg), em
-     vez da própria cor de superfície (--hdr-glass, branco/cinza-escuro) —
-     fica "uma coisa só" com o resto, sem parecer um cartão flutuando por
-     cima. Como agora é opaco e idêntico ao que tem atrás, o blur/saturação
-     não tem mais efeito visível nenhum (só faz sentido quando dá pra ver o
-     conteúdo por trás através de transparência) — removido. O border-bottom
-     que existia aqui também foi removido (pedido explícito): estava
-     formando uma "linha dupla" em cima de uma sombra que o próprio Android
-     desenha por baixo da barra de status em alguns aparelhos (fora do
-     controle da página) — sem a nossa linha, sobra no máximo só a do
-     sistema, que sozinha incomoda bem menos. */
-  background:var(--bg);
+  /* Cabeçalho com leve efeito "vidro" (fundo translúcido + blur) — dá a
+     sensação de camada fixa por cima do conteúdo que rola por trás, mais
+     próxima do padrão nativo atual (iOS/Android), em vez de ficar 100%
+     "grudado" no fundo da página. Mantém box-shadow:none de propósito
+     (não mexe nisso): um border-bottom/sombra aqui já causou uma "linha
+     dupla" em cima da sombra que o próprio Android desenha sob a barra de
+     status em alguns aparelhos — só o blur é reintroduzido, sem sombra
+     nem borda, pra não trazer aquele problema de volta. */
+  background:var(--hdr-glass);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
   box-shadow:none;
   display:flex;
   align-items:center;
@@ -330,13 +329,17 @@ body{
   z-index:100;
   height:var(--nav-safe);
   padding-bottom:env(safe-area-inset-bottom, 0px);
-  /* Mesma cor do fundo da página (--bg), igual já era feito no .app-nav lá
-     em cima — fica "uma coisa só" com o resto da tela, sem parecer uma
-     barra flutuando por cima. Sem blur/saturação (não tem mais efeito
-     visível com fundo opaco idêntico ao que tem atrás), sem borda e sem
-     sombra — só os cards brancos se destacam, a barra não. */
-  background:var(--bg);
-  box-shadow:none;
+  /* Leve efeito "vidro" (fundo translúcido + blur), igual ao header lá em
+     cima — reforça visualmente que é uma barra fixa por cima do conteúdo,
+     mais próximo do padrão nativo atual. Borda superior fina + sombra
+     sutil pra separar da tela sem pesar (essa barra nunca teve o problema
+     de "linha dupla" do header com a sombra do Android, então pode ter
+     essa separação sem risco). */
+  background:var(--nav-glass);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-top:1px solid var(--bdr2);
+  box-shadow:var(--shadow-nav);
   display:flex;
   align-items:stretch;
 }
@@ -362,16 +365,16 @@ body{
   padding:0 2px;
 }
 .bnav-tab:active{transform:scale(0.92)}
-.bnav-tab.on{color:var(--t1)}
+.bnav-tab.on{color:var(--acc)}
 .bnav-tab.on .bnav-icon{
-  background:var(--s3);
+  background:var(--acc3);
 }
 .bnav-icon{
   font-size:20px;
   line-height:1;
   width:40px;
   height:28px;
-  border-radius:6px;
+  border-radius:var(--r);
   display:flex;
   align-items:center;
   justify-content:center;
@@ -407,7 +410,7 @@ body{
 .hero p{font-size:13px;color:var(--t2);margin-bottom:0}
 .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .hero-stats .hero-stat:last-child{grid-column:1/-1}
-.hero-stat{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:5px 11px;font-size:11.5px;font-weight:700;color:var(--t2)}
+.hero-stat{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:5px 11px;font-size:11.5px;font-weight:700;color:var(--t2)}
 .hero-stat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .hero-stat-dot.g{background:var(--gr)}.hero-stat-dot.b{background:var(--acc)}.hero-stat-dot.p{background:var(--pu)}
 .hero-feat-ico{width:17px;height:17px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:var(--t1);margin-top:1px}
@@ -425,7 +428,7 @@ body{
 /* INPUTS */
 .ig{display:flex;flex-direction:column;gap:5px}
 .ig label{font-size:12.5px;color:var(--t2);font-weight:600;letter-spacing:.06em}
-input[type=number],input[type=text]{width:100%;height:48px;padding:0 14px;border:1.5px solid rgba(0,0,0,0.10);border-radius:8px;font-size:16px;color:var(--t1);background:var(--s2);font-family:inherit;outline:none;transition:all .2s;-webkit-appearance:none;appearance:none}
+input[type=number],input[type=text]{width:100%;height:48px;padding:0 14px;border:1.5px solid rgba(0,0,0,0.10);border-radius:var(--r);font-size:16px;color:var(--t1);background:var(--s2);font-family:inherit;outline:none;transition:all .2s;-webkit-appearance:none;appearance:none}
 input:focus{border-color:var(--acc);box-shadow:none;background:var(--s1)}
 input::placeholder{color:var(--t3)}
 .igrow{display:grid;gap:12px;align-items:flex-end}
@@ -522,7 +525,7 @@ input::placeholder{color:var(--t3)}
 .propt.on .propt-icon{color:var(--acc)}
 
 .dur-opts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
-.dopt{padding:5px 14px;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--t2);background:var(--s2);transition:all .2s}
+.dopt{padding:5px 14px;border:1px solid var(--bdr);border-radius:var(--r);cursor:pointer;font-size:12.5px;font-weight:700;color:var(--t2);background:var(--s2);transition:all .2s}
 .dopt:hover{border-color:var(--bdr-day);color:var(--acc);background:var(--s3);box-shadow:var(--shadow-card-hover)}
 .dopt.on{border-color:var(--bdr-day);color:var(--acc);background:var(--s3);box-shadow:none;}
 .dopt:active{transform:scale(0.98)}
@@ -722,7 +725,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .sw-mark-btn .gi{font-size:8px}
 .sw-mark-btn.is-done{color:var(--t3)}
 /* TOAST */
-.toast{position:fixed;bottom:calc(var(--nav-safe) + 12px);left:50%;transform:translateX(-50%) translateY(80px);opacity:0;visibility:hidden;background:var(--s2);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--bdr2);border-radius:8px;padding:12px 22px;font-size:14px;font-weight:700;color:var(--t1);z-index:999;pointer-events:none;box-shadow:none;max-width:min(90vw,420px);white-space:normal;text-align:center;line-height:1.4}
+.toast{position:fixed;bottom:calc(var(--nav-safe) + 12px);left:50%;transform:translateX(-50%) translateY(80px);opacity:0;visibility:hidden;background:var(--s2);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid var(--bdr2);border-radius:var(--r2);padding:12px 22px;font-size:14px;font-weight:700;color:var(--t1);z-index:999;pointer-events:none;box-shadow:none;max-width:min(90vw,420px);white-space:normal;text-align:center;line-height:1.4}
 .toast.warm{background:linear-gradient(135deg,var(--warm),var(--warm2));border:none;color:var(--on-warm)}
 .toast.show{animation:toastLifecycle 2.8s cubic-bezier(0.34,1.56,0.64,1) forwards}
 @keyframes toastLifecycle{
@@ -1002,7 +1005,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .auth-btn:active{transform:scale(0.96)}
 .auth-btn.primary{background:var(--s1);border-color:var(--bdr2);color:var(--acc)}
 .auth-btn.logout{border-color:rgba(214,44,80,0.2);color:var(--t3)}
-.auth-user-chip{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:8px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow)}
+.auth-user-chip{display:flex;align-items:center;gap:7px;padding:4px 10px 4px 4px;border-radius:var(--r);background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow)}
 .auth-avatar{width:28px;height:28px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
 .auth-name{font-size:12px;font-weight:700;color:var(--gr);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
@@ -1036,7 +1039,7 @@ details[open] summary::after{transform:rotate(90deg)}
   background:var(--s1);
   -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   border:1px solid var(--bdr2);
-  border-radius:8px;
+  border-radius:var(--r2);
   padding:14px 16px;
   display:flex;align-items:center;gap:12px;
   box-shadow:none;
@@ -1122,9 +1125,9 @@ details[open] summary::after{transform:rotate(90deg)}
 .auth-modal-title{font-size:20px;font-weight:800;color:var(--t1);margin-bottom:6px;letter-spacing:-.03em}
 .auth-modal-sub{font-size:13px;color:var(--t3);margin-bottom:1.5rem;line-height:1.6}
 .auth-modal-sub strong{color:var(--t2)}
-.auth-notice{background:var(--s2);border:1px solid var(--bdr2);border-radius:6px;padding:.75rem 1rem;margin-bottom:1.4rem;font-size:12.5px;color:var(--t2);line-height:1.6}
+.auth-notice{background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1.4rem;font-size:12.5px;color:var(--t2);line-height:1.6}
 .auth-notice strong{color:var(--acc)}
-.auth-google-btn{width:100%;height:44px;border:1px solid var(--bdr2);border-radius:8px;background:var(--s1);color:var(--t1);font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s}
+.auth-google-btn{width:100%;height:44px;border:1px solid var(--bdr2);border-radius:var(--rb);background:var(--s1);color:var(--t1);font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s}
 .auth-google-btn:hover{background:var(--s2)}
 .auth-divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--t3);font-size:12px}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--bdr2)}
@@ -1143,7 +1146,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .pass-rules{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 .prule{font-size:11.5px;padding:2px 8px;border-radius:8px;border:1px solid var(--bdr2);background:var(--s3);color:var(--t3);transition:all .2s;font-weight:600}
 .prule.ok{background:var(--s3);border-color:var(--bdr2);color:var(--gr)}
-.auth-error{font-size:12.5px;color:var(--rd);margin-bottom:.75rem;padding:8px 12px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:8px;display:none}
+.auth-error{font-size:12.5px;color:var(--rd);margin-bottom:.75rem;padding:8px 12px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);display:none}
 .auth-error.show{display:block}
 .auth-terms{display:flex;align-items:flex-start;gap:9px;margin-bottom:.75rem;margin-top:.4rem;padding:10px 12px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r)}
 .auth-terms input[type=checkbox]{width:16px;height:16px;flex-shrink:0;margin-top:2px;accent-color:var(--acc);cursor:pointer}
@@ -1158,7 +1161,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .auth-divider::before{left:0}.auth-divider::after{right:0}
 .saved-cloud-notice{background:var(--bg);border:none;border-bottom:1px solid var(--bdr);box-shadow:none;border-radius:0;padding:.75rem 1rem;margin-bottom:1rem;font-size:13px;color:var(--t2);line-height:1.6;display:flex;align-items:flex-start;gap:10px}
 .saved-cloud-notice .icon{font-size:18px;flex-shrink:0;margin-top:1px}
-.saved-cloud-btn{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 12px;border-radius:6px;border:1px solid var(--bdr2);background:var(--s3);color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:all .2s}
+.saved-cloud-btn{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 12px;border-radius:var(--rb);border:1px solid var(--bdr2);background:var(--s3);color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:all .2s}
 .saved-cloud-btn:hover{filter:brightness(1.15)}
 
 /* ── LONGÃO CARD ── */
@@ -1166,13 +1169,13 @@ details[open] summary::after{transform:rotate(90deg)}
 .long-expand.open{display:block}
 .long-expand-title{font-size:10.5px;font-weight:800;letter-spacing:.15em;text-transform:uppercase;color:var(--am);margin-bottom:6px}
 .long-tip-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.long-tip{background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:6px 8px;font-size:11.5px;color:var(--t2);line-height:1.5}
+.long-tip{background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:6px 8px;font-size:11.5px;color:var(--t2);line-height:1.5}
 .long-tip strong{display:block;font-size:10.5px;color:var(--am);margin-bottom:2px;text-transform:uppercase;letter-spacing:.08em}
 
 /* ── SEÇÃO RECUPERAÇÃO ── */
 .rec-section{background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);padding:.9rem 1rem;margin-bottom:1rem}
 .rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.rec-card{background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:8px 10px}
+.rec-card{background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:8px 10px}
 .rec-card-icon{font-size:16px;margin-bottom:4px}
 .rec-card-title{font-size:11.5px;font-weight:800;color:var(--t1);margin-bottom:3px}
 .rec-card-body{font-size:11.5px;color:var(--t2);line-height:1.55}
@@ -1207,10 +1210,20 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-row{display:flex;align-items:center;gap:10px}
 .cs-row-plain .cs-txt{font-size:15px;font-weight:700;color:var(--t1)}
 .cs-row-vo2{gap:11px}
-.cs-vo2-ring{width:78px;height:78px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:4px;position:relative}
-.cs-vo2-ring-in{width:100%;height:100%;border-radius:50%;background:var(--s1);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:var(--t1);position:relative;z-index:1}
+.cs-vo2-ring{width:88px;height:88px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:4px;position:relative}
+.cs-vo2-ring-in{width:100%;height:100%;border-radius:50%;background:var(--s1);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:var(--t1);position:relative;z-index:1}
 .cs-vo2-pointer{position:absolute;top:0;left:0;width:100%;height:100%;transform-origin:50% 50%;pointer-events:none;z-index:2}
 .cs-vo2-pointer::after{content:'';position:absolute;top:0;left:50%;width:11px;height:11px;margin-left:-5.5px;border-radius:50%;background:var(--dot-color,#333a42);box-shadow:0 0 0 2px var(--s1)}
+/* ── Anel de progresso semanal (substitui a barra segmentada na tela
+   inicial) — mesmo estilo visual do anel de VO2, pra ficar "da mesma
+   família". Fica na coluna direita, na mesma altura do anel de VO2. */
+.wk-progress{flex-shrink:0;text-align:center}
+.wk-progress-streak{cursor:pointer;display:inline-block;font-size:10px;font-weight:800;color:var(--t1);white-space:nowrap;background:var(--s1);border:1.5px solid var(--warm);padding:2px 8px;border-radius:20px;box-sizing:border-box;margin-bottom:8px}
+.wk-ring{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;box-shadow:0 0 0 2px var(--acc3)}
+.wk-ring-in{width:48px;height:48px;border-radius:50%;background:var(--mc-bg);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.wk-ring-num{font-size:13px;font-weight:800;color:var(--t1);line-height:1}
+.wk-ring-unit{font-size:7.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.03em;margin-top:3px}
+.wk-progress-lbl{font-size:11px;font-weight:700;color:var(--t3);white-space:nowrap}
 .cs-vo2-txt{font-size:15px;font-weight:700;color:var(--t1)}
 .cs-note{display:flex;align-items:flex-start;gap:6px;font-size:14px;color:var(--t3);line-height:1.45;padding:.75rem 0 0;margin:.75rem 0 0;border-top:1px solid var(--bdr)}
 .cs-today{padding:1rem 1.2rem;margin:1rem 0 0;background:var(--mc-bg);border-radius:var(--r2);box-shadow:var(--mc-shadow)}
@@ -1235,7 +1248,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-upcoming-details{height:26px;margin-top:6px;border:none;background:none;padding:0;color:var(--t3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;text-decoration:underline;text-underline-offset:2px}
 .cs-upcoming-done{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:800;color:var(--gr);margin-top:10px}
 .cs-upcoming-btn{
-  height:26px;margin-top:16px;padding:0 12px;border:none;border-radius:6px;
+  height:26px;margin-top:16px;padding:0 12px;border:none;border-radius:var(--rb);
   background:var(--acc);color:var(--on-acc);font-size:11px;font-weight:800;
   cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;
 }
@@ -1245,7 +1258,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-today-type{font-size:18px;font-weight:900;letter-spacing:-.01em;margin-bottom:4px}
 .cs-today-pace{font-size:15px;color:var(--t2);font-family:monospace;margin-bottom:4px;font-weight:700}
 .cs-today-detail{font-size:13.5px;color:var(--t2);line-height:1.55}
-.cs-today-done{min-height:38px;padding:0 1.1rem;border:none;border-radius:6px;background:var(--gr);color:#fff;font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.03em}
+.cs-today-done{min-height:38px;padding:0 1.1rem;border:none;border-radius:var(--rb);background:var(--gr);color:#fff;font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.03em}
 .cs-eyebrow{font-size:13px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin-bottom:6px}
 .cs-greeting{font-size:17px;font-weight:800;color:var(--t1);margin-bottom:12px}
 .cs-actions-discrete{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:1.1rem;padding-top:.9rem}
@@ -1289,7 +1302,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .wz-saved-vo2-val{font-size:20px;font-weight:900;letter-spacing:-.04em;color:var(--t1);line-height:1}
 .wz-saved-vo2-meta{font-size:11.5px;color:var(--t3);margin-top:2px}
 .wz-saved-vo2-actions{display:flex;flex-direction:column;gap:5px;flex-shrink:0}
-.wz-saved-btn{height:30px;padding:0 12px;cursor:pointer;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:6px;transition:all .2s;font-family:inherit;white-space:nowrap;border:1px solid var(--bdr2);background:transparent;color:var(--t3)}
+.wz-saved-btn{height:30px;padding:0 12px;cursor:pointer;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:var(--rb);transition:all .2s;font-family:inherit;white-space:nowrap;border:1px solid var(--bdr2);background:transparent;color:var(--t3)}
 .wz-saved-btn.keep{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
 .wz-saved-btn:hover{filter:brightness(1.1)}
 .wz-next-btn{width:100%;height:48px;border:none;border-radius:var(--r2);background:var(--acc);color:var(--on-acc);font-size:14px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:.06em;margin-top:.85rem;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:none}
@@ -1318,21 +1331,21 @@ details[open] summary::after{transform:rotate(90deg)}
 
 .mt-toolbar{flex-shrink:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--bdr);background:var(--s1);font-size:12.5px;color:var(--t2)}
 .mt-toolbar label{display:flex;align-items:center;gap:5px;font-weight:700}
-.mt-toolbar input[type=date]{height:30px;border-radius:8px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t1);font-family:inherit;font-size:12.5px;padding:0 8px}
+.mt-toolbar input[type=date]{height:30px;border-radius:var(--r);border:1px solid var(--bdr2);background:var(--s2);color:var(--t1);font-family:inherit;font-size:12.5px;padding:0 8px}
 .mt-wkstep{display:flex;align-items:center;gap:4px}
-.mt-wkstep button{width:26px;height:26px;border-radius:8px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);font-weight:900;cursor:pointer}
-.mt-skip-first{height:26px;padding:0 10px;border-radius:8px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;font-family:inherit}
+.mt-wkstep button{width:26px;height:26px;border-radius:var(--r);border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);font-weight:900;cursor:pointer}
+.mt-skip-first{height:26px;padding:0 10px;border-radius:var(--rb);border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;font-family:inherit}
 .mt-skip-first:hover{border-color:var(--acc);color:var(--acc)}
 .mt-skip-first .gi{font-size:13px}
 .mt-tabs{display:none;gap:6px}
-.mt-tab-btn{height:30px;padding:0 12px;border-radius:6px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);font-size:12.5px;font-weight:800;cursor:pointer}
+.mt-tab-btn{height:30px;padding:0 12px;border-radius:var(--rb);border:1px solid var(--bdr2);background:var(--s2);color:var(--t2);font-size:12.5px;font-weight:800;cursor:pointer}
 .mt-tab-btn.on{background:var(--pu);border-color:var(--pu);color:#fff}
 
 .mt-body{flex:1;display:flex;min-height:0;overflow:hidden}
 .mt-bank{width:260px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--bdr);background:var(--s1);padding:10px}
 .mt-bank-week{margin-bottom:10px}
 .mt-bank-week-lbl{font-size:11.5px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;color:var(--t3);padding:4px 2px 6px}
-.mt-card{display:flex;align-items:flex-start;gap:8px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-left:4px solid var(--acc);border-radius:6px;padding:8px 10px;margin-bottom:6px;cursor:pointer;user-select:none}
+.mt-card{display:flex;align-items:flex-start;gap:8px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-left:4px solid var(--acc);border-radius:var(--r);padding:8px 10px;margin-bottom:6px;cursor:pointer;user-select:none}
 .mt-card:active{background:var(--s3)}
 .mt-card.mt-card-selected{border-color:var(--pu);box-shadow:none;background:var(--pu2)}
 .mt-card-pick{flex-shrink:0;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bdr2);background:var(--s3);color:var(--t2);font-size:15px;font-weight:900;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -1342,16 +1355,16 @@ details[open] summary::after{transform:rotate(90deg)}
 .mt-card-type{font-size:11.5px;font-weight:800;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mt-card-meta{font-size:11.5px;color:var(--t2);margin-top:1px}
 .mt-card-detail{font-size:11px;color:var(--t3);margin-top:2px;line-height:1.4}
-.mt-tap-hint{display:none;align-items:center;justify-content:space-between;gap:8px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:8px 12px;margin:8px 14px 0;font-size:13px;font-weight:700;color:var(--pu);flex-shrink:0}
+.mt-tap-hint{display:none;align-items:center;justify-content:space-between;gap:8px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:8px 12px;margin:8px 14px 0;font-size:13px;font-weight:700;color:var(--pu);flex-shrink:0}
 .mt-tap-hint.on{display:flex}
-.mt-tap-hint button{flex-shrink:0;height:26px;padding:0 10px;border-radius:6px;border:none;background:var(--pu);color:#fff;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
+.mt-tap-hint button{flex-shrink:0;height:26px;padding:0 10px;border-radius:var(--rb);border:none;background:var(--pu);color:#fff;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit}
 
 .mt-cal{flex:1;overflow-y:auto;padding:10px}
 .mt-cal-dow{display:grid;grid-template-columns:52px repeat(7,1fr);gap:6px;padding:0 0 6px;position:sticky;top:0;background:var(--bg);z-index:2}
 .mt-cal-dow span{font-size:11px;font-weight:900;color:var(--t3);text-align:center;letter-spacing:.04em}
 .mt-cal-week{display:grid;grid-template-columns:52px repeat(7,1fr);gap:6px;margin-bottom:6px;align-items:stretch}
 .mt-cal-wlbl{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;color:var(--t2);background:var(--s2);border-radius:8px}
-.mt-day-cell{min-height:78px;background:var(--s1);border:1.5px dashed var(--bdr2);border-radius:6px;padding:4px;display:flex;flex-direction:column;gap:2px;position:relative}
+.mt-day-cell{min-height:78px;background:var(--s1);border:1.5px dashed var(--bdr2);border-radius:var(--r);padding:4px;display:flex;flex-direction:column;gap:2px;position:relative}
 .mt-body.mt-armed .mt-day-cell{cursor:pointer;border-color:var(--pu);border-style:solid}
 .mt-day-date{font-size:10px;color:var(--t3);font-weight:700;padding:1px 2px}
 .mt-chip{flex:1;border-radius:7px;border-left:4px solid var(--acc);background:var(--s2);padding:4px 16px 4px 6px;position:relative;font-size:9.5px;line-height:1.35}
@@ -1361,11 +1374,11 @@ details[open] summary::after{transform:rotate(90deg)}
 
 .mt-foot{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 10px);border-top:1px solid var(--bdr);background:var(--s1);flex-wrap:wrap}
 .mt-foot-count{font-size:12.5px;color:var(--t2);font-weight:700;flex:1;min-width:120px}
-.btn-mt-save{height:44px;padding:0 20px;border-radius:8px;border:none;background:var(--pu);color:#fff;font-size:13.5px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:.03em;display:flex;align-items:center;gap:8px}
+.btn-mt-save{height:44px;padding:0 20px;border-radius:var(--rb);border:none;background:var(--pu);color:#fff;font-size:13.5px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:.03em;display:flex;align-items:center;gap:8px}
 .btn-mt-save:disabled{opacity:.4;cursor:not-allowed}
-.btn-mt-clear{height:44px;padding:0 16px;border-radius:8px;border:1.5px solid var(--bdr2);background:var(--s2);color:var(--t2);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+.btn-mt-clear{height:44px;padding:0 16px;border-radius:var(--rb);border:1.5px solid var(--bdr2);background:var(--s2);color:var(--t2);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
 .btn-mt-clear:hover{border-color:#e5484d;color:#e5484d}
-.mt-info-banner{flex-shrink:0;display:flex;align-items:flex-start;gap:8px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:8px 12px;margin:8px 14px 0;font-size:12.5px;line-height:1.45;font-weight:600;color:var(--t2)}
+.mt-info-banner{flex-shrink:0;display:flex;align-items:flex-start;gap:8px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:8px 12px;margin:8px 14px 0;font-size:12.5px;line-height:1.45;font-weight:600;color:var(--t2)}
 .mt-info-banner strong{color:var(--t1)}
 .mt-info-banner span.mt-info-icon{flex-shrink:0;font-size:14px}
 
@@ -1455,7 +1468,7 @@ details[open] summary::after{transform:rotate(90deg)}
   <img class="app-logo" id="app-logo" src="logo.png" alt="VO2 RunMax" onerror="this.classList.add('app-logo-hidden')"/>
   <div style="flex:1"></div>
   <div class="auth-bar" id="auth-loading-bar" style="gap:8px;align-items:center">
-    <div style="width:100px;height:34px;border-radius:8px;background:var(--s2);opacity:.5;animation:authLoadingPulse 1.1s ease-in-out infinite"></div>
+    <div style="width:100px;height:34px;border-radius:var(--r);background:var(--s2);opacity:.5;animation:authLoadingPulse 1.1s ease-in-out infinite"></div>
   </div>
   <div class="auth-bar" id="auth-bar" style="display:none">
     <button class="auth-btn primary" onclick="openAuthModal('login')" id="auth-login-btn"><svg class="gi"><use href="#i-key"></use></svg> Entrar</button>
@@ -1602,7 +1615,7 @@ details[open] summary::after{transform:rotate(90deg)}
         <div class="wz-step-num">1</div>
         <div><div class="wz-step-title">Qual é o seu perfil de corredor?</div><div class="wz-step-sub">Selecione o que melhor descreve seu volume semanal atual</div></div>
       </div>
-      <div id="wz-vo2-real-note" style="display:none;margin:0 0 14px 0;padding:9px 12px;background:var(--s3);border:1px solid var(--bdr2);border-radius:8px;font-size:12.5px;color:var(--t2)"></div>
+      <div id="wz-vo2-real-note" style="display:none;margin:0 0 14px 0;padding:9px 12px;background:var(--s3);border:1px solid var(--bdr2);border-radius:var(--r);font-size:12.5px;color:var(--t2)"></div>
       <div class="pr-opts" style="grid-template-columns:1fr 1fr 1fr">
         <div class="propt propt-calc" id="calc-prof-init" onclick="wzSelectProfile('init')">
           <div class="propt-icon"><svg class="gi"><use href="#i-directions_walk"></use></svg></div><div class="propt-title">Iniciante</div>
@@ -1682,8 +1695,8 @@ details[open] summary::after{transform:rotate(90deg)}
             <span style="font-size:22px"><svg class="gi"><use href="#i-directions_run"></use></svg></span>
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste Cooper — 12 minutos</div><div style="font-size:12.5px;color:var(--t3)">Corra o máximo possível em 12 min e anote a distância</div>
               <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-                <button onclick="vtShowLocationNotice('cooper')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
-                <button onclick="wzGoToTest('cooper')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
+                <button onclick="vtShowLocationNotice('cooper')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:var(--rb);padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
+                <button onclick="wzGoToTest('cooper')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:var(--rb);padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
               </div>
             </div>
           </div>
@@ -1691,8 +1704,8 @@ details[open] summary::after{transform:rotate(90deg)}
             <span style="font-size:22px"><svg class="gi"><use href="#i-directions_walk"></use></svg></span>
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste 1.600m (1 milha)</div><div style="font-size:12.5px;color:var(--t3)">Corra 1.600m o mais rápido possível e anote o tempo</div><div style="margin-top:4px"><span style="display:inline-block;background:var(--s3);color:var(--t3);font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:6px;padding:2px 8px">Indicado para iniciantes</span></div>
               <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-                <button onclick="vtShowLocationNotice('m1600')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
-                <button onclick="wzGoToTest('1600')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
+                <button onclick="vtShowLocationNotice('m1600')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:var(--rb);padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
+                <button onclick="wzGoToTest('1600')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:var(--rb);padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
               </div>
             </div>
           </div>
@@ -1700,8 +1713,8 @@ details[open] summary::after{transform:rotate(90deg)}
             <span style="font-size:22px"><svg class="gi"><use href="#i-straighten"></use></svg></span>
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:var(--t1)">Corrida 2,4 km</div><div style="font-size:12.5px;color:var(--t3)">Corra 2,4 km o mais rápido possível e anote o tempo</div>
               <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-                <button onclick="vtShowLocationNotice('km24')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
-                <button onclick="wzGoToTest('2400')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
+                <button onclick="vtShowLocationNotice('km24')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:var(--rb);padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
+                <button onclick="wzGoToTest('2400')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:var(--rb);padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
               </div>
             </div>
           </div>
@@ -1709,8 +1722,8 @@ details[open] summary::after{transform:rotate(90deg)}
             <span style="font-size:22px"><svg class="gi"><use href="#i-sports_score"></use></svg></span>
             <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:800;color:var(--t1)">Teste 3 km</div><div style="font-size:12.5px;color:var(--t3)">Corra 3 km o mais rápido possível e anote o tempo</div>
               <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-                <button onclick="vtShowLocationNotice('km3')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
-                <button onclick="wzGoToTest('3km')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
+                <button onclick="vtShowLocationNotice('km3')" style="flex:1;background:var(--acc);color:var(--on-acc);border:none;border-radius:var(--rb);padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center"><svg class="gi" style="font-size:14px"><use href="#i-location_on"></use></svg> Realizar teste ao vivo</button>
+                <button onclick="wzGoToTest('3km')" style="flex:1;background:none;color:var(--t2);border:1.5px solid var(--bdr2);border-radius:var(--rb);padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center">Inserir manualmente</button>
               </div>
             </div>
           </div>
@@ -2461,7 +2474,7 @@ async function doPasswordReset(){
         <div style="font-size:36px;margin-bottom:12px"><svg class="gi"><use href="#i-mail"></use></svg></div>
         <div style="font-size:14px;font-weight:800;color:var(--gr);margin-bottom:8px">E-mail enviado!</div>
         <div style="font-size:13px;color:var(--t3);line-height:1.6;margin-bottom:1.2rem">Verifique sua caixa de entrada em <strong style="color:var(--t2)">${email}</strong> e clique no link para redefinir sua senha.</div>
-        <button onclick="switchAuthPanel('login')" style="background:none;border:1px solid var(--bdr2);border-radius:6px;padding:8px 20px;color:var(--t2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Voltar ao login</button>
+        <button onclick="switchAuthPanel('login')" style="background:none;border:1px solid var(--bdr2);border-radius:var(--rb);padding:8px 20px;color:var(--t2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Voltar ao login</button>
       </div>`;
   }catch(e){
     const msg={
@@ -4115,7 +4128,7 @@ function buildTodayMini(plan){
       </div>`:''}
     </div>
     ${!isDone?`<div>
-      <button onclick="startLiveWorkout(${plan.id},${wIdx},${dIdx})" style="width:100%;min-height:38px;padding:0 1.1rem;border:none;border-radius:6px;background:var(--acc);color:var(--on-acc);font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.03em;display:inline-flex;align-items:center;justify-content:center;gap:6px"><svg class="gi"><use href="#i-directions_run"></use></svg> Iniciar Treino</button>
+      <button onclick="startLiveWorkout(${plan.id},${wIdx},${dIdx})" style="width:100%;min-height:38px;padding:0 1.1rem;border:none;border-radius:var(--rb);background:var(--acc);color:var(--on-acc);font-size:14.5px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.03em;display:inline-flex;align-items:center;justify-content:center;gap:6px"><svg class="gi"><use href="#i-directions_run"></use></svg> Iniciar Treino</button>
       <div style="text-align:center;margin-top:8px">
         <button onclick="toggleDone(${plan.id},${wIdx},${dIdx}).then(renderCalcSummary)" style="background:none;border:none;padding:4px;color:var(--gr);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Concluir treino manualmente</button>
       </div>
@@ -4205,7 +4218,7 @@ function buildStandaloneHomeCard(){
   const hasProgress=currentUser&&getWeeklyVolumeData(8).some(w=>w.km>0);
   if(!vo2Live&&!recItems.length&&!markItems.length&&!hasProgress)return'';
   const vo2Block=vo2Live?`${buildVo2RingHtml(vo2Live)}
-    <button onclick="wzCalcRealVo2()" style="background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
+    <button onclick="wzCalcRealVo2()" style="align-self:flex-start;text-align:left;background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
   return`
     ${vo2Block}
     ${vo2Live?`<button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()" style="margin-top:.6rem">
@@ -4357,22 +4370,25 @@ function renderCalcSummary(){
   const distVal=({'10k':`${medalIconSvg('#2563EB','#1D4ED8',18)} 10 km`,'21':`${medalIconSvg('#F5C518','#B8860B',18)} Meia-maratona · 21 km`,'42':`${trophyIconSvg(18)} Maratona · 42 km`})[dist]||'';
   const objVal=({'finish':'<svg class="gi"><use href="#i-track_changes"></use></svg> Completar a prova','target':'<svg class="gi"><use href="#i-schedule"></use></svg> Tempo alvo','improve':'<svg class="gi"><use href="#i-trending_up"></use></svg> Melhorar tempo atual'})[obj]||'';
   const vo2Row=vo2?`${buildVo2RingHtml(vo2)}
-    <button onclick="wzCalcRealVo2()" style="background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
+    <button onclick="wzCalcRealVo2()" style="align-self:flex-start;text-align:left;background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
   const nomeUsuario=(typeof currentUser!=='undefined'&&currentUser)?(currentUser.displayName||currentUser.email||'').split(' ')[0]:'';
   box.innerHTML=`
     ${nomeUsuario?`<div class="cs-greeting">Olá, ${nomeUsuario}!</div>`:''}
-    <div class="cs-eyebrow"><svg class="gi"><use href="#i-list_alt"></use></svg> Planilha atual</div>
-    <div class="cs-rows">
-      ${profVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${profVal}</span></div>`:''}
-      ${vo2Row}
-      ${distVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${distVal}</span></div>`:''}
-      ${objVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${objVal}</span></div>`:''}
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+      <div style="flex:1;min-width:0">
+        <div class="cs-eyebrow"><svg class="gi"><use href="#i-list_alt"></use></svg> Planilha atual</div>
+        <div class="cs-rows">
+          ${profVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${profVal}</span></div>`:''}
+          ${vo2Row?`<div style="margin-top:14px">${vo2Row}</div>`:''}
+          ${distVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${distVal}</span></div>`:''}
+          ${objVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${objVal}</span></div>`:''}
+        </div>
+      </div>
+      ${progHome?`<div class="wk-progress" id="home-wkprog-${plan.id}">
+        ${streakHome>=1?`<div onclick="openStreakInfoModal()" class="wk-progress-streak">🔥 ${streakHome} semana${streakHome>1?'s':''} seguida${streakHome>1?'s':''} <svg class="gi" style="font-size:10px;vertical-align:-1px"><use href="#i-info"></use></svg></div>`:''}
+        ${buildWeekProgressWidget(plan,progHome)}
+      </div>`:''}
     </div>
-    ${progHome?`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;margin-top:12px">
-      ${streakHome>=1?`<div onclick="openStreakInfoModal()" style="cursor:pointer;width:186px;text-align:center;font-size:11px;font-weight:800;color:var(--t1);white-space:nowrap;background:var(--s1);border:1.5px solid var(--warm);padding:2.5px 10px;border-radius:20px;box-sizing:border-box">🔥 ${streakHome} semana${streakHome>1?'s':''} seguida${streakHome>1?'s':''} <svg class="gi" style="font-size:11px;vertical-align:-1px"><use href="#i-info"></use></svg></div>`:''}
-      <div class="prog-segbar" id="home-prog-fill-${plan.id}">${buildProgSegments(progHome.pct,plan.weeks?plan.weeks.length:0)}</div>
-      <span style="font-size:11px;font-weight:700;color:var(--t3);white-space:nowrap"><span id="home-prog-lbl-${plan.id}">${progHome.done}/${progHome.total} treinos</span> <span style="font-size:7px;vertical-align:middle">●</span> <span id="home-prog-pct-${plan.id}">${progHome.pct}%</span></span>
-    </div>`:''}
     ${(plan&&planNeedsVo2Refresh(plan))?`<div class="cs-note"><span><svg class="gi"><use href="#i-info"></use></svg></span><div>${plan.vo2IsReal?`Seu VO₂ real foi atualizado desde que esta planilha foi gerada (era ${plan.vo2}, agora é ${Math.round(lastRealTest.vo2*10)/10}).`:'Esta planilha foi gerada com um VO₂ estimado pelo nível. Você possui um VO₂ real calculado.'}<div style="margin-top:6px"><button onclick="recalcPlanVo2(${plan.id})" style="background:none;border:none;padding:0;font-size:14px;font-weight:700;color:var(--acc);text-decoration:underline;cursor:pointer;font-family:inherit">Atualizar planilha com VO₂ real →</button></div></div></div>`:''}
     ${plan?buildTodayMini(plan):''}
     ${plan?buildUpcomingCarousel(plan):''}
@@ -4831,7 +4847,7 @@ function wzGoToTest(method){
     formArea.innerHTML=`${backBtn}
       <div style="background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.85rem;font-size:13px;color:var(--t2);line-height:1.6">
         <svg class="gi"><use href="#i-directions_run"></use></svg> <strong style="color:var(--acc)">Teste de Cooper — 12 minutos</strong><br>Corra o máximo possível em 12 min em percurso plano e anote a distância percorrida.
-        <button onclick="openCooperHowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--bdr2);border-radius:6px;color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
+        <button onclick="openCooperHowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--bdr2);border-radius:var(--rb);color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
       </div>
       <div class="igrow" style="grid-template-columns:1fr 100px 120px;align-items:flex-end;gap:12px">
         <div class="ig">
@@ -4859,7 +4875,7 @@ function wzGoToTest(method){
     formArea.innerHTML=`${backBtn}
       <div style="background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.85rem;font-size:13px;color:var(--t2);line-height:1.6">
         <svg class="gi"><use href="#i-directions_walk"></use></svg> <strong style="color:var(--acc)">Teste 1.600m (1 milha)</strong><br>Corra 1.600m o mais rápido possível em percurso plano e anote o tempo exato. Ótimo ponto de partida para quem está começando.
-        <button onclick="open1600HowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--bdr2);border-radius:6px;color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
+        <button onclick="open1600HowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--bdr2);border-radius:var(--rb);color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
       </div>
       <div class="igrow" style="grid-template-columns:1fr 1fr;align-items:flex-end;gap:12px">
         <div class="ig">
@@ -4879,7 +4895,7 @@ function wzGoToTest(method){
     formArea.innerHTML=`${backBtn}
       <div style="background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.85rem;font-size:13px;color:var(--t2);line-height:1.6">
         <svg class="gi"><use href="#i-straighten"></use></svg> <strong style="color:var(--acc)">Corrida 2,4 km</strong><br>Corra 2,4 km o mais rápido possível em percurso plano e anote o tempo exato.
-        <button onclick="open2400HowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--bdr2);border-radius:6px;color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
+        <button onclick="open2400HowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--bdr2);border-radius:var(--rb);color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
       </div>
       <div class="igrow" style="grid-template-columns:1fr 1fr 1fr;align-items:flex-end;gap:12px">
         <div class="ig">
@@ -4911,7 +4927,7 @@ function wzGoToTest(method){
     formArea.innerHTML=`${backBtn}
       <div style="background:var(--s2);border:1px solid var(--bdr2);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:.85rem;font-size:13px;color:var(--t2);line-height:1.6">
         <svg class="gi"><use href="#i-sports_score"></use></svg> <strong style="color:var(--acc)">Teste 3 km</strong><br>Corra 3 km o mais rápido possível em percurso plano e anote o tempo exato.
-        <button onclick="open3kmHowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--bdr2);border-radius:6px;color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
+        <button onclick="open3kmHowModal()" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--bdr2);border-radius:var(--rb);color:var(--acc);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;padding:2px 9px;margin-left:6px"><svg class="gi"><use href="#i-list_alt"></use></svg> Como fazer</button>
       </div>
       <div class="igrow" style="grid-template-columns:1fr 1fr;align-items:flex-end;gap:12px">
         <div class="ig">
@@ -8310,7 +8326,7 @@ function buildPlanUI(race){
   </div></div>
   <div id="plan-legend-export-${race}" style="display:${planBodyDisplay}">
   <div class="legend-bar" id="legend-bar-${race}"><strong style="font-size:12.5px;color:var(--t2)">LEGENDA:</strong><div class="ld"><div class="ldot" style="background:#ffb830"></div>Sáb = Longão <svg class="gi"><use href="#i-info"></use></svg></div><div class="ld"><div class="ldot" style="background:#00aaff"></div>Corrida leve</div><div class="ld"><div class="ldot" style="background:#00cc66"></div>Moderado Z3</div><div class="ld"><div class="ldot" style="background:#ff2244"></div>Intervalado</div><div class="ld"><div class="ldot" style="background:#ff6b00"></div>Tempo run</div><div class="ld"><div class="ldot" style="background:#cc4400"></div>Fartlek</div></div>
-  ${isShort?'':`<div style="font-size:11.5px;color:var(--t3);background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:7px 12px;margin-bottom:.75rem;line-height:1.6;display:none" id="dias-ativos-${race}">
+  ${isShort?'':`<div style="font-size:11.5px;color:var(--t3);background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:7px 12px;margin-bottom:.75rem;line-height:1.6;display:none" id="dias-ativos-${race}">
   <svg class="gi"><use href="#i-bolt"></use></svg> <strong style="color:var(--t2)">Dias ativos por fase:</strong> ${is42?'Base 3–4 treinos · Build 4–5 treinos · Específica 4–5 treinos · Pico 5 treinos · Taper 3–4 treinos':race==='21'?'21km 12sem: 4 treinos constantes (Base→Específica→Pico→Taper) · 21km 16sem: inicia 3 treinos, evolui para 4 gradualmente':'Base 3–4 treinos · Build 4–5 treinos · Recuo 3 treinos · Taper 3–4 treinos'}. <strong style="color:var(--t2)">SEG</strong>: descanso (iniciante) ou rec.ativa progressiva (inter/avançado) · <strong style="color:var(--t2)">SEX</strong>: descanso pré-longão (leve opcional p/ avançado/improve) · <strong style="color:var(--t2)">DOM</strong> sempre descanso.
   </div>`}
   <div class="exp-bar-pending" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--s2);border-radius:var(--r);margin-bottom:1rem;font-size:13px;color:var(--t3);line-height:1.5"><span style="font-size:15px;flex-shrink:0"><svg class="gi"><use href="#i-schedule"></use></svg></span><span>Salve a planilha em <strong style="color:var(--t2)">Meus Treinos</strong> para liberar a opção de enviar os treinos para o relógio via intervals.icu.</span></div>
@@ -9345,6 +9361,28 @@ function buildProgSegments(pct,weekCount){
   const knobHtml=(pct>0&&pct<100)?`<div class="prog-seg-knob" style="left:calc(${pct}% - 4.5px);box-shadow:0 0 0 2px ${knobColor}"></div>`:'';
   return`<div class="prog-seg-fill" style="width:${pct}%;background:${fill}"><div class="prog-seg-sheen"></div></div>${ticksHtml}${knobHtml}`;
 }
+// ── Anel de progresso semanal (tela inicial) ──────────────────────────
+// Substitui a barra segmentada por um anel (mesmo estilo do anel de VO2)
+// mostrando o progresso geral da planilha (%) com a semana atual no meio.
+// Reaproveita getTodayInfo(plan) só pra saber a semana atual — não repete
+// nem substitui o cálculo de progresso geral (prog), que continua vindo
+// de calcProgress(plan) como antes.
+function buildWeekProgressWidget(plan,prog){
+  const totalWeeks=plan.weeks?plan.weeks.length:(plan.planWeeks||0);
+  if(!totalWeeks)return'';
+  const info=getTodayInfo(plan);
+  let curWeekNum;
+  if(info&&info.status==='active')curWeekNum=info.wIdx+1;
+  else if(info&&info.status==='finished')curWeekNum=totalWeeks;
+  else curWeekNum=1;
+  const ringPct=Math.max(0,Math.min(100,prog.pct));
+  const ringColor=ringPct>=100?'var(--gr)':'var(--acc)';
+  return`
+    <div class="wk-ring" style="background:conic-gradient(${ringColor} 0 ${ringPct}%,var(--s3) ${ringPct}% 100%)">
+      <div class="wk-ring-in"><div class="wk-ring-num">${curWeekNum}/${totalWeeks}</div><div class="wk-ring-unit">semanas</div></div>
+    </div>
+    <div class="wk-progress-lbl">${prog.done}/${prog.total} treinos · ${prog.pct}%</div>`;
+}
 
 async function toggleDone(planId,wIdx,dIdx){
   if(!requireLoginFor('Crie uma conta grátis pra marcar treinos como concluídos e acompanhar seu histórico.'))return;
@@ -9395,8 +9433,12 @@ function finishToggleDoneUI(planId,wIdx,dIdx){
   const bar=document.getElementById(`prog-fill-${planId}`);const pct=document.getElementById(`prog-pct-${planId}`);const lbl=document.getElementById(`prog-lbl-${planId}`);
   if(bar){ if(bar.classList.contains('prog-segbar'))bar.innerHTML=buildProgSegments(prog.pct,plan.weeks?plan.weeks.length:0);else bar.style.width=prog.pct+'%'; }
   if(pct)pct.textContent=prog.pct+'%';if(lbl)lbl.textContent=`${prog.done}/${prog.total} treinos`;
-  const homeBar=document.getElementById(`home-prog-fill-${planId}`);const homePct=document.getElementById(`home-prog-pct-${planId}`);const homeLbl=document.getElementById(`home-prog-lbl-${planId}`);
-  if(homeBar)homeBar.innerHTML=buildProgSegments(prog.pct,plan.weeks?plan.weeks.length:0);if(homePct)homePct.textContent=prog.pct+'%';if(homeLbl)homeLbl.textContent=`${prog.done} / ${prog.total} treinos`;
+  const homeWk=document.getElementById(`home-wkprog-${planId}`);
+  if(homeWk){
+    const streakNow=calcWeekStreak(plan);
+    const streakHtml=streakNow>=1?`<div onclick="openStreakInfoModal()" class="wk-progress-streak">🔥 ${streakNow} semana${streakNow>1?'s':''} seguida${streakNow>1?'s':''} <svg class="gi" style="font-size:10px;vertical-align:-1px"><use href="#i-info"></use></svg></div>`:'';
+    homeWk.innerHTML=streakHtml+buildWeekProgressWidget(plan,prog);
+  }
   /* update week prog */
   const wk=plan.weeks[wIdx];const weekDone=wk.days.filter((d,di)=>!d.rest&&plan.done[`${wIdx}-${di}`]).length;const weekTotal=wk.days.filter(d=>!d.rest).length;const wkLbl=document.getElementById(`wprog-${planId}-${wIdx}`);if(wkLbl)wkLbl.textContent=`${weekDone}/${weekTotal}`;
   /* toggle cell style */
@@ -9567,7 +9609,7 @@ function openManualCompletionModal(planId,wIdx,dIdx){
     <div class="modal-sub" style="margin-bottom:1rem">Quer informar como foi de verdade? Pode ter sido diferente do planejado — isso é opcional.</div>
     <div style="margin-bottom:1rem">
       <div style="margin-bottom:10px"><label style="font-size:10.5px;color:var(--t3);text-transform:uppercase">Distância</label>
-        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:6px;background:var(--s1);overflow:hidden;max-width:160px">
+        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--s1);overflow:hidden;max-width:160px">
           <input id="mdone-dist" value="${plannedDist}" inputmode="decimal" placeholder="0" oninput="shareMaskNumber(this);mdoneOnDistInput()" onblur="padDistOnBlur(this)" style="flex:1;min-width:0;border:none;background:none;padding:7px 4px 7px 9px;font-size:13px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:12px;padding-right:9px">km</span>
         </div></div>
@@ -9575,14 +9617,14 @@ function openManualCompletionModal(planId,wIdx,dIdx){
         ${buildTimeInputsHTML('mdone-t','','','',`mdoneRecalcPace()`)}
       </div>
       <div><label style="font-size:10.5px;color:var(--t3);text-transform:uppercase">Ritmo <span style="text-transform:none;color:var(--t3);font-weight:400">(calculado sozinho, mas pode editar)</span></label>
-        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:6px;background:var(--s1);overflow:hidden;max-width:160px">
+        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--s1);overflow:hidden;max-width:160px">
           <input id="mdone-pace" inputmode="numeric" placeholder="0:00" oninput="shareMaskPace(this);mdoneRecalcTimeFromPace()" onblur="padTimeOnBlur(this)" style="flex:1;min-width:0;border:none;background:none;padding:7px 4px 7px 9px;font-size:13px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:12px;padding-right:9px">/km</span>
         </div></div>
     </div>
     <div style="display:flex;gap:8px">
-      <button onclick="skipManualCompletion(${planId},${wIdx},${dIdx})" style="flex:1;padding:11px;border-radius:8px;border:1px solid var(--bdr2);background:none;color:var(--t2);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit">Pular</button>
-      <button onclick="confirmManualCompletion(${planId},${wIdx},${dIdx})" style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit">Salvar</button>
+      <button onclick="skipManualCompletion(${planId},${wIdx},${dIdx})" style="flex:1;padding:11px;border-radius:var(--rb);border:1px solid var(--bdr2);background:none;color:var(--t2);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit">Pular</button>
+      <button onclick="confirmManualCompletion(${planId},${wIdx},${dIdx})" style="flex:1;padding:11px;border-radius:var(--rb);border:none;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit">Salvar</button>
     </div>
   </div>`;
   document.body.appendChild(modal);
@@ -9685,7 +9727,7 @@ function buildLongExplainHTML(plan,wk,dp){
   const subtypeTitle=subtype?` — <span style="color:#c88800;font-weight:900">${subtype.toUpperCase()}</span>`:'';
   return`<div class="long-expand-title" style="margin-top:1rem"><svg class="gi"><use href="#i-directions_run"></use></svg> Longão${subtypeTitle} — Treino mais importante da semana</div>
     <div style="font-size:11.5px;color:var(--t2);line-height:1.6;margin-bottom:8px">${longContext}</div>
-    ${dp.longDetail&&dp.longDetail!==dp.detail?`<div style="font-size:11.5px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:7px 10px;margin-bottom:8px;line-height:1.6;color:var(--t1)">${dp.longDetail}</div>`:''}
+    ${dp.longDetail&&dp.longDetail!==dp.detail?`<div style="font-size:11.5px;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r);padding:7px 10px;margin-bottom:8px;line-height:1.6;color:var(--t1)">${dp.longDetail}</div>`:''}
     <div class="long-tip-grid">
       ${extraTip}
       <div class="long-tip"><strong><svg class="gi"><use href="#i-water_drop"></use></svg> Hidratação</strong>Beba antes de sentir sede. A cada 15–20min no calor. Leve gel para longas acima de ${is42?'18km':'14km'}.</div>
@@ -9918,16 +9960,16 @@ function renderShareModalBody(){
   const f=shareCtx;
   body.innerHTML=`
     <div style="display:flex;gap:8px;margin-bottom:.9rem">
-      <button onclick="shareSetFormat('story')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid ${f.format==='story'?'var(--bdr-day)':'var(--bdr2)'};background:${f.format==='story'?'var(--s3)':'var(--s2)'};color:${f.format==='story'?'var(--acc)':'var(--t2)'};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">📱 Story</button>
-      <button onclick="shareSetFormat('post')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid ${f.format==='post'?'var(--bdr-day)':'var(--bdr2)'};background:${f.format==='post'?'var(--s3)':'var(--s2)'};color:${f.format==='post'?'var(--acc)':'var(--t2)'};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">▯ Post</button>
+      <button onclick="shareSetFormat('story')" style="flex:1;padding:8px;border-radius:var(--rb);border:1.5px solid ${f.format==='story'?'var(--bdr-day)':'var(--bdr2)'};background:${f.format==='story'?'var(--s3)':'var(--s2)'};color:${f.format==='story'?'var(--acc)':'var(--t2)'};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">📱 Story</button>
+      <button onclick="shareSetFormat('post')" style="flex:1;padding:8px;border-radius:var(--rb);border:1.5px solid ${f.format==='post'?'var(--bdr-day)':'var(--bdr2)'};background:${f.format==='post'?'var(--s3)':'var(--s2)'};color:${f.format==='post'?'var(--acc)':'var(--t2)'};font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">▯ Post</button>
     </div>
     <canvas id="share-canvas" style="width:100%;border-radius:10px;display:block;margin-bottom:.8rem;background:#0a1420"></canvas>
     <div style="margin-bottom:.8rem">
-      <label style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:8px;font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600">
+      <label style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:var(--rb);font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600">
         <svg class="gi" style="vertical-align:-2px"><use href="#i-add_a_photo"></use></svg> ${f.photoDataUrl?'Trocar foto':'Adicionar foto (opcional)'}
         <input type="file" accept="image/*" style="display:none" onchange="shareOnPhotoChange(this)"/>
       </label>
-      <button onclick="shareCopyStatsImage()" title="Copia só a logo e os dados, com fundo transparente, pra colar em cima de qualquer foto" style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:8px;font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600;background:none;font-family:inherit;margin-left:6px">
+      <button onclick="shareCopyStatsImage()" title="Copia só a logo e os dados, com fundo transparente, pra colar em cima de qualquer foto" style="display:inline-block;padding:8px 14px;border:1px dashed var(--bdr2);border-radius:var(--rb);font-size:12.5px;color:var(--t2);cursor:pointer;font-weight:600;background:none;font-family:inherit;margin-left:6px">
         <svg class="gi" style="vertical-align:-2px"><use href="#i-content_copy"></use></svg> Copiar dados
       </button>
       ${f.photoDataUrl?`<button onclick="shareRemovePhoto()" style="background:none;border:none;color:var(--rd);font-size:12px;font-weight:600;cursor:pointer;margin-left:8px;font-family:inherit">remover</button>`:''}
@@ -9938,9 +9980,9 @@ function renderShareModalBody(){
       </div>`:''}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;margin-bottom:1rem">
-      <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">Tipo</label><input id="share-f-type" value="${f.type}" oninput="shareUpdateField('type',this.value)" style="width:100%;min-width:0;box-sizing:border-box;padding:6px 7px;border:1px solid var(--bdr2);border-radius:6px;font-size:12px;font-family:inherit;background:var(--s1);color:var(--t1)"/></div>
+      <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">Tipo</label><input id="share-f-type" value="${f.type}" oninput="shareUpdateField('type',this.value)" style="width:100%;min-width:0;box-sizing:border-box;padding:6px 7px;border:1px solid var(--bdr2);border-radius:var(--r);font-size:12px;font-family:inherit;background:var(--s1);color:var(--t1)"/></div>
       <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">Distância</label>
-        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:6px;background:var(--s1);overflow:hidden">
+        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--s1);overflow:hidden">
           <input id="share-f-dist" value="${f.distNum}" inputmode="decimal" placeholder="0" oninput="shareMaskNumber(this);shareUpdateField('distNum',this.value);shareOnDistInput()" onblur="padDistOnBlur(this)" style="flex:1;width:0;min-width:0;border:none;background:none;padding:6px 2px 6px 7px;font-size:12px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:10.5px;padding-right:6px;flex-shrink:0">km</span>
         </div></div>
@@ -9948,19 +9990,19 @@ function renderShareModalBody(){
         ${buildTimeInputsHTML('share-f-t',parseTimeToHMS(f.duration).h,parseTimeToHMS(f.duration).m,parseTimeToHMS(f.duration).s,`shareUpdateField('duration',readTimeFields('share-f-t'));shareRecalcPace()`)}
       </div>
       <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">Ritmo</label>
-        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:6px;background:var(--s1);overflow:hidden">
+        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--s1);overflow:hidden">
           <input id="share-f-pace" value="${f.paceNum}" inputmode="numeric" placeholder="0:00" oninput="shareMaskPace(this);shareUpdateField('paceNum',this.value);shareRecalcTimeFromPace()" onblur="padTimeOnBlur(this);shareUpdateField('paceNum',this.value)" style="flex:1;width:0;min-width:0;border:none;background:none;padding:6px 2px 6px 7px;font-size:12px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:10.5px;padding-right:6px;flex-shrink:0">/km</span>
         </div></div>
       <div style="min-width:0"><label style="font-size:9.5px;color:var(--t3);text-transform:uppercase">FC</label>
-        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:6px;background:var(--s1);overflow:hidden">
+        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--s1);overflow:hidden">
           <input id="share-f-avghr" value="${f.avgHrNum}" inputmode="numeric" placeholder="opcional" oninput="shareMaskNumber(this);shareUpdateField('avgHrNum',this.value)" style="flex:1;width:0;min-width:0;border:none;background:none;padding:6px 2px 6px 7px;font-size:12px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:10.5px;padding-right:6px;flex-shrink:0">bpm</span>
         </div></div>
     </div>
     <div style="display:flex;gap:8px">
-      <button onclick="shareDownloadImage()" style="flex:1;padding:11px;border-radius:8px;border:none;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit"><svg class="gi" style="vertical-align:-2px"><use href="#i-download"></use></svg> Baixar imagem</button>
-      <button onclick="shareNativeShare()" style="flex:1;padding:11px;border-radius:8px;border:1px solid var(--bdr2);background:none;color:var(--t2);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit"><svg class="gi" style="vertical-align:-2px"><use href="#i-share"></use></svg> Compartilhar</button>
+      <button onclick="shareDownloadImage()" style="flex:1;padding:11px;border-radius:var(--rb);border:none;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:13.5px;cursor:pointer;font-family:inherit"><svg class="gi" style="vertical-align:-2px"><use href="#i-download"></use></svg> Baixar imagem</button>
+      <button onclick="shareNativeShare()" style="flex:1;padding:11px;border-radius:var(--rb);border:1px solid var(--bdr2);background:none;color:var(--t2);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit"><svg class="gi" style="vertical-align:-2px"><use href="#i-share"></use></svg> Compartilhar</button>
     </div>`;
   shareRedrawCanvas();
 }
@@ -10769,13 +10811,13 @@ function buildRealizadosFilterBar(){
   return chips+`<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;padding:10px;border:1px solid var(--bdr2);border-radius:10px">
     <div>
       <label style="display:block;font-size:10.5px;color:var(--t3);margin-bottom:3px">De</label>
-      <input type="date" id="realizados-custom-start" value="${toInputVal(realizadosCustomStart)}" style="font-family:inherit;font-size:13px;padding:5px 7px;border-radius:6px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t1)">
+      <input type="date" id="realizados-custom-start" value="${toInputVal(realizadosCustomStart)}" style="font-family:inherit;font-size:13px;padding:5px 7px;border-radius:var(--r);border:1px solid var(--bdr2);background:var(--s2);color:var(--t1)">
     </div>
     <div>
       <label style="display:block;font-size:10.5px;color:var(--t3);margin-bottom:3px">Até</label>
-      <input type="date" id="realizados-custom-end" value="${toInputVal(realizadosCustomEnd)}" style="font-family:inherit;font-size:13px;padding:5px 7px;border-radius:6px;border:1px solid var(--bdr2);background:var(--s2);color:var(--t1)">
+      <input type="date" id="realizados-custom-end" value="${toInputVal(realizadosCustomEnd)}" style="font-family:inherit;font-size:13px;padding:5px 7px;border-radius:var(--r);border:1px solid var(--bdr2);background:var(--s2);color:var(--t1)">
     </div>
-    <button onclick="applyRealizadosCustomRange()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--acc);color:var(--on-acc);font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit">Buscar</button>
+    <button onclick="applyRealizadosCustomRange()" style="padding:7px 14px;border-radius:var(--rb);border:none;background:var(--acc);color:var(--on-acc);font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit">Buscar</button>
     <div style="width:100%;font-size:10.5px;color:var(--t3)">Máximo de ${REALIZADOS_CUSTOM_MAX_DAYS} dias entre as duas datas.</div>
   </div>`;
 }
@@ -12500,7 +12542,7 @@ async function garminSendWorkouts(planId, silent){
   sendModal.id='garmin-send-modal';
   sendModal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:800;display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px)';
   sendModal.innerHTML=`
-  <div style="background:var(--s1);border:1px solid var(--bdr2);border-radius:8px;width:100%;max-width:420px;padding:2rem;text-align:center">
+  <div style="background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--rc);width:100%;max-width:420px;padding:2rem;text-align:center">
     <div style="font-size:28px;margin-bottom:12px"><svg class="gi"><use href="#i-schedule"></use></svg></div>
     <div style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:8px">Enviando para Garmin Connect</div>
     <div id="garmin-send-info" style="font-size:14px;color:var(--t2);margin-bottom:16px">Preparando ${workouts.length} treinos...</div>
@@ -12551,26 +12593,26 @@ function showGarminInstructionModal(count, planName, planId){
 
   const oauthStatusHTML = clientConfigured
     ? isConnected
-      ? `<div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      ? `<div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:10px">
            <div style="display:flex;align-items:center;gap:8px">
              <div style="width:8px;height:8px;border-radius:50%;background:#00a855;flex-shrink:0"></div>
              <span style="font-size:13px;font-weight:700;color:#00a855">Garmin Connect autorizado</span>
            </div>
-           <button onclick="garminDisconnect();showToast('Desconectado do Garmin.')" style="font-size:11.5px;color:var(--t3);background:transparent;border:1px solid var(--bdr2);border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit">Desconectar</button>
+           <button onclick="garminDisconnect();showToast('Desconectado do Garmin.')" style="font-size:11.5px;color:var(--t3);background:transparent;border:1px solid var(--bdr2);border-radius:var(--rb);padding:3px 10px;cursor:pointer;font-family:inherit">Desconectar</button>
          </div>`
-      : `<div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      : `<div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:10px">
            <div>
              <div style="font-size:13px;font-weight:800;color:#0a6acf;margin-bottom:2px"><svg class="gi"><use href="#i-link"></use></svg> Envio automático disponível</div>
              <div style="font-size:12.5px;color:var(--t2)">Autorize o app no Garmin Connect e envie direto, sem passos manuais.</div>
            </div>
-           <button onclick="document.getElementById('garmin-modal').remove();garminStartOAuth(${planId})" style="height:36px;padding:0 14px;background:#0079b3;border:none;border-radius:6px;color:#fff;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap">Conectar →</button>
+           <button onclick="document.getElementById('garmin-modal').remove();garminStartOAuth(${planId})" style="height:36px;padding:0 14px;background:#0079b3;border:none;border-radius:var(--rb);color:#fff;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap">Conectar →</button>
          </div>`
-    : `<div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:10px 14px;margin-bottom:1rem;font-size:12.5px;color:var(--am);line-height:1.5">
+    : `<div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:10px 14px;margin-bottom:1rem;font-size:12.5px;color:var(--am);line-height:1.5">
          <svg class="gi"><use href="#i-schedule"></use></svg> <strong>Envio automático em breve</strong> — aguardando aprovação do Garmin Developer Program. Por enquanto, use a importação manual abaixo.
        </div>`;
 
   modal.innerHTML=`
-  <div style="background:var(--s1);border:1px solid var(--bdr2);border-radius:8px;width:100%;max-width:500px;margin:auto;overflow:hidden">
+  <div style="background:var(--s1);border:1px solid var(--bdr2);border-radius:var(--rc);width:100%;max-width:500px;margin:auto;overflow:hidden">
     <div style="padding:1.4rem;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:36px;height:36px;border-radius:6px;background:#0079b3;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><svg class="gi"><use href="#i-schedule"></use></svg></div>
@@ -12584,7 +12626,7 @@ function showGarminInstructionModal(count, planName, planId){
     <div style="padding:1.4rem;font-size:14px;color:var(--t2);line-height:1.7">
 
       <!-- Confirmação do download -->
-      <div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:6px;padding:.9rem 1rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:10px">
+      <div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:.9rem 1rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:10px">
         <div style="font-size:22px;flex-shrink:0"><svg class="gi"><use href="#i-check_circle"></use></svg></div>
         <div>
           <div style="font-weight:800;color:#00a855;font-size:13px;margin-bottom:2px">Arquivo baixado com sucesso!</div>
@@ -12596,31 +12638,31 @@ function showGarminInstructionModal(count, planName, planId){
       <div style="font-weight:800;color:var(--t1);margin-bottom:10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase">Como copiar para o relógio (cabo USB):</div>
 
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.2rem">
-        ${count>1?`<div style="display:flex;gap:10px;align-items:flex-start;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:8px;padding:10px 12px">
+        ${count>1?`<div style="display:flex;gap:10px;align-items:flex-start;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:10px 12px">
           <div style="width:22px;height:22px;border-radius:50%;background:#0079b3;color:#fff;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</div>
           <div style="font-size:13px">Descompacte o arquivo <code style="background:var(--s3);padding:1px 5px;border-radius:4px">.zip</code> baixado — você verá um arquivo <code style="background:var(--s3);padding:1px 5px;border-radius:4px">.fit</code> para cada treino.</div>
         </div>`:''}
-        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:8px;padding:10px 12px">
+        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:10px 12px">
           <div style="width:22px;height:22px;border-radius:50%;background:#0079b3;color:#fff;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${count>1?'2':'1'}</div>
           <div style="font-size:13px">Conecte o relógio Garmin ao computador com o <strong>cabo USB</strong>. Ele aparece como um drive/dispositivo de armazenamento.</div>
         </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:8px;padding:10px 12px">
+        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:10px 12px">
           <div style="width:22px;height:22px;border-radius:50%;background:#0079b3;color:#fff;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${count>1?'3':'2'}</div>
           <div style="font-size:13px">Abra a pasta do relógio e navegue até <code style="background:var(--s3);padding:1px 5px;border-radius:4px">GARMIN/NewFiles</code> (crie a pasta <code style="background:var(--s3);padding:1px 5px;border-radius:4px">NewFiles</code> se ela não existir).</div>
         </div>
-        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:8px;padding:10px 12px">
+        <div style="display:flex;gap:10px;align-items:flex-start;background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:10px 12px">
           <div style="width:22px;height:22px;border-radius:50%;background:#2e9f51;color:#fff;font-size:10px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${count>1?'4':'3'}</div>
           <div style="font-size:13px">Copie ${count>1?`o(s) arquivo(s) <code style="background:var(--s3);padding:1px 5px;border-radius:4px">.fit</code>`:`o arquivo <code style="background:var(--s3);padding:1px 5px;border-radius:4px">.fit</code>`} para dentro dessa pasta, depois desconecte o relógio com segurança ("Ejetar"). Os treinos aparecem na lista de treinos do relógio em poucos segundos. <svg class="gi"><use href="#i-celebration"></use></svg></div>
         </div>
       </div>
 
       <!-- Nota técnica -->
-      <div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--pu);line-height:1.6">
+      <div style="background:var(--mc-bg);border:var(--mc-border);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:9px 12px;font-size:12.5px;color:var(--pu);line-height:1.6">
         <svg class="gi"><use href="#i-lightbulb"></use></svg> <strong>O que o relógio vai mostrar:</strong> cada treino fica com steps de aquecimento, séries (pace-alvo por km) e volta à calma. O relógio avisa quando está no ritmo certo.
       </div>
     </div>
     <div style="padding:1rem 1.4rem;border-top:1px solid var(--bdr);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-      <button onclick="document.getElementById('garmin-modal').remove()" style="height:38px;padding:0 1.4rem;border-radius:6px;border:none;background:#0079b3;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">
+      <button onclick="document.getElementById('garmin-modal').remove()" style="height:38px;padding:0 1.4rem;border-radius:var(--rb);border:none;background:#0079b3;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">
         Entendido!
       </button>
     </div>
@@ -17104,7 +17146,7 @@ function lwBuildOverlay(){
            aceita pelo navegador (precisa de um toque "fresco" de verdade). O
            ícone e o texto trocam sozinhos conforme o estado atual (ver
            lwUpdateFullscreenBtn, chamado no fullscreenchange). -->
-      <button id="lw-fullscreen-btn" onclick="lwToggleFullscreen()" style="background:none;border:1px solid var(--bdr2);border-radius:8px;color:var(--t3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;padding:5px 10px;display:flex;align-items:center;gap:5px;flex-shrink:0">
+      <button id="lw-fullscreen-btn" onclick="lwToggleFullscreen()" style="background:none;border:1px solid var(--bdr2);border-radius:var(--rb);color:var(--t3);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;padding:5px 10px;display:flex;align-items:center;gap:5px;flex-shrink:0">
         <svg id="lw-fullscreen-btn-icon" class="gi" style="font-size:13px"><use href="#i-fullscreen"></use></svg>
         <span id="lw-fullscreen-btn-label">Tela cheia</span>
       </button>
