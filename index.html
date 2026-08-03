@@ -2666,20 +2666,30 @@ function setAppTheme(mode){
   // inline no <head>, que já faz isso no primeiro paint) — mantém a barra
   // de status alinhada com o cabeçalho ao trocar de tema sem recarregar.
   const isDark=mode==='dark'||(mode==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
-  // Troca a tag <meta name="theme-color"> inteira por uma nova (em vez de só
-  // mudar o atributo "content" da mesma tag) — alguns Android/Chrome não
-  // repintam a barra de status de verdade quando só o VALOR de uma meta tag
-  // já existente muda via JS, deixando uma linha fina com a cor antiga
-  // "grudada" no topo até um refresh forçado do sistema (reportado: só
-  // sumia desligando/ligando o modo escuro do próprio celular). Recriar a
-  // tag do zero força o navegador a tratar como algo novo de verdade.
+  // Troca a tag <meta name="theme-color"> em DUAS etapas — primeiro remove
+  // de vez, espera um quadro de tela renderizar sem ela (rAF), só depois
+  // recoloca já com a cor certa. Só recriar a tag de uma vez (como era
+  // antes) resolvia na primeira troca depois de abrir o app, mas trocas
+  // seguidas na mesma sessão voltavam a deixar a linha — sinal de que o
+  // Android só repinta a barra de status de verdade quando existe uma
+  // pausa real (um frame) sem a tag no meio, não só uma substituição
+  // instantânea.
   const oldTc=document.querySelector('meta[name="theme-color"]');
-  if(oldTc){
-    const newTc=document.createElement('meta');
-    newTc.setAttribute('name','theme-color');
-    newTc.setAttribute('content',isDark?'#000000':'#eceff2');
-    oldTc.parentNode.replaceChild(newTc,oldTc);
-  }
+  const newContent=isDark?'#000000':'#eceff2';
+  if(oldTc)oldTc.remove();
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      // Busca de novo (em vez de confiar na referência antiga) e remove
+      // qualquer uma que ainda exista — protege contra cliques rápidos em
+      // sequência (trocar de tema várias vezes rapidinho), garantindo que
+      // sempre sobra exatamente uma tag no final, com a cor mais recente.
+      document.querySelectorAll('meta[name="theme-color"]').forEach(el=>el.remove());
+      const newTc=document.createElement('meta');
+      newTc.setAttribute('name','theme-color');
+      newTc.setAttribute('content',newContent);
+      document.head.appendChild(newTc);
+    });
+  });
   // Atualiza também a meta color-scheme (não só o estilo do <html> acima) —
   // é esse valor que navegadores baseados em Chromium (Samsung Internet
   // incluído) checam pra decidir se aplicam o "modo escuro forçado" deles
