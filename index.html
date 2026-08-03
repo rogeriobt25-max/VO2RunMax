@@ -9428,7 +9428,7 @@ function calcWeekStreak(plan){
 // ao lado, que usa essa mesma largura fixa.
 function buildProgSegments(pct,weekCount){
   const isComplete=pct>=100;
-  const fill=isComplete?'var(--gr)':'linear-gradient(90deg,var(--acc),var(--acc2))';
+  const fill=isComplete?'var(--gr)':'linear-gradient(90deg,#00c2ff,var(--acc))';
   let ticksHtml='';
   if(weekCount>1){
     // Marca só as divisas INTERNAS entre semanas (nunca nas pontas 0%/100%)
@@ -9463,7 +9463,9 @@ function buildWeekProgressWidget(plan,prog,streak){
   else if(info&&info.status==='finished')curWeekNum=totalWeeks;
   else curWeekNum=1;
   const ringPct=Math.max(0,Math.min(100,prog.pct));
-  const ringColor=ringPct>=100?'var(--gr)':'var(--acc)';
+  const isDone=ringPct>=100;
+  const ringColor=isDone?'var(--gr)':'var(--acc)';
+  const ringStart=isDone?'var(--gr)':'#00c2ff';
   // Trilha (parte ainda não preenchida) em var(--bdr) — visível mesmo com
   // pouco progresso, em vez de var(--s3) que ficava quase invisível/
   // "apagada" contra o fundo do card. Sem box-shadow/glow ao redor: o
@@ -9471,7 +9473,7 @@ function buildWeekProgressWidget(plan,prog,streak){
   // contorno meio "azul-marinho" sujo, em vez de um brilho bonito.
   const streakHtml=streak>=1?`<div onclick="openStreakInfoModal()" class="wk-progress-streak">🔥 ${streak} semana${streak>1?'s':''} seguida${streak>1?'s':''} <svg class="gi" style="font-size:10px;vertical-align:-1px"><use href="#i-info"></use></svg></div>`:'';
   return`
-    <div class="wk-ring" style="background:conic-gradient(${ringColor} 0 ${ringPct}%,var(--bdr) ${ringPct}% 100%)">
+    <div class="wk-ring" style="background:conic-gradient(${ringStart} 0%,${ringColor} ${ringPct}%,var(--bdr) ${ringPct}% 100%)">
       <div class="wk-ring-in"><div class="wk-ring-num">${curWeekNum}/${totalWeeks}</div><div class="wk-ring-unit">semanas</div></div>
     </div>
     ${streakHtml}
