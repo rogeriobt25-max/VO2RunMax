@@ -2666,8 +2666,20 @@ function setAppTheme(mode){
   // inline no <head>, que já faz isso no primeiro paint) — mantém a barra
   // de status alinhada com o cabeçalho ao trocar de tema sem recarregar.
   const isDark=mode==='dark'||(mode==='auto'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const tc=document.querySelector('meta[name="theme-color"]');
-  if(tc)tc.setAttribute('content',isDark?'#000000':'#eceff2');
+  // Troca a tag <meta name="theme-color"> inteira por uma nova (em vez de só
+  // mudar o atributo "content" da mesma tag) — alguns Android/Chrome não
+  // repintam a barra de status de verdade quando só o VALOR de uma meta tag
+  // já existente muda via JS, deixando uma linha fina com a cor antiga
+  // "grudada" no topo até um refresh forçado do sistema (reportado: só
+  // sumia desligando/ligando o modo escuro do próprio celular). Recriar a
+  // tag do zero força o navegador a tratar como algo novo de verdade.
+  const oldTc=document.querySelector('meta[name="theme-color"]');
+  if(oldTc){
+    const newTc=document.createElement('meta');
+    newTc.setAttribute('name','theme-color');
+    newTc.setAttribute('content',isDark?'#000000':'#eceff2');
+    oldTc.parentNode.replaceChild(newTc,oldTc);
+  }
   // Atualiza também a meta color-scheme (não só o estilo do <html> acima) —
   // é esse valor que navegadores baseados em Chromium (Samsung Internet
   // incluído) checam pra decidir se aplicam o "modo escuro forçado" deles
