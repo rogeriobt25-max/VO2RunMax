@@ -3206,16 +3206,32 @@ function saveLastTest(vo2,vVO2,methodLabel,methodType,profKey){
     if(currentUser&&fbDb){
       try{fbDb.collection('users').doc(currentUser.uid).set({lastRealTest:data},{merge:true});}catch(e){}
     }
-    // Histórico de testes: guarda TODO teste real feito, não só o último.
-    // Mais recente primeiro. Salva o array inteiro (não tem "push" nativo
-    // no Firestore sem usar arrayUnion, e como o array é pequeno — ver
-    // conta de tamanho no chat — regravar tudo de uma vez é simples e
-    // seguro, mesmo padrão já usado pra savedPlans).
-    vo2TestHistory.unshift({vo2,methodLabel,date:data.date});
-    lsSet(userScopedKey(LS_TEST_HISTORY_KEY),JSON.stringify(vo2TestHistory));
-    if(currentUser&&fbDb){
-      try{fbDb.collection('users').doc(currentUser.uid).set({vo2TestHistory},{merge:true});}catch(e){}
-    }
+  }
+  // IMPORTANTE: saveLastTest só guarda o "estado atual" (último teste) —
+  // é seguro chamar isso várias vezes seguidas pro MESMO teste (ex:
+  // reabrir a tela, manter o VO2 numa planilha nova, restaurar depois de
+  // excluir outra planilha) sem duplicar nada. O registro no HISTÓRICO
+  // (vo2TestHistory) foi separado pra registerVo2TestInHistory — só ela
+  // deve ser chamada, e só nos pontos onde um teste É DE VERDADE NOVO
+  // (ver comentário na função abaixo). Antes os dois estavam juntos aqui
+  // dentro, e como saveLastTest era chamada de vários lugares que só
+  // "resincronizam" o estado (sem ser um teste novo), cada resincronização
+  // duplicava o histórico.
+}
+
+// Registra um teste REAL no histórico — chamar SÓ nos pontos exatos onde
+// a pessoa acabou de calcular um VO2 novo de verdade (não em qualquer
+// re-render de tela, não ao "manter o VO2 atual" numa planilha nova, não
+// ao restaurar estado depois de excluir/atualizar planilha). Nunca
+// registra "sem informar" (methodType==='profileDefault') nem estimativas
+// sem teste real (methodType==='no_test').
+function registerVo2TestInHistory(vo2,methodLabel,methodType){
+  if(methodType==='profileDefault'||methodType==='no_test')return;
+  const date=new Date().toLocaleDateString('pt-BR');
+  vo2TestHistory.unshift({vo2,methodLabel,date});
+  lsSet(userScopedKey(LS_TEST_HISTORY_KEY),JSON.stringify(vo2TestHistory));
+  if(currentUser&&fbDb){
+    try{fbDb.collection('users').doc(currentUser.uid).set({vo2TestHistory},{merge:true});}catch(e){}
   }
 }
 
@@ -4481,6 +4497,14 @@ function renderCalcSummary(){
    etapa do VO₂, pronta pra fazer um teste real. */
 var wzVo2OnlyMode=false;
 
+/* Guarda o teste de VO2 que acabou de ser calculado/confirmado, mas AINDA
+   NÃO foi registrado no histórico — só é registrado de fato quando a
+   pessoa clica em "Continuar →" (wzAdvanceTo3). Antes, o registro
+   acontecia na hora do cálculo/confirmação, então clicar várias vezes em
+   "Confirmar" (ex: no valor manual) criava um teste duplicado no
+   histórico e na tela inicial a cada clique. */
+var wzPendingVo2Registration=null;
+
 /* ══════════════════════════════════════════════════════════
    PAINEL "VO₂ MÁX E ZONAS" — seção expansível abaixo do card
    "Planilha atual". Sempre mostra os dados do último VO₂
@@ -4580,6 +4604,7 @@ function wzCalcRealVo2(){
   switchNavReal('calc');
   wzBuildingNew=true;
   wzVo2OnlyMode=true;
+  wzPendingVo2Registration=null; // começando um cálculo novo — descarta qualquer resultado anterior não confirmado
   wzState={profile:snap.profile||null,vo2:null,usedRealVo2:false,dist:snap.dist||null,obj:snap.obj||null,dur:snap.dur||null};
   const wzWrap=document.getElementById('wz-wrap');if(wzWrap)wzWrap.style.display='';
   // Abre direto e só a etapa do VO2 — sem passar por wzEditStep (que reseta pra
@@ -4650,6 +4675,7 @@ function wzStartNewPlan(){
   wzBuildingNew=true;
   saveNavState('calc',null,{building:true}); // registra que está no assistente, não no resumo — ver restoreLastNavState
   wzVo2OnlyMode=false;
+  wzPendingVo2Registration=null; // começando um cálculo novo — descarta qualquer resultado anterior não confirmado
   const optEst=document.getElementById('wz-opt-est');if(optEst)optEst.style.display='flex';
   wzState={profile:null,vo2:null,usedRealVo2:false,dist:null,obj:null,dur:null};
   renderWzVo2RealNote();
@@ -4672,6 +4698,7 @@ function wzStartNewPlan(){
 function wzCancelBuildingNew(){
   wzBuildingNew=false;
   wzVo2OnlyMode=false;
+  wzPendingVo2Registration=null; // desistiu do assistente — descarta qualquer resultado calculado e não confirmado
   // Mesmo motivo do fix em switchNav: repõe o resumo se ainda não tiver um
   // (pode acontecer depois de recarregar a página no meio do assistente).
   if(!wzSummaryPlanId&&typeof wzAutoRestoreFromSavedPlans==='function')wzAutoRestoreFromSavedPlans();
@@ -4832,6 +4859,7 @@ function wzReplaceSavedVo2(){
 }
 
 function wzVo2Choice(choice){
+  wzPendingVo2Registration=null; // recomeçando a escolha do método — descarta qualquer teste calculado antes e não confirmado
   document.getElementById('wz-vo2-question').style.display='none';
   document.getElementById('wz-vo2-input').style.display='none';
   document.getElementById('wz-test-picker').style.display='none';
@@ -5361,6 +5389,13 @@ function wzFinishTest(vo2,vVO2calc,label,type){
   vo2G=vo2;vVO2G=vVO2calc;
   customPaces={};usingCustom=false;
   saveLastTest(vo2,vVO2calc,label,type,wzState.profile||'inter');
+  // NÃO registra no histórico aqui — isso deixa registrar um teste a cada
+  // clique em "Confirmar" (a pessoa pode clicar várias vezes antes de
+  // avançar). O registro real só acontece em wzAdvanceTo3, quando a
+  // pessoa confirma que quer seguir com esse resultado clicando em
+  // "Continuar →". saveLastTest acima é seguro chamar de novo a cada
+  // clique (só atualiza o "último teste", não duplica nada).
+  wzPendingVo2Registration={vo2,label,type};
   // Renderiza silenciosamente para preparar o motor — mantém oculto até o fim do wizard
   const ra=document.getElementById('result-area');
   if(ra){ra.style.visibility='hidden';ra.style.display='none';}
@@ -5438,6 +5473,16 @@ function wzConfirmVo2(){
 }
 
 function wzAdvanceTo3(){
+  // Registra no histórico só agora, uma única vez — cobre todos os
+  // métodos (manual, Cooper, 2400m, 1600m, 3km, teste ao vivo), já que
+  // todos passam por wzFinishTest e chegam aqui pra avançar. Limpa a
+  // variável antes de qualquer outra coisa pra não correr risco de
+  // registrar de novo se essa função for chamada mais de uma vez.
+  if(wzPendingVo2Registration){
+    const{vo2,label,type}=wzPendingVo2Registration;
+    wzPendingVo2Registration=null;
+    registerVo2TestInHistory(vo2,label,type);
+  }
   if(wzVo2OnlyMode){wzFinishVo2OnlyUpdate();return;}
   document.getElementById('wz-step-2').style.display='none';
   wzRenderHistory();
@@ -5770,6 +5815,7 @@ function calcular(){
   vVO2G=vo2/3.5; // padrão — compatível com Garmin/Coros/apps do mercado
   customPaces={};usingCustom=false;
   renderResults(vo2,calcFCmax(idade),'Cooper — 12 min','physiological');
+  registerVo2TestInHistory(vo2,'Cooper — 12 min','physiological');
 }
 
 function calcularSemDist(idade){
@@ -5853,6 +5899,7 @@ function calcular2400(){
   vVO2G=vo2/3.5;
   customPaces={};usingCustom=false;
   renderResults(vo2,calcFCmax(idade),`2,4km — ${min}:${String(Math.round(sec)).padStart(2,'0')} · ${peso}kg`,'physiological');
+  registerVo2TestInHistory(vo2,`2,4km — ${min}:${String(Math.round(sec)).padStart(2,'0')} · ${peso}kg`,'physiological');
 }
 
 var sexoEstreante='M';
@@ -6271,6 +6318,30 @@ function getRaceSpeed(race){
   if(obj==='target'){const h=parseFloat(document.getElementById(`target-h-${race}`)?.value)||0,m=parseFloat(document.getElementById(`target-m-${race}`)?.value)||0,t=h*60+m;return t>0?distKm/(t/60):v*pct[1]}
   if(obj==='improve'){const h=parseFloat(document.getElementById(`curr-h-${race}`)?.value)||0,m=parseFloat(document.getElementById(`curr-m-${race}`)?.value)||0,t=h*60+m;return t>0?distKm/((t*.95)/60):v*pct[2]}
   return v*pct[0];
+}
+// Piso de segurança: Tempo run e Intervalado nunca podem ficar mais lentos
+// que o pace de prova — isso seria fisicamente incoerente (um treino de
+// qualidade sempre precisa ser mais forte que a prova em si, nunca igual
+// ou mais fraco). Só entra em ação quando o objetivo é mais ambicioso do
+// que o VO2 atual sustenta (Tempo Alvo ou Melhorar PR com meta digitada
+// puxada) — pra quem tem meta realista, o cálculo normal pelo VO2 já dá
+// um valor mais rápido que isso sozinho, e o Math.max não muda nada. Não
+// "puxa" a planilha inteira pra meta, só evita a inversão de hierarquia
+// entre os paces de qualidade e a prova. Não aplica em 5km (decisão
+// explícita) nem quando o pace foi personalizado manualmente pela pessoa
+// (isCustomTempo/isCustomIntv) — nesse caso o valor digitado por ela tem
+// prioridade sobre qualquer piso automático.
+// Chamada logo depois de tempo/intv serem calculados, em TODO lugar do
+// código que faz esse cálculo (são vários, cada tela/exportação recalcula
+// separadamente) — assim o card de resumo, a planilha gerada e qualquer
+// exportação sempre mostram exatamente o mesmo número, nunca um piso só
+// "escondido" dentro da geração dos treinos.
+function applyQualityPaceFloor(tempo,intv,raceSpeed,race,isCustomTempo,isCustomIntv){
+  if(race==='5k')return{tempo,intv};
+  return{
+    tempo:isCustomTempo?tempo:Math.max(tempo,raceSpeed*1.03),
+    intv:isCustomIntv?intv:Math.max(intv,raceSpeed*1.06)
+  };
 }
 
 function buildPhases(race,planWeeks){
@@ -8712,9 +8783,15 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
         // do treino, em vez de um % solto do km semanal sem relação com a estrutura.
         const reps=Math.max(2,Math.min(5,Math.round(km*.09)));
         const totalMinGen=Math.round((600+600+reps*(120+120))/60);
-        const d2=Math.round(((600+600)*ez+reps*(120*mod+120*ez))/3600*10)/10;
-        return{type:'Fartlek',pace:s2p(mod),dist:`~${d2}km`,timeLabel:`${totalMinGen} min`,
-          detail:`Aquecimento Z1 · 10min (${paceBand(ez,15)}) → ${reps}×(2min forte Z3-Z4 a ${paceBand(mod,10)} + 2min fácil Z1-Z2 a ${paceBand(ez,20)}) → Desaquecimento Z1 · 10min (${paceBand(ez,15)})`};
+        // Piso de segurança (mesmo princípio do Tempo run/Intervalado): o
+        // trecho "forte" do fartlek é treino de velocidade, não de
+        // condicionamento geral — não pode ficar mais lento que o pace de
+        // prova quando a meta é ambiciosa. Só afeta ESSE treino aqui, não
+        // mexe na variável `mod` usada nos dias de Moderado de verdade.
+        const fartlekFortePace=is10k?Math.max(mod,raceSpeed*1.03):mod;
+        const d2=Math.round(((600+600)*ez+reps*(120*fartlekFortePace+120*ez))/3600*10)/10;
+        return{type:'Fartlek',pace:s2p(fartlekFortePace),dist:`~${d2}km`,timeLabel:`${totalMinGen} min`,
+          detail:`Aquecimento Z1 · 10min (${paceBand(ez,15)}) → ${reps}×(2min forte Z3-Z4 a ${paceBand(fartlekFortePace,10)} + 2min fácil Z1-Z2 a ${paceBand(ez,20)}) → Desaquecimento Z1 · 10min (${paceBand(ez,15)})`};
       }
       if(p==='taper'){
         // Taper TER: intervalado curto para manter a velocidade
@@ -8904,8 +8981,9 @@ function renderPlanShort(race,planWeeks,profKey){
   const pf=prof.paces;
   const ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez;
   const mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod;
-  const tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
-  const intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  let tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
+  let intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,raceSpeed,race,usingCustom&&!!customPaces.Z4,usingCustom&&!!customPaces.Z5));
   // Guarda defensiva: sem VO2max calculado (vVO2G=0), ez/mod/tempo/intv saem 0,
   // s2p() vira '--:--', e o .fit acaba sem pace nenhum nos steps (exibido como
   // "(0-0w)" / "Pace (null-null)" no intervals.icu, ou "1-1W" no relógio).
@@ -9015,8 +9093,9 @@ function renderPlan(race){
   const pf=prof.paces;
   const ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez;
   const mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod;
-  const tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
-  const intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  let tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
+  let intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,raceSpeed,race,usingCustom&&!!customPaces.Z4,usingCustom&&!!customPaces.Z5));
   // Guarda defensiva: sem VO2max calculado, ez sai 0 e os paces do plano (inclusive
   // o do Longão) ficam em branco no .fit exportado. Avisa em vez de falhar silenciosamente.
   if(!ez||ez<=0){
@@ -9170,8 +9249,9 @@ async function confirmSave(){
   const pf=prof.paces;
   const ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez;
   const mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod;
-  const tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
-  const intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  let tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
+  let intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,raceSpeed,race,usingCustom&&!!customPaces.Z4,usingCustom&&!!customPaces.Z5));
   // Guarda defensiva (ver renderPlan/renderPlanShort): evita salvar um plano com paces zerados.
   if(!ez||ez<=0){
     showToast('VO2max/pace não calculado — os ritmos deste plano ficarão em branco.');
@@ -9289,7 +9369,9 @@ async function recalcPlanVo2(planId,skipConfirm){
   const prof=PROFILES[plan.profKey]||PROFILES.inter;
   const vVO2new=lastRealTest.vVO2||(lastRealTest.vo2/3.5);
   const pf=prof.paces;
-  const ez=vVO2new*pf.ez,mod=vVO2new*pf.mod,tempo=vVO2new*pf.tempo,intv=vVO2new*pf.intv;
+  const ez=vVO2new*pf.ez,mod=vVO2new*pf.mod;
+  let tempo=vVO2new*pf.tempo,intv=vVO2new*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,plan.raceSpeed,plan.race));
   const isShort=plan.race==='5k'||plan.race==='10k';
   let newWeeks,newLp;
   if(isShort){
@@ -12554,8 +12636,9 @@ function exportGarminFromRace(race){
   const pf=prof.paces;
   const ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez;
   const mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod;
-  const tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
-  const intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  let tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
+  let intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,raceSpeed,race,usingCustom&&!!customPaces.Z4,usingCustom&&!!customPaces.Z5));
   const obj=is42?planObj42:race==='21'?planObj21:race==='5k'?planObj5k:planObj10k;
   const isShort=race==='5k'||race==='10k';
   let weeks;
@@ -12953,7 +13036,9 @@ function buildPlanData(race){
   const prof=PROFILES[profKey];
   const planWeeks=race==='21'?planWeeks21:race==='42'?planWeeks42:race==='5k'?planWeeks5k:planWeeks10k;
   const raceSpeed=getRaceSpeed(race);
-  const pf=prof.paces,ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez,mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod,tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo,intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  const pf=prof.paces,ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez,mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod;
+  let tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo,intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,raceSpeed,race,usingCustom&&!!customPaces.Z4,usingCustom&&!!customPaces.Z5));
   // Passa o objetivo correto (finish/target/improve) — idêntico ao que foi gerado na tela
   const obj=is42?planObj42:race==='21'?planObj21:race==='5k'?planObj5k:planObj10k;
   let weeks;
@@ -14975,8 +15060,9 @@ function intervalsExportFromRace(race){
   const pf=prof.paces;
   const ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez;
   const mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod;
-  const tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
-  const intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  let tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
+  let intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,raceSpeed,race,usingCustom&&!!customPaces.Z4,usingCustom&&!!customPaces.Z5));
   const obj=is42?planObj42:race==='21'?planObj21:race==='5k'?planObj5k:planObj10k;
   const isShort=race==='5k'||race==='10k';
   let weeks;
@@ -15219,8 +15305,9 @@ function intervalsWeeklyExportFromRace(race){
   const pf=prof.paces;
   const ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez;
   const mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod;
-  const tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
-  const intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  let tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
+  let intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,raceSpeed,race,usingCustom&&!!customPaces.Z4,usingCustom&&!!customPaces.Z5));
   const obj=is42?planObj42:race==='21'?planObj21:race==='5k'?planObj5k:planObj10k;
   const isShort=race==='5k'||race==='10k';
   let weeks;
@@ -15398,8 +15485,9 @@ function abrirMontador(race){
   const pf=prof.paces;
   const ez=usingCustom&&customPaces.Z1?customPaces.Z1:vVO2G*pf.ez;
   const mod=usingCustom&&customPaces.Z3?customPaces.Z3:vVO2G*pf.mod;
-  const tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
-  const intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  let tempo=usingCustom&&customPaces.Z4?customPaces.Z4:vVO2G*pf.tempo;
+  let intv=usingCustom&&customPaces.Z5?customPaces.Z5:vVO2G*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,raceSpeed,race,usingCustom&&!!customPaces.Z4,usingCustom&&!!customPaces.Z5));
   const obj=is42?planObj42:race==='21'?planObj21:race==='5k'?planObj5k:planObj10k;
 
   let weeks;
