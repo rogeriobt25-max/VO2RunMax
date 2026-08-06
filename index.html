@@ -24,7 +24,7 @@
   var lastTouchEnd=0;
   document.addEventListener('touchend',function(e){
     // Exceção: a tela de bloqueio do Treino ao Vivo usa DOIS toques rápidos
-    // de propósito pra destravar (até 600ms entre eles — ver LW_DOUBLE_TAP_MS
+    // de propósito pra destravar (até 350ms entre eles — ver LW_DOUBLE_TAP_MS
     // e lwHandleLockTap). Sem essa exceção, esse bloqueio de zoom "engolia"
     // o segundo toque (chamando preventDefault, que cancela o clique
     // sintetizado), impedindo destravar com toques rápidos — só funcionava
@@ -1884,6 +1884,22 @@ details[open] summary::after{transform:rotate(90deg)}
         <div class="wz-step-num">5</div>
         <div><div class="wz-step-title">Duração da planilha</div><div class="wz-step-sub">Quantas semanas até a sua prova?</div></div>
       </div>
+
+      <!-- Prova alvo (opcional): se a pessoa tiver uma data marcada, usamos
+           ela pra escolher a duração certa e ancorar o calendário pra
+           terminar exatamente nesse dia — sem isso, funciona exatamente
+           como antes. -->
+      <div id="wz-target-date-box" style="background:var(--s2);border:1.5px solid var(--bdr2);border-radius:var(--r2);padding:.9rem 1.1rem;margin-bottom:1rem">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:800;color:var(--t1)">
+          <input type="checkbox" id="wz-target-date-toggle" onchange="wzToggleTargetDate()" style="width:18px;height:18px;accent-color:var(--acc);cursor:pointer"/>
+          Já tenho a data da minha prova
+        </label>
+        <div id="wz-target-date-input-row" style="display:none;margin-top:.7rem">
+          <input type="date" id="wz-target-date-val" onchange="wzApplyTargetDate()" style="width:100%;box-sizing:border-box;font-size:15px;font-weight:700;padding:.6rem .8rem;border-radius:var(--r);border:1.5px solid var(--bdr2);background:var(--bg);color:var(--t1)"/>
+          <div id="wz-target-date-msg" style="font-size:12.5px;margin-top:.6rem;line-height:1.5"></div>
+        </div>
+      </div>
+
       <div class="dur-opts" id="wz-dur-opts"></div>
       <button class="wz-next-btn" id="wz-dur-next" onclick="wzConfirmDur()" style="opacity:.4;cursor:not-allowed">Gerar Planilha ▶</button>
     </div>
@@ -1912,7 +1928,7 @@ details[open] summary::after{transform:rotate(90deg)}
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hero-feat-ico"><svg class="gi"><use href="#i-sync"></use></svg></span>
-        <span style="font-size:16px;font-weight:700;color:var(--t1)">Envie para o relógio via Intervals.icu</span>
+        <span style="font-size:16px;font-weight:700;color:var(--t1)">Envie treinos para seu relógio</span>
       </div>
     </div>
     <div style="font-size:12.5px;font-style:italic;color:var(--t3);margin:2px 0 18px">Não sabe seu VO<sub style="font-size:.75em">2</sub> Máx? O aplicativo também permite começar sem ele.</div>
@@ -3191,7 +3207,7 @@ const LS_TEST_HISTORY_KEY='vo2_test_history';
 function userScopedKey(base){ return currentUser?`${base}_${currentUser.uid}`:base; }
 
 function saveLastTest(vo2,vVO2,methodLabel,methodType,profKey){
-  const data={vo2,vVO2,methodLabel,methodType,profKey,date:new Date().toLocaleDateString('pt-BR')};
+  const data={vo2,vVO2,methodLabel,methodType,profKey,date:new Date().toLocaleDateString('pt-BR'),completedAtTs:Date.now()};
   lastTestResult=data;
   lsSet(userScopedKey(LS_TEST_KEY),JSON.stringify(data));
   // Sincroniza na nuvem se tiver conta
@@ -3205,6 +3221,20 @@ function saveLastTest(vo2,vVO2,methodLabel,methodType,profKey){
     lsSet(userScopedKey(LS_REAL_TEST_KEY),JSON.stringify(data));
     if(currentUser&&fbDb){
       try{fbDb.collection('users').doc(currentUser.uid).set({lastRealTest:data},{merge:true});}catch(e){}
+    }
+    // Um teste real novo sempre "libera" a trava que evita reoferecer
+    // atualizar a planilha logo depois de uma sugestão adaptativa aplicada
+    // (ver planNeedsVo2Refresh). Antes isso dependia de comparar datas
+    // (adaptiveVo2AppliedAt vs completedAtTs), o que é frágil — dados vindos
+    // da nuvem podem chegar fora de ordem, ou um `lastRealTest` cacheado de
+    // antes dessa correção pode não ter completedAtTs nenhum. Mais simples e
+    // à prova de falha: limpa a trava direto aqui, sempre que um teste
+    // de verdade novo (não "sem informar") é salvo — não precisa confiar em
+    // nenhuma comparação de timestamp pra isso funcionar certo.
+    const activePlan=savedPlans.find(p=>p.id===wzSummaryPlanId);
+    if(activePlan&&activePlan.adaptiveVo2AppliedAt){
+      activePlan.adaptiveVo2AppliedAt=null;
+      try{persistAccountPlans();}catch(e){}
     }
   }
   // IMPORTANTE: saveLastTest só guarda o "estado atual" (último teste) —
@@ -3834,6 +3864,32 @@ function jumpTo(target){
   // religar o comportamento suave pra outras rolagens.
   setTimeout(()=>{html.style.scrollBehavior=prevBehavior||'smooth';},150);
 }
+/* ── Modal de "novo recorde" ──────────────────────────────────────────
+   Pedido explícito: diferente de um toast (que some sozinho em poucos
+   segundos), esse modal fica na tela até a pessoa tocar em "Show!" — pra
+   não passar batido logo depois de terminar de correr. Mesmas cores
+   "warm" (laranja) já usadas no toast antigo, só que num cartão central
+   que exige confirmação. Não fecha tocando fora de propósito: é uma
+   conquista, melhor garantir que a pessoa viu antes de sumir. */
+function showRecordModal(broken){
+  if(!broken||!broken.length)return;
+  const old=document.getElementById('record-modal'); if(old)old.remove();
+  const div=document.createElement('div');
+  div.id='record-modal';
+  div.style.cssText='position:fixed;inset:0;z-index:980;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px';
+  const title=broken.length===1?`Novo recorde: ${broken[0]}!`:`Novos recordes: ${broken.join(', ')}!`;
+  div.innerHTML=`
+    <div style="background:var(--bg);border-radius:16px;padding:28px 22px 20px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.4);text-align:center">
+      <div style="font-size:42px;line-height:1;margin-bottom:12px">🏆</div>
+      <div style="font-size:17px;font-weight:800;color:var(--t1);margin-bottom:20px;line-height:1.4">${title}</div>
+      <button id="record-modal-ok" style="width:100%;height:46px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--warm),var(--warm2));color:var(--on-warm);font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">Show! 🎉</button>
+    </div>`;
+  document.body.appendChild(div);
+  document.body.style.overflow='hidden'; // trava o scroll de fundo enquanto o modal estiver aberto, igual os outros modais do app
+  const close=()=>{ const el=document.getElementById('record-modal'); if(el)el.remove(); document.body.style.overflow=''; };
+  div.querySelector('#record-modal-ok').onclick=close;
+}
+window.showRecordModal=showRecordModal;
 function showToast(msg,variant,durationMs){
   const t=document.getElementById('toast');
   if(!t)return;
@@ -3879,6 +3935,10 @@ function resetCalcInputs(){
    WIZARD PROGRESSIVO
 ══════════════════════════════════════════════════════════ */
 var wzState={profile:null,vo2:null,usedRealVo2:false,dist:null,obj:null,dur:null};
+// Data da prova alvo (string 'YYYY-MM-DD' ou null), informada na Etapa 5
+// (Duração). Fica fora de wzState de propósito, pra ser fácil de limpar
+// em qualquer lugar sem mexer no resto do estado do assistente.
+var wzTargetDate=null;
 /* Resumo compacto exibido acima do card "Planilhas Personalizadas" depois que
    uma planilha é gerada e salva. wzSummaryPlanId aponta pro plano salvo em
    savedPlans; wzSummarySnapshot guarda perfil/vo2/dist/objetivo escolhidos
@@ -4134,7 +4194,10 @@ function buildUnplannedMiniCardsForToday(){
       <div class="cs-today-workout">
         <div class="cs-today-type" style="color:var(--t1)">${displayName}</div>
         <div class="stat-card" style="margin-top:10px;padding:10px 12px">${realInfoHtml}</div>
-        <button onclick="openShareModalFromLog('${entry.id}')" style="margin-top:12px;background:none;border:1px solid var(--bdr2);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--t2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-share"></use></svg> Compartilhar</button>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button onclick="openVincularPicker('${entry.id}')" style="background:none;border:1px solid var(--acc);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--acc);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-link"></use></svg> Vincular a um treino da planilha</button>
+          <button onclick="openShareModalFromLog('${entry.id}')" style="background:none;border:1px solid var(--bdr2);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--t2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-share"></use></svg> Compartilhar</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -4145,17 +4208,18 @@ function buildTodayMini(plan){
   const is42=plan.race==='42';
   const is10k=plan.race==='10k';
   const unplannedMiniHtml=buildUnplannedMiniCardsForToday();
+  const adaptiveHtml=buildAdaptiveSuggestionCard(plan);
   if(info.status==='future'){
-    return`<div class="cs-today">
-      <div class="cs-today-eyebrow">TREINO DE HOJE</div>
-      <div class="cs-today-body">A planilha começa em <strong>${info.daysToStart} dia${info.daysToStart!==1?'s':''}</strong>.</div>
-    </div>`+unplannedMiniHtml;
+    return`<div class="cs-today" style="margin-top:10px">
+      <div class="cs-today-eyebrow" style="color:var(--acc)"><svg class="gi"><use href="#i-schedule"></use></svg> INÍCIO DA PLANILHA</div>
+      <div class="cs-today-body">Sua planilha inicia em <strong>${info.daysToStart} dia${info.daysToStart!==1?'s':''}</strong>.<br><span style="color:var(--t3);font-size:.9em">Início: ${fmtDateFull(new Date(plan.startTimestamp))}</span></div>
+    </div>`+adaptiveHtml+unplannedMiniHtml;
   }
   if(info.status==='finished'){
     return`<div class="cs-today">
       <div class="cs-today-eyebrow"><svg class="gi"><use href="#i-sports_score"></use></svg> CICLO CONCLUÍDO</div>
       <div class="cs-today-body">Parabéns! Você completou as <strong>${plan.planWeeks} semanas</strong> da planilha.</div>
-    </div>`+unplannedMiniHtml;
+    </div>`+adaptiveHtml+unplannedMiniHtml;
   }
   const{wIdx,dIdx,week,day}=info;
   const isDone=!!plan.done[`${wIdx}-${dIdx}`];
@@ -4168,7 +4232,7 @@ function buildTodayMini(plan){
       <div class="cs-today-eyebrow">TREINO DE HOJE · ${todayStr}</div>
       <div class="cs-today-meta">Semana ${week.w} de ${plan.planWeeks}${week.phaseLabel?` · ${week.phaseLabel}`:''} · ${weekRange}</div>
       <div class="cs-today-body">Descanso <svg class="gi"><use href="#i-bedtime"></use></svg> — dia de recuperação.</div>
-    </div>`+unplannedMiniHtml;
+    </div>`+adaptiveHtml+unplannedMiniHtml;
   }
   const realInfo=(isDone&&plan.done[`${wIdx}-${dIdx}`]&&typeof plan.done[`${wIdx}-${dIdx}`]==='object')?plan.done[`${wIdx}-${dIdx}`]:null;
   return`<div class="cs-today">
@@ -4178,7 +4242,7 @@ function buildTodayMini(plan){
       <div class="cs-today-type" style="color:${col}">${day.type}${day.subtypeBadge||''}${day.dist?` · ${day.dist}`:''}</div>
       ${day.pace&&!day.rest?`<div class="cs-today-pace">${compactPaceDisplay(day)}</div>`:''}
       ${day.detail?`<div class="cs-today-detail">${day.detail}</div>`:''}
-      ${realInfo?`<div class="stat-card" style="margin-top:10px;padding:10px 12px">${formatRealInfoBlock(realInfo)}</div>`:''}
+      ${realInfo?`<div class="stat-card" style="margin-top:10px;padding:10px 12px">${formatRealInfoBlock(realInfo,null,plan.id,wIdx,dIdx)}</div>`:''}
       ${isDone?`<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
         <button onclick="openShareModal(${plan.id},${wIdx},${dIdx})" style="background:none;border:1px solid var(--bdr2);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--t2);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-share"></use></svg> Compartilhar</button>
         <button onclick="toggleDone(${plan.id},${wIdx},${dIdx}).then(renderCalcSummary)" style="background:none;border:1px solid var(--bdr2);border-radius:20px;padding:6px 14px;font-size:12.5px;font-weight:700;color:var(--t3);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px"><svg class="gi" style="font-size:14px"><use href="#i-cancel"></use></svg> Desmarcar como feito</button>
@@ -4190,7 +4254,7 @@ function buildTodayMini(plan){
         <button onclick="toggleDone(${plan.id},${wIdx},${dIdx}).then(renderCalcSummary)" style="background:none;border:none;padding:4px;color:var(--gr);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Concluir treino manualmente</button>
       </div>
     </div>`:''}
-  </div>`+unplannedMiniHtml;
+  </div>`+adaptiveHtml+unplannedMiniHtml;
 }
 // Carrossel horizontal "Próximos treinos" — mostra os próximos 5 treinos de
 // verdade (pula descanso/caminhada), com a mesma opção de "Iniciar" que o
@@ -4420,7 +4484,17 @@ function renderCalcSummary(){
   const profKey=plan?plan.profKey:snap.profile;
   const dist=plan?plan.race:snap.dist;
   const obj=plan?(plan.obj||snap.obj):snap.obj;
-  const vo2Live=(lastTestResult&&lastTestResult.vo2)?lastTestResult.vo2:null;
+  // O card sempre preferiu mostrar o "último teste calculado" (lastTestResult)
+  // por cima do VO2 da planilha — pensado pra quem acabou de testar de novo
+  // mas ainda não gerou uma planilha nova com esse valor. Só que a sugestão
+  // adaptativa atualiza o VO2 DENTRO da planilha sem passar por ali (não é
+  // um teste, é um ajuste algorítmico) — então, sem essa checagem de data,
+  // o card continuava preso no valor antigo depois de aceitar a sugestão.
+  // Só usa lastTestResult se ele for igual ou mais recente que o último
+  // ajuste adaptativo aplicado nessa planilha.
+  const lastTestTs=lastTestResult?(lastTestResult.completedAtTs||0):0;
+  const adaptiveTs=plan?(plan.adaptiveVo2AppliedAt||0):0;
+  const vo2Live=(lastTestResult&&lastTestResult.vo2&&lastTestTs>=adaptiveTs)?lastTestResult.vo2:null;
   const vo2=vo2Live!=null?vo2Live:(plan?plan.vo2:snap.vo2);
   const usedReal=vo2Live!=null?(lastTestResult.methodType!=='profileDefault'):!!snap.usedRealVo2;
   if(!profKey&&!dist&&!vo2){
@@ -4605,6 +4679,7 @@ function wzCalcRealVo2(){
   wzBuildingNew=true;
   wzVo2OnlyMode=true;
   wzPendingVo2Registration=null; // começando um cálculo novo — descarta qualquer resultado anterior não confirmado
+  wzTargetDate=null; // idem, pra data de prova alvo
   wzState={profile:snap.profile||null,vo2:null,usedRealVo2:false,dist:snap.dist||null,obj:snap.obj||null,dur:snap.dur||null};
   const wzWrap=document.getElementById('wz-wrap');if(wzWrap)wzWrap.style.display='';
   // Abre direto e só a etapa do VO2 — sem passar por wzEditStep (que reseta pra
@@ -4676,6 +4751,7 @@ function wzStartNewPlan(){
   saveNavState('calc',null,{building:true}); // registra que está no assistente, não no resumo — ver restoreLastNavState
   wzVo2OnlyMode=false;
   wzPendingVo2Registration=null; // começando um cálculo novo — descarta qualquer resultado anterior não confirmado
+  wzTargetDate=null; // idem, pra data de prova alvo
   const optEst=document.getElementById('wz-opt-est');if(optEst)optEst.style.display='flex';
   wzState={profile:null,vo2:null,usedRealVo2:false,dist:null,obj:null,dur:null};
   renderWzVo2RealNote();
@@ -4699,6 +4775,7 @@ function wzCancelBuildingNew(){
   wzBuildingNew=false;
   wzVo2OnlyMode=false;
   wzPendingVo2Registration=null; // desistiu do assistente — descarta qualquer resultado calculado e não confirmado
+  wzTargetDate=null;
   // Mesmo motivo do fix em switchNav: repõe o resumo se ainda não tiver um
   // (pode acontecer depois de recarregar a página no meio do assistente).
   if(!wzSummaryPlanId&&typeof wzAutoRestoreFromSavedPlans==='function')wzAutoRestoreFromSavedPlans();
@@ -5227,7 +5304,7 @@ async function vtStartTest(type,weight,sexo){
     steps:[step],stepIdx:0,
     status:'idle',
     startedAt:null,pausedAt:null,pausedAccumMs:0,
-    totalDistM:0,lastGoodPoint:null,recentSamples:[],
+    totalDistM:0,lastGoodPoint:null,recentSamples:[],track:[],
     segStartDistM:0,segStartElapsedMs:0,
     watchId:null,timerId:null,wakeLock:null,wakeLockRequesting:false,
     stepHistory:[],lastBeepKey:null,audioCtx:null,
@@ -5581,16 +5658,11 @@ function wzConfirmObj(){
 }
 
 /* ── ETAPA 5: Duração ── */
-function wzShowStep5(){
-  const step=document.getElementById('wz-step-5');
-  step.style.display='';
-  const race=wzState.dist;
-  const prof=wzState.profile||'inter';
-
-  // Recomendação por perfil:
-  // Iniciante  → mais semanas (16 p/ 21km, 20 p/ 42km)
-  // Inter/Avançado → menos semanas (12 p/ 21km, 16 p/ 42km)
-  let opts, recW;
+// Catálogo de durações por distância + recomendação por perfil — extraído
+// pra função própria pra poder ser reusado tanto na renderização normal
+// quanto no cálculo com data de prova alvo.
+function wzGetDurOpts(race,prof){
+  let opts,recW;
   if(race==='42'){
     opts=[{w:16},{w:20}];
     recW=prof==='init'?20:16;
@@ -5601,20 +5673,113 @@ function wzShowStep5(){
     opts=[{w:12},{w:16}];
     recW=prof==='init'?16:12;
   }
-
+  return{opts,recW};
+}
+// Renderiza a lista de cards de duração. `opts` já vem filtrada quando tem
+// data de prova alvo (só mostra durações que cabem no tempo restante).
+function wzRenderDurOptsList(opts,selectedW,recW){
+  const prof=wzState.profile||'inter';
   const profLabel={'init':'Iniciante','inter':'Intermediário','avance':'Avançado'};
   document.getElementById('wz-dur-opts').innerHTML=opts.map(o=>{
     const isRec=o.w===recW;
+    const isSel=o.w===selectedW;
     const badge=isRec?`<span style="pointer-events:none;display:inline-block;margin-left:6px;background:var(--acc);color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.08em;border-radius:8px;padding:1px 7px;vertical-align:middle"><svg class="gi"><use href="#i-check"></use></svg> Recomendado para ${profLabel[prof]||prof}</span>`:'';
-    return `<div class="dopt${isRec?' on':''}" id="wz-dopt-${o.w}" onclick="wzSelectDur(${o.w})" style="pointer-events:auto">${o.w} semanas${badge}</div>`;
+    return `<div class="dopt${isSel?' on':''}" id="wz-dopt-${o.w}" onclick="wzSelectDur(${o.w})" style="pointer-events:auto">${o.w} semanas${badge}</div>`;
   }).join('');
+}
 
-  // Pré-seleciona o recomendado
-  wzState.dur=recW;
+function wzShowStep5(){
+  const step=document.getElementById('wz-step-5');
+  step.style.display='';
+  const race=wzState.dist;
+  const prof=wzState.profile||'inter';
+  const{opts,recW}=wzGetDurOpts(race,prof);
+
+  const toggle=document.getElementById('wz-target-date-toggle');
+  const dateVal=document.getElementById('wz-target-date-val');
+  const inputRow=document.getElementById('wz-target-date-input-row');
   const btn=document.getElementById('wz-dur-next');
-  btn.style.opacity='1';btn.style.cursor='pointer';
-  btn.textContent='Gerar Planilha ▶';
+
+  if(wzTargetDate){
+    toggle.checked=true;
+    inputRow.style.display='';
+    dateVal.value=wzTargetDate;
+    wzApplyTargetDate();
+  } else {
+    toggle.checked=false;
+    inputRow.style.display='none';
+    dateVal.value='';
+    document.getElementById('wz-target-date-msg').innerHTML='';
+    wzRenderDurOptsList(opts,recW,recW);
+    wzState.dur=recW;
+    btn.style.opacity='1';btn.style.cursor='pointer';
+    btn.textContent='Gerar Planilha ▶';
+  }
   step.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function wzToggleTargetDate(){
+  const checked=document.getElementById('wz-target-date-toggle').checked;
+  document.getElementById('wz-target-date-input-row').style.display=checked?'':'none';
+  if(!checked){
+    wzTargetDate=null;
+    document.getElementById('wz-target-date-msg').innerHTML='';
+    wzShowStep5(); // sem data — volta pro fluxo normal, sem nenhuma restrição
+  }
+}
+
+function wzApplyTargetDate(){
+  const val=document.getElementById('wz-target-date-val').value;
+  const msgBox=document.getElementById('wz-target-date-msg');
+  const btn=document.getElementById('wz-dur-next');
+  const race=wzState.dist;
+  const prof=wzState.profile||'inter';
+  const{opts,recW}=wzGetDurOpts(race,prof);
+
+  if(!val){
+    wzTargetDate=null;
+    msgBox.innerHTML='';
+    wzRenderDurOptsList(opts,recW,recW);
+    wzState.dur=recW;
+    btn.style.opacity='1';btn.style.cursor='pointer';
+    return;
+  }
+  wzTargetDate=val;
+
+  const todayZero=new Date();todayZero.setHours(0,0,0,0);
+  const target=new Date(val+'T00:00:00');
+  if(isNaN(target)||target<todayZero){
+    msgBox.innerHTML='<span style="color:#e5484d;font-weight:700">Escolha uma data futura.</span>';
+    document.getElementById('wz-dur-opts').innerHTML='';
+    wzState.dur=null;
+    btn.style.opacity='.4';btn.style.cursor='not-allowed';
+    return;
+  }
+
+  const weeksAvail=weeksAvailableUntilTarget(val);
+  const fits=opts.filter(o=>o.w<=weeksAvail);
+
+  if(fits.length===0){
+    msgBox.innerHTML=`<span style="color:#e5484d;font-weight:700">Não há tempo mínimo suficiente pra completar a planilha até a sua prova (faltam só ${weeksAvail} semana${weeksAvail===1?'':'s'}).</span><br>Por segurança, esta planilha não será gerada com essa data. Desmarque a data acima e escolha uma das durações do plano, ou monte sua planilha manualmente se preferir.`;
+    document.getElementById('wz-dur-opts').innerHTML='';
+    wzState.dur=null;
+    btn.style.opacity='.4';btn.style.cursor='not-allowed';
+    return;
+  }
+
+  const bestW=Math.max(...fits.map(o=>o.w));
+  wzRenderDurOptsList(fits,bestW,recW);
+  wzState.dur=bestW;
+  btn.style.opacity='1';btn.style.cursor='pointer';
+
+  const anchor=computeTargetDateAnchor(val,bestW);
+  const startDate=new Date(anchor.startTimestamp);
+  const daysToStart=Math.round((startDate-todayZero)/86400000);
+  if(daysToStart<=0){
+    msgBox.innerHTML='<span style="color:#2ecc71;font-weight:700">Seu ciclo de treinamento começa hoje e termina no dia da sua prova.</span>';
+  } else {
+    msgBox.innerHTML=`<span style="color:#2ecc71;font-weight:700">Seu ciclo de treinamento, pensado pra terminar no dia da sua prova, inicia daqui ${daysToStart} dia${daysToStart===1?'':'s'} (${fmtDateFull(startDate)}).</span>`;
+  }
 }
 
 function wzSelectDur(w){
@@ -5628,6 +5793,22 @@ function wzSelectDur(w){
   if(sel){sel.classList.add('on');sel.style.borderColor='var(--acc)';}
   const btn=document.getElementById('wz-dur-next');
   btn.style.opacity='1';btn.style.cursor='pointer';
+  // Com data de prova ativa, trocar a duração manualmente muda a data de
+  // início do ciclo (a prova continua no mesmo dia, só muda quantas semanas
+  // de preparo cabem antes dela) — recalcula a mensagem na hora, senão ela
+  // fica mostrando o número da duração anterior até salvar.
+  if(wzTargetDate){
+    const msgBox=document.getElementById('wz-target-date-msg');
+    const anchor=computeTargetDateAnchor(wzTargetDate,w);
+    const startDate=new Date(anchor.startTimestamp);
+    const todayZero=new Date();todayZero.setHours(0,0,0,0);
+    const daysToStart=Math.round((startDate-todayZero)/86400000);
+    if(daysToStart<=0){
+      msgBox.innerHTML='<span style="color:#2ecc71;font-weight:700">Seu ciclo de treinamento começa hoje e termina no dia da sua prova.</span>';
+    } else {
+      msgBox.innerHTML=`<span style="color:#2ecc71;font-weight:700">Seu ciclo de treinamento, pensado pra terminar no dia da sua prova, inicia daqui ${daysToStart} dia${daysToStart===1?'':'s'} (${fmtDateFull(startDate)}).</span>`;
+    }
+  }
 }
 
 function wzConfirmDur(){
@@ -5733,7 +5914,7 @@ function setMethod(m){
 }
 function setSexo2400(s){sexo2400=s;setSexo(s);document.getElementById('btn2400-m').classList.toggle('on',s==='M');document.getElementById('btn2400-f').classList.toggle('on',s==='F')}
 function getFit(v,sexoOverride){const s=sexoOverride||sexo;const t=s==='N'?FIT_N:(s==='M'?FIT_M:FIT_F);return t.find(f=>v>=f.min&&v<f.max)||t[0]}
-function s2p(kmh){if(!kmh||kmh<=0)return'--:--';const m=60/kmh,mi=Math.floor(m),s=Math.round((m-mi)*60);return`${mi}:${s.toString().padStart(2,'0')}`}
+function s2p(kmh){if(!kmh||kmh<=0)return'--:--';const m=60/kmh;let mi=Math.floor(m),s=Math.round((m-mi)*60);if(s===60){s=0;mi+=1;}return`${mi}:${s.toString().padStart(2,'0')}`}
 // Segundos → "H:MM:SS" (se passar de 1h) ou "M:SS" — usado ao converter
 // durações que vêm em segundos (ex: sincronização com o relógio), pra nunca
 // mostrar "61 min" quando deveria ser "1:01:00".
@@ -5753,7 +5934,7 @@ function paceBand(kmh,tolSec){
   if(!kmh||kmh<=0)return'--:--';
   const base=3600/kmh;
   const fast=Math.max(1,base-tolSec),slow=base+tolSec;
-  const fmt=s=>{const m=Math.floor(s/60),ss=Math.round(s%60);return`${m}:${String(ss).padStart(2,'0')}`};
+  const fmt=s=>{let m=Math.floor(s/60),ss=Math.round(s%60);if(ss===60){ss=0;m+=1;}return`${m}:${String(ss).padStart(2,'0')}`};
   return`${fmt(fast)}/km-${fmt(slow)}/km`;
 }
 // Distância REAL de uma sessão de Intervalado — aquecimento (10min) + tiros
@@ -6280,7 +6461,7 @@ function renderResults(vo2,fcmax,methodLabel,methodType,fitSexo){
 
   if(chartInst){chartInst.destroy();chartInst=null}
   const ctx=document.getElementById('zonesChart').getContext('2d');
-  chartInst=new Chart(ctx,{type:'bar',data:{labels:ZONES.map(z=>z.id),datasets:[{label:'_base',data:pMin,backgroundColor:'transparent',borderColor:'transparent',stack:'p'},{label:'Pace',data:ZONES.map((_,i)=>pMax[i]-pMin[i]),backgroundColor:ZCOL.map(c=>c+'bb'),borderRadius:6,stack:'p'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{filter:i=>i&&i.datasetIndex===1,callbacks:{title:i=>(i&&i[0]&&ZONES[i[0].dataIndex])?ZONES[i[0].dataIndex].label:'',label:i=>{if(!i||i.dataIndex==null)return'';const[v1,v2]=zSpeedRange(i.dataIndex);return` ${s2p(v2)} – ${s2p(v1)} min/km · ${v2.toFixed(1)}–${v1.toFixed(1)} km/h`}}}},scales:{x:{stacked:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#4a5a7a',font:{size:10},callback:v=>{const mi=Math.floor(v),s=Math.round((v-mi)*60);return`${mi}:${s.toString().padStart(2,'0')}`}},title:{display:true,text:'pace (min/km)',color:'#4a5a7a',font:{size:10}}},y:{stacked:true,grid:{display:false},ticks:{color:'#8899bb',font:{size:11}}}}}});
+  chartInst=new Chart(ctx,{type:'bar',data:{labels:ZONES.map(z=>z.id),datasets:[{label:'_base',data:pMin,backgroundColor:'transparent',borderColor:'transparent',stack:'p'},{label:'Pace',data:ZONES.map((_,i)=>pMax[i]-pMin[i]),backgroundColor:ZCOL.map(c=>c+'bb'),borderRadius:6,stack:'p'}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{filter:i=>i&&i.datasetIndex===1,callbacks:{title:i=>(i&&i[0]&&ZONES[i[0].dataIndex])?ZONES[i[0].dataIndex].label:'',label:i=>{if(!i||i.dataIndex==null)return'';const[v1,v2]=zSpeedRange(i.dataIndex);return` ${s2p(v2)} – ${s2p(v1)} min/km · ${v2.toFixed(1)}–${v1.toFixed(1)} km/h`}}}},scales:{x:{stacked:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#4a5a7a',font:{size:10},callback:v=>{let mi=Math.floor(v),s=Math.round((v-mi)*60);if(s===60){s=0;mi+=1;}return`${mi}:${s.toString().padStart(2,'0')}`}},title:{display:true,text:'pace (min/km)',color:'#4a5a7a',font:{size:10}}},y:{stacked:true,grid:{display:false},ticks:{color:'#8899bb',font:{size:11}}}}}});
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -6418,9 +6599,18 @@ function taperVolumeFactor(is42,taperPos,taperDur,taperVolExtra){
   return Math.max(0.28,Math.min(0.75,base+ex));
 }
 
-function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish'){
+function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish',raceDayIndex=6){
   // ctx: contexto completo passado para todas as sub-funções
   // obj: 'finish' | 'target' | 'improve'
+  // raceDayIndex: dia da semana (0=Seg...6=Dom) em que a prova cai na última
+  // semana. Padrão 6 (domingo) — comportamento de sempre, sem NENHUMA
+  // mudança. Só é diferente de 6 quando o usuário informa uma data de prova
+  // alvo que não cai num domingo (ver confirmSave). Nesse caso, deslocamos
+  // qual índice de dia recebe o conteúdo de "Prova!"/"véspera" dentro de
+  // raceWeekDay (ver shiftRaceDay logo abaixo) — sem tocar em nada da
+  // função raceWeekDay em si, então a ciência do taper continua intacta,
+  // só muda em qual dia real da semana ela é "encaixada".
+  const raceDayShift=6-((typeof raceDayIndex==='number'&&raceDayIndex>=0&&raceDayIndex<=6)?raceDayIndex:6); // 0 quando cai no domingo (ou qualquer valor inválido) — não desloca nada
   const ctx={race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj};
   const is42=race==='42';
   const ph=buildPhases(race,planWeeks),lp=is42?prof.long42:prof.long21;
@@ -6994,6 +7184,18 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
     const mainKm=Math.max(5,Math.round((lkm-warmCoolKm)*10)/10);
     const halfKm=Math.round(mainKm/2*10)/10;
     const restKm=Math.round((mainKm-halfKm)*10)/10;
+    // Guarda os metros exatos já calculados aqui — o exportador (Garmin/
+    // intervals.icu) usa esses valores DIRETO em vez de recalcular por
+    // conta própria a partir do ez do momento do envio. Evita o texto (tela)
+    // e o arquivo enviado divergirem quando o ez de exportação não é
+    // exatamente o mesmo usado pra montar esse texto (ex: planilha
+    // recalculada mais de uma vez, ou pequena diferença de arredondamento).
+    const longSplitM={mainM:Math.round(mainKm*1000),halfM:Math.round(halfKm*1000),restM:Math.round(restKm*1000)};
+    // Total real (mainKm já com piso de 5km aplicado + aquec./desaq.) — pode
+    // ser MAIOR que o "lkm" pedido quando o piso é acionado (ritmo rápido +
+    // longão curto). É esse total real que deve aparecer na tela, não o lkm
+    // bruto da tabela semanal.
+    const totalKm=Math.round((mainKm+warmCoolKm)*10)/10;
     if(cb||variant==='leve'){
       return{
         type:'Longo',subtype:'Leve',
@@ -7005,6 +7207,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
       return{
         type:'Longo',subtype:'Progressivo',
         pace:paceMod,
+        longSplitM,totalKm,
         detail:`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${halfKm}km Z1-Z2 (${paceBand(ez,20)}) → ${restKm}km Z3 progressivo (${paceBand(mod,15)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · segunda metade mais rápida que a primeira · não force o início`
       };
     }
@@ -7012,6 +7215,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
       return{
         type:'Longo',subtype:'Final Forte',
         pace:paceMod,
+        longSplitM,totalKm,
         detail:`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${halfKm}km Z1-Z2 (${paceBand(ez,20)}) → ${restKm}km Z3 forte (${paceBand(mod,15)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · simula fadiga de prova · não inicie rápido — guarde energia para o final`
       };
     }
@@ -7019,6 +7223,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
       return{
         type:'Longo',subtype:'Ritmo de Prova',
         pace:paceProva,
+        longSplitM,totalKm,
         detail:`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${mainKm}km pace de prova (${paceBand(raceSpeed,10)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · estímulo específico · requer 48h de recuperação após`
       };
     }
@@ -7026,6 +7231,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
       return{
         type:'Longo',subtype:'Steady State',
         pace:s2p(ez*.90),
+        longSplitM,totalKm,
         detail:`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${mainKm}km Z3-Z4 constante (${paceBand(ez*.90,10)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · pace uniforme do início ao fim · não acelere nem diminua`
       };
     }
@@ -7034,6 +7240,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
       return{
         type:'Longo',subtype:'MP Progressivo',
         pace:s2p(raceSpeed),
+        longSplitM,totalKm,
         detail:`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${halfKm}km Z1-Z2 (${paceBand(ez,20)}) → ${restKm}km no pace de prova (${paceBand(raceSpeed,15)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · Daniels marathon-specific · simula stress metabólico de prova`
       };
     }
@@ -7107,7 +7314,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
     // recuperação fixa de 2min ez entre séries (igual ao que é exportado)
     const reps=Math.min(6,Math.round(3+tBuild*3));
     const acSec=Math.round(90+tBuild*90); // 90s → 3min
-    const acLabel=(acSec%60===0)?`${acSec/60}min`:`${acSec}s`;
+    const acLabel=(acSec%60===0)?`${acSec/60}min`:`${Math.floor(acSec/60)}min${acSec%60}s`;
     const totalMinBuild=Math.round((600+600+reps*(acSec+120))/60);
     const dist=Math.round(((600+600)*ez+reps*(acSec*intv+120*ez))/3600*10)/10;
     return{type:'Fartlek Build',pace:s2p(intv),dist:`~${dist}km`,timeLabel:`${totalMinBuild} min`,
@@ -7138,20 +7345,33 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
       const td=Math.max(6,Math.min(Math.round(baseKm*objMod.tempoLenFactor),is42?24:17));
       const warmCoolKmT=Math.round(ez*1200/3.6)/1000;
       const seg=Math.max(3,Math.round((td-warmCoolKmT)*10)/10);
+      // Total real exibido = segmento (já com o piso de 3km aplicado, se
+      // bateu) + aquec./desaq. — não o "td" bruto de antes do piso. Bug real
+      // encontrado em teste: com ritmo rápido, o desconto de aquec.+desaq.
+      // podia ser maior que o "td" da tabela, o piso de 3km no segmento então
+      // fazia o treino de verdade ficar MAIOR do que o km mostrado na tela.
+      const totalKmReal=Math.round((seg+warmCoolKmT)*10)/10;
       // Microprogressão: nota de ondulação (cada semana cresce ~0.5–1km de segmento útil)
       const buildStart=getBuildStart(w);
       const phasePos=Math.max(0,w-buildStart);
       const ondNote=phasePos>0?` · ${seg}km contínuos`:'';
-      return{type:'Tempo run',pace:s2p(tempo),dist:`${td}km`,
+      return{type:'Tempo run',pace:s2p(tempo),dist:`${totalKmReal}km`,tempoSegM:Math.round(seg*1000),
         detail:`Aquecimento Z1 · 10min (${paceBand(ez,15)}) → ${seg}km Z4 a ${paceBand(tempo,8)} → Desaquecimento Z1 · 10min (${paceBand(ez,15)})${label?` · ${label}`:''}${ondNote}`};
     }
 
-    // finish → sempre Moderado (sem qualidade na QUA)
-    if(obj==='finish'){
-      const d=Math.max(7,Math.round(km*(is42?.16:.18)));
-      return{type:'Moderado',pace:s2p(mod),dist:`${d}km`,
-        detail:`Z3 · ${d}km moderado — objetivo conservador, sem tempo run`};
-    }
+    // "Só completar" (finish) agora segue os MESMOS branches abaixo já usados
+    // por "Tempo alvo" (target) — pedido explícito: reaproveitar só o que já
+    // existe (fartlekSession/tempoRun, sem função nova nenhuma), pra ficar
+    // coerente com Higdon/Daniels/Pfitzinger (mesmos treinadores já
+    // creditados no app), que também incluem Fartlek/Tempo run em planos
+    // conservadores — só reservam Intervalado (VO2max) pra quem já busca
+    // performance. Os branches abaixo só diferenciam obj==='improve'
+    // explicitamente; qualquer outro valor (target OU finish agora) cai no
+    // mesmo caminho "target" de sempre. O volume/duração de cada Tempo run
+    // continua automaticamente mais conservador pro finish sozinho, via
+    // objMod.tempoLenFactor (0.80 pra finish vs 1.0 pra target) já usado
+    // dentro de tempoRun() logo acima — sem precisar de nenhum ajuste extra
+    // aqui.
 
     // ── INICIANTE ──────────────────────────────────────────────────────────
     if(isInit){
@@ -7619,7 +7839,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
     function racePaceBlock(warmKm,blockKm){
       const warmCoolKm=Math.round(ez*1200/3.6)/1000;
       const totalDist=Math.round((blockKm+warmCoolKm)*10)/10;
-      return{type:'Tempo run',pace:s2p(raceSpeed),dist:`${totalDist}km`,
+      return{type:'Tempo run',pace:s2p(raceSpeed),dist:`${totalDist}km`,tempoSegM:Math.round(blockKm*1000),
         detail:`Aquecimento Z1 · 10min (${paceBand(ez,15)}) → ${blockKm}km a ${paceBand(raceSpeed,8)} (pace de prova) → Desaquecimento Z1 · 10min (${paceBand(ez,15)}) · último estímulo específico · não force`};
     }
 
@@ -7669,7 +7889,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
           const warmCoolKm=Math.round(ez*1200/3.6)/1000;
           const block=Math.max(4,dT-Math.round(warmCoolKm));
           const totalDist=Math.round((block+warmCoolKm)*10)/10;
-          return{type:'Tempo run',pace:s2p(tempo),dist:`${totalDist}km`,
+          return{type:'Tempo run',pace:s2p(tempo),dist:`${totalDist}km`,tempoSegM:Math.round(block*1000),
             detail:`Aquecimento Z1 · 10min (${paceBand(ez,15)}) → ${block}km Z4 a ${paceBand(tempo,8)} → Desaquecimento Z1 · 10min (${paceBand(ez,15)}) · último limiar antes da queda`};
         }
         if(d===3)return strideActivation(d3,6,false);
@@ -7784,7 +8004,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
           const warmCoolKm=Math.round(ez*1200/3.6)/1000;
           const block=Math.max(3,dT-Math.round(warmCoolKm));
           const totalDist=Math.round((block+warmCoolKm)*10)/10;
-          return{type:'Tempo run',pace:s2p(tempo),dist:`${totalDist}km`,
+          return{type:'Tempo run',pace:s2p(tempo),dist:`${totalDist}km`,tempoSegM:Math.round(block*1000),
             detail:`Aquecimento Z1 · 10min (${paceBand(ez,15)}) → ${block}km Z4 a ${paceBand(tempo,8)} → Desaquecimento Z1 · 10min (${paceBand(ez,15)}) · último limiar`};
         }
         if(d===3)return strideActivation(d3,4,false);
@@ -7799,7 +8019,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
         const warmCoolKm=Math.round(ez*1200/3.6)/1000;
         const block=Math.max(3,dT-Math.round(warmCoolKm));
         const totalDist=Math.round((block+warmCoolKm)*10)/10;
-        return{type:'Tempo run',pace:s2p(tempo),dist:`${totalDist}km`,
+        return{type:'Tempo run',pace:s2p(tempo),dist:`${totalDist}km`,tempoSegM:Math.round(block*1000),
           detail:`Aquecimento Z1 · 10min (${paceBand(ez,15)}) → ${block}km Z4 a ${paceBand(tempo,8)} → Desaquecimento Z1 · 10min (${paceBand(ez,15)}) · intensidade preservada, volume baixo`};
       }
       if(d===3)return strideActivation(d3,5,false);
@@ -7870,15 +8090,25 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
         const distAdj=Math.max(8,Math.round((totalDist-warmCoolKmMP)*10)/10);
         const mpSeg=Math.round(distAdj*.60*10)/10;
         const warmSeg=Math.round((distAdj-mpSeg)*10)/10;
-        return{type:'MP Run',pace:s2p(raceSpeed),dist:`${totalDist}km`,isLong:true,isPeak:false,
+        const mpSplitM={warmSegM:Math.round(warmSeg*1000),mpSegM:Math.round(mpSeg*1000)};
+        // Total real exibido = warmSeg+mpSeg (já com o piso de 8km aplicado)
+        // + aquec./desaq. — pode ser maior que o "totalDist" bruto (85% do
+        // longão da semana) quando o piso é acionado. Mesmo bug do Longão/
+        // Tempo run, mesma correção.
+        const totalKmMP=Math.round((warmSeg+mpSeg+warmCoolKmMP)*10)/10;
+        return{type:'MP Run',pace:s2p(raceSpeed),dist:`${totalKmMP}km`,isLong:true,isPeak:false,mpSplitM,
           longDetail:`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${warmSeg}km Z2 (${paceBand(ez,20)}) → ${mpSeg}km a pace de prova (${paceBand(raceSpeed,8)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}). Simula o stress metabólico sem destruir a recuperação.`,
           detail:`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${warmSeg}km Z2 (${paceBand(ez,20)}) → ${mpSeg}km pace de prova (${paceBand(raceSpeed,8)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)})`};
       }
       const variant=getLongaoVariant(w,lkm,p,cb);
       const lo=buildLongaoDetail(lkm,variant,p,cb);
       const subtypeBadge=lo.subtype?` <span style="font-size:8.5px;font-weight:900;background:rgba(255,184,48,0.25);color:#c88800;padding:1px 5px;border-radius:6px;margin-left:3px;vertical-align:middle">${lo.subtype.toUpperCase()}</span>`:'';
-      return{type:'Longo',subtype:lo.subtype,pace:lo.pace,dist:`${lkm}km`,isLong:true,isPeak:lkm>=lpEff.peak,
-        longDetail:lo.detail,detail:lo.detail,subtypeBadge};
+      // Total real exibido: se o segmento principal bateu no piso de segurança
+      // (mínimo 5km), o total de verdade (segmento + aquec./desaq.) pode ficar
+      // maior que o "lkm" da tabela semanal — mesmo bug do Tempo run. lo.totalKm
+      // já vem calculado certo (com o piso considerado) direto da função.
+      return{type:'Longo',subtype:lo.subtype,pace:lo.pace,dist:`${lo.totalKm||lkm}km`,isLong:true,isPeak:lkm>=lpEff.peak,
+        longDetail:lo.detail,detail:lo.detail,subtypeBadge,longSplitM:lo.longSplitM};
     }
 
     // DOM: descanso sempre
@@ -8137,7 +8367,7 @@ function buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj='finish')
     const isPeak=!isRace&&phaseName(w)==='build'&&lkm>=lpEff.peak;
     const days=[];
     for(let d=0;d<7;d++){
-      days.push(isRace?raceWeekDay(d):dayPlan(w,d));
+      days.push(isRace?raceWeekDay(d+raceDayShift):dayPlan(w,d));
     }
     const activeDays=days.filter(d=>!d.rest).length;
     weeks.push({w,km,lkm,isPeak,isRace,isCB,
@@ -8606,9 +8836,23 @@ function buildPhasesShort(race,planWeeks){
   }
 }
 
-function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
+function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,raceDayIndex=null){
   const is10k=race==='10k';
   const distKm=is10k?10:5;
+  // Dia "natural" da prova nessa distância: 10km cai no domingo (6), 5km no
+  // sábado (5) — igual já era antes. raceDayIndex só é diferente disso
+  // quando o usuário informou uma data de prova alvo que não cai nesse dia
+  // natural (ver confirmSave); nesse caso deslocamos raceWeekDay pro dia
+  // certo, sem tocar a função em si (mesma ideia usada em buildDays).
+  const defaultRaceDayIndex=is10k?6:5;
+  // Guarda defensiva: alguns pontos do código já chamavam buildDaysShort
+  // passando um 9º argumento (o "obj" — 'finish'/'target'/'improve') que
+  // antes não existia como parâmetro nenhum e era simplesmente ignorado.
+  // Agora que esse slot é o raceDayIndex, só aceitamos um número válido de
+  // 0 a 6 — qualquer outra coisa (string, undefined, etc.) cai no padrão
+  // de sempre, sem afetar nada dessas chamadas antigas.
+  const validRaceDayIndex=(typeof raceDayIndex==='number'&&raceDayIndex>=0&&raceDayIndex<=6)?raceDayIndex:defaultRaceDayIndex;
+  const raceDayShift=defaultRaceDayIndex-validRaceDayIndex;
   const ph=buildPhasesShort(race,planWeeks);
   const isAvance=prof.label==='Avançado';
   const cutbackCycle=isAvance?3:4;
@@ -8742,10 +8986,12 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
         }
         if(variant!=='leve'){
           const paceMod=s2p(mod),paceProva=s2p(raceSpeed);
-          const warmCoolKm=Math.round(ez*300/3.6)/1000; // 5min aquec. + 5min desaq., por tempo
+          const warmCoolKm=Math.round(ez*600/3.6)/1000; // 5min aquec. + 5min desaq., por tempo (BUG CORRIGIDO: estava só *300, contando 1 bloco de 5min em vez dos 2 — total real batia 0.8km a mais que o mostrado, confirmado em teste no intervals.icu)
           const mainKm=Math.max(4,Math.round((lkm-warmCoolKm)*10)/10);
           const halfKm=Math.round(mainKm/2*10)/10;
           const restKm=Math.round((mainKm-halfKm)*10)/10;
+          const longSplitM10k={mainM:Math.round(mainKm*1000),halfM:Math.round(halfKm*1000),restM:Math.round(restKm*1000)};
+          const totalKm10k=Math.round((mainKm+warmCoolKm)*10)/10;
           let subtype,pace,detail;
           if(variant==='progressivo'){
             subtype='Progressivo';pace=paceMod;
@@ -8761,7 +9007,7 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
             detail=`Aquecimento Z1 · 5min (${paceBand(ez,20)}) → ${mainKm}km pace de prova (${paceBand(raceSpeed,10)}) → Desaquecimento Z1 · 5min (${paceBand(ez,20)}) · estímulo específico de 10km · requer 48h de recuperação após`;
           }
           const subtypeBadge=` <span style="font-size:8.5px;font-weight:900;background:rgba(255,184,48,0.25);color:#c88800;padding:1px 5px;border-radius:6px;margin-left:3px;vertical-align:middle">${subtype.toUpperCase()}</span>`;
-          return{type:'Longo',subtype,pace,dist:`${lkm}km`,isLong:true,isPeak:is10k&&lkm>=longCfg10k.peak,longDetail:detail,detail,subtypeBadge};
+          return{type:'Longo',subtype,pace,dist:`${totalKm10k}km`,isLong:true,isPeak:is10k&&lkm>=longCfg10k.peak,longDetail:detail,detail,subtypeBadge,longSplitM:longSplitM10k};
         }
       }
       const detail=cb?`Z1-Z2 · ${lkm}km recuo — regenerativo, pace bem confortável`:
@@ -8878,7 +9124,10 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
         [5,6,7,8][Math.min(block,3)];
       const warmCoolKmT=Math.round(ez*1200/3.6)/1000;
       const seg=Math.max(is10k?4:3,Math.round((tempoKm-warmCoolKmT)*10)/10);
-      return{type:'Tempo run',pace:s2p(tempo),dist:`${tempoKm}km`,
+      // Total real exibido = segmento (já com piso aplicado) + aquec./desaq.,
+      // não o valor bruto da tabela — mesmo motivo do helper tempoRun acima.
+      const totalKmReal=Math.round((seg+warmCoolKmT)*10)/10;
+      return{type:'Tempo run',pace:s2p(tempo),dist:`${totalKmReal}km`,tempoSegM:Math.round(seg*1000),
         detail:`Aquecimento Z1 · 10min (${paceBand(ez,15)}) → ${seg}km Z4 a ${paceBand(tempo,8)} → Desaquecimento Z1 · 10min (${paceBand(ez,15)}) — especificidade ${is10k?'10km':'5km'} · bloco ${block+1}`};
     }
 
@@ -8959,7 +9208,7 @@ function buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed){
     const isPeak=is10k&&!isRace&&phaseName(w)==='build'&&lkm>=longCfg10k.peak;
     const days=[];
     for(let d=0;d<7;d++){
-      days.push(isRace?raceWeekDay(d):dayPlan(w,d));
+      days.push(isRace?raceWeekDay(d+raceDayShift):dayPlan(w,d));
     }
     const activeDays=days.filter(d=>!d.rest).length;
     weeks.push({w,km,lkm,isPeak,isRace,isCB,
@@ -8991,7 +9240,7 @@ function renderPlanShort(race,planWeeks,profKey){
   if(!ez||ez<=0){
     showToast('Calcule seu VO2max/pace antes de gerar o plano — os ritmos ficarão em branco.');
   }
-  const{weeks}=buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed);
+  const{weeks}=buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,wzTargetDate?computeTargetDateAnchor(wzTargetDate,planWeeks).raceDayIndex:null);
   const mt=document.getElementById(`method-tag-${race}`);
   const obj=is10k?planObj10k:planObj5k;
   const objLabel=obj==='target'?'<svg class="gi"><use href="#i-schedule"></use></svg> Tempo alvo':obj==='improve'?'<svg class="gi"><use href="#i-trending_up"></use></svg> Melhorar PR':'Completar';
@@ -9018,9 +9267,10 @@ function renderPlanShort(race,planWeeks,profKey){
     days.forEach((dp,d)=>{
       const col=(dp.type==='Prova!'?'#00ff88':typeColors[dp.type])||'#334455';
       const isLongDay=dp.isLong&&!isRace;
+      const subtypeBadgeHtml=dp.subtypeBadge||'';
       html+=`<div class="day-cell${dp.rest?' rest':isLongDay?' long':''}">
         <div class="day-name">${DAYS[d]}</div>
-        <div class="day-type" style="color:${col}">${dp.type}</div>
+        <div class="day-type" style="color:${col}">${dp.type}${subtypeBadgeHtml}</div>
         ${dp.timeLabel
           ?`<div class="day-info" style="color:var(--acc);font-weight:700"><svg class="gi"><use href="#i-schedule"></use></svg> ${dp.timeLabel}</div>${dp.pace&&!dp.rest?`<div class="day-info-sub">${compactPaceDisplay(dp)}${dp.dist?' · '+dp.dist:''}</div>`:''}`
           :dp.dist
@@ -9102,7 +9352,7 @@ function renderPlan(race){
     showToast('Calcule seu VO2max/pace antes de gerar o plano — os ritmos ficarão em branco.');
   }
   const obj=race==='21'?planObj21:planObj42;
-  const {weeks,lp}=buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj);
+  const {weeks,lp}=buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj,wzTargetDate?computeTargetDateAnchor(wzTargetDate,planWeeks).raceDayIndex:6);
   // Pico real do longão: máximo entregue pelo engine (considera lpEff, maxDurH, cutback)
   const realPeakLong=Math.max(...weeks.filter(w=>!w.isRace).map(w=>w.lkm));
   const raceWeekCls=is42?'r42':'r21';
@@ -9229,6 +9479,45 @@ function renderPlan(race){
 }
 
 /* ══════════════════════════════════════════════════════════
+   PROVA ALVO — data informada pelo usuário no assistente
+══════════════════════════════════════════════════════════ */
+// Quantas semanas cabem entre hoje e a data da prova, contando a semana
+// atual e a semana da prova (ex: se a prova é nessa mesma semana, retorna
+// 1). Usado só pra decidir/travar a duração da planilha — nada disso
+// mexe na geração em si.
+function weeksAvailableUntilTarget(targetDateStr){
+  if(!targetDateStr)return null;
+  const today=mondayOfCurrentWeek();
+  const target=new Date(targetDateStr+'T00:00:00');
+  if(isNaN(target))return null;
+  const dow=target.getDay();
+  const daysToMon=dow===0?-6:1-dow;
+  const targetMonday=new Date(target);
+  targetMonday.setDate(targetMonday.getDate()+daysToMon);
+  targetMonday.setHours(0,0,0,0);
+  const diffDays=Math.round((targetMonday-today)/86400000);
+  return Math.floor(diffDays/7)+1;
+}
+// Data de início do ciclo (segunda-feira da 1ª semana) e o dia da semana
+// (0=Seg...6=Dom) em que a prova cai, ancorando pra trás a partir da data
+// real informada — a semana da prova é sempre uma semana Seg-Dom normal,
+// só o CONTEÚDO daquele dia específico (Prova!/véspera) muda de posição
+// dentro dela (ver raceDayIndex em buildDays/buildDaysShort). Nenhuma
+// outra semana do ciclo é afetada por isso.
+function computeTargetDateAnchor(targetDateStr,planWeeks){
+  const target=new Date(targetDateStr+'T00:00:00');
+  const dow=target.getDay(); // 0=dom,1=seg...6=sab
+  const raceDayIndex=dow===0?6:dow-1; // remapeia pra 0=Seg...6=Dom
+  const daysToMon=dow===0?-6:1-dow;
+  const targetMonday=new Date(target);
+  targetMonday.setDate(targetMonday.getDate()+daysToMon);
+  targetMonday.setHours(0,0,0,0);
+  const start=new Date(targetMonday);
+  start.setDate(start.getDate()-(planWeeks-1)*7);
+  return{startTimestamp:start.getTime(),raceDayIndex};
+}
+
+/* ══════════════════════════════════════════════════════════
    SAVE MODAL
 ══════════════════════════════════════════════════════════ */
 function openSaveModal(race){
@@ -9257,19 +9546,28 @@ async function confirmSave(){
     showToast('VO2max/pace não calculado — os ritmos deste plano ficarão em branco.');
   }
   const obj=is42?planObj42:race==='21'?planObj21:race==='5k'?planObj5k:planObj10k;
+  // Prova alvo: só existe se a pessoa informou uma data no assistente pra
+  // ESSA distância específica (wzTargetDate é limpo sempre que a distância
+  // muda — ver wzSelectDistActual/wzClearTargetDate). Sem data informada,
+  // startTimestamp e raceDayIndex ficam exatamente como sempre foram —
+  // nenhuma mudança de comportamento no fluxo padrão.
+  const hasTargetDate=!!wzTargetDate;
+  const targetAnchor=hasTargetDate?computeTargetDateAnchor(wzTargetDate,planWeeks):null;
+  const raceDayIndexArg=targetAnchor?targetAnchor.raceDayIndex:(is5k?5:6);
   let weeks,lp;
   if(isShort){
-    ({weeks}=buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed));
+    ({weeks}=buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,raceDayIndexArg));
     // Pico real entregue pelo engine (agora varia por perfil pro 10km) — em
     // vez de um número fixo que ficava desatualizado toda vez que a
     // progressão do longão mudasse.
     const realPeakLongShort=Math.max(...weeks.filter(w=>!w.isRace).map(w=>w.lkm));
     lp={peak:realPeakLongShort};
   }
-  else{({weeks,lp}=buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj));}
+  else{({weeks,lp}=buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj,raceDayIndexArg));}
   const totalWorkouts=weeks.reduce((acc,wk)=>acc+wk.days.filter(d=>!d.rest).length,0);
   const intensityDist=calcIntensityDist(weeks);
-  const startTimestamp=Date.now();const plan={id:startTimestamp,name,race,planWeeks,profKey,obj,vo2:Math.round(vo2G*10)/10,vo2IsReal:!!wzState.usedRealVo2,vo2Method:(wzState.usedRealVo2&&lastTestResult&&lastTestResult.methodLabel)?lastTestResult.methodLabel:null,raceSpeed,ez,mod,tempo,intv,lp,createdAt:new Date().toLocaleDateString('pt-BR'),startTimestamp,weeks,done:{},totalWorkouts,intensityDist};
+  const startTimestamp=targetAnchor?targetAnchor.startTimestamp:Date.now();
+  const plan={id:Date.now(),name,race,planWeeks,profKey,obj,vo2:Math.round(vo2G*10)/10,vo2IsReal:!!wzState.usedRealVo2,vo2Method:(wzState.usedRealVo2&&lastTestResult&&lastTestResult.methodLabel)?lastTestResult.methodLabel:null,raceSpeed,ez,mod,tempo,intv,lp,createdAt:new Date().toLocaleDateString('pt-BR'),startTimestamp,hasTargetDate,targetRaceDate:hasTargetDate?wzTargetDate:null,weeks,done:{},totalWorkouts,intensityDist};
   savedPlans.push(plan);
   updateSavedBadge();
   persistAccountPlans();
@@ -9349,12 +9647,19 @@ function planSupportsVo2Recalc(plan){
   return !!(plan&&!plan.montada&&PROFILES[plan.profKey]&&PROFILES[plan.profKey].paces);
 }
 // Só oferece recalcular quando já existe um teste REAL mais novo que o VO2
-// com o qual a planilha foi gerada (evita mostrar o botão à toa).
+// com o qual a planilha foi gerada (evita mostrar o botão à toa). Também
+// não oferece se o VO2 atual da planilha veio de um ajuste da sugestão
+// adaptativa MAIS RECENTE que esse teste real — senão o botão ficava
+// reaparecendo logo depois de aceitar a sugestão adaptativa, e clicar nele
+// voltaria a planilha pra um VO2 mais antigo/desatualizado, o oposto do
+// que a pessoa acabou de pedir.
 function planNeedsVo2Refresh(plan){
   if(!planSupportsVo2Recalc(plan))return false;
   if(!lastRealTest||!lastRealTest.vo2)return false;
   const newVo2=Math.round(lastRealTest.vo2*10)/10;
-  return newVo2!==plan.vo2;
+  if(newVo2===plan.vo2)return false;
+  if(plan.adaptiveVo2AppliedAt&&(!lastRealTest.completedAtTs||plan.adaptiveVo2AppliedAt>=lastRealTest.completedAtTs))return false;
+  return true;
 }
 async function recalcPlanVo2(planId,skipConfirm){
   const plan=savedPlans.find(p=>p.id===planId);
@@ -9373,12 +9678,17 @@ async function recalcPlanVo2(planId,skipConfirm){
   let tempo=vVO2new*pf.tempo,intv=vVO2new*pf.intv;
   ({tempo,intv}=applyQualityPaceFloor(tempo,intv,plan.raceSpeed,plan.race));
   const isShort=plan.race==='5k'||plan.race==='10k';
+  // Se a planilha foi gerada com prova alvo, precisa recalcular com o MESMO
+  // dia de prova (senão a "Prova!" volta pro domingo padrão, mesmo numa
+  // planilha cuja prova de verdade é numa quinta, por exemplo).
+  const recalcTargetAnchor=plan.hasTargetDate&&plan.targetRaceDate?computeTargetDateAnchor(plan.targetRaceDate,plan.planWeeks):null;
+  const recalcRaceDayIndex=recalcTargetAnchor?recalcTargetAnchor.raceDayIndex:(plan.race==='5k'?5:6);
   let newWeeks,newLp;
   if(isShort){
-    ({weeks:newWeeks}=buildDaysShort(plan.race,plan.planWeeks,prof,ez,mod,tempo,intv,plan.raceSpeed));
+    ({weeks:newWeeks}=buildDaysShort(plan.race,plan.planWeeks,prof,ez,mod,tempo,intv,plan.raceSpeed,recalcRaceDayIndex));
     newLp=plan.lp;
   }else{
-    ({weeks:newWeeks,lp:newLp}=buildDays(plan.race,plan.planWeeks,prof,ez,mod,tempo,intv,plan.raceSpeed,plan.obj));
+    ({weeks:newWeeks,lp:newLp}=buildDays(plan.race,plan.planWeeks,prof,ez,mod,tempo,intv,plan.raceSpeed,plan.obj,recalcRaceDayIndex));
   }
   // Descobre a partir de qual dia (índice global = semana*7+dia) é "hoje em
   // diante". Dias com índice menor que esse já passaram e nunca são tocados.
@@ -9430,14 +9740,325 @@ async function recalcPlanVo2(planId,skipConfirm){
   if(wzSummaryPlanId===plan.id)wzSaveSummaryStateFromPlan(plan);
   renderSavedList();
   const vo2UpdatedText=document.getElementById('modal-vo2-updated-text');
+  const msgTxt=`Planilha atualizada com VO2 ${newVo2} — treinos de hoje em diante ainda não concluídos foram recalculados. Se você já tinha enviado essa planilha pro relógio, pode reenviar sem medo — o intervals.icu reconhece os mesmos treinos e só atualiza o ritmo neles, não duplica nada.`;
   if(vo2UpdatedText){
-    vo2UpdatedText.textContent=`Planilha atualizada com VO2 ${newVo2} — treinos de hoje em diante ainda não concluídos foram recalculados.`;
+    vo2UpdatedText.textContent=msgTxt;
     document.getElementById('modal-vo2-updated').style.display='flex';
   }else{
-    showToast(`Planilha atualizada com VO2 ${newVo2} — treinos de hoje em diante ainda não concluídos foram recalculados.`);
+    showToast(msgTxt);
   }
 }
 window.recalcPlanVo2=recalcPlanVo2;
+
+// ══════════════════════════════════════════════════════════
+// SUGESTÃO ADAPTATIVA DE RITMO — nunca aplica sozinha, só sugere.
+// Olha os últimos 3 treinos de QUALIDADE (tempo run/intervalado) que:
+//  - já foram concluídos,
+//  - têm FC média registrada (sem FC não entra — não dá pra saber se foi
+//    melhora de condicionamento ou só esforço maior naquele dia),
+//  - cabem numa janela de até 30 dias entre o mais antigo e o mais novo
+//    (evita misturar fases muito diferentes de condicionamento).
+// Só sugere se o desvio médio de pace for de pelo menos ~2%, e mesmo assim
+// aplica só uma fração dele (35%), com teto de 3% pra cima OU pra baixo —
+// nunca um salto grande de uma vez.
+// ══════════════════════════════════════════════════════════
+function paceStrToSec(str){
+  if(!str)return null;
+  const m=String(str).match(/(\d+):(\d+)/);
+  if(!m)return null;
+  return parseInt(m[1])*60+parseInt(m[2]);
+}
+// Números digitados/exibidos no app podem vir no formato brasileiro
+// ("5,00km", vírgula decimal) — troca vírgula por ponto ANTES de tirar o
+// resto do texto, senão "5,00" virava "500" (a vírgula some junto com o
+// "km", restando só os dígitos grudados). Bug real encontrado em teste:
+// isso fazia a trava de distância/tempo achar uma diferença gigante e
+// descartar treinos digitados manualmente o tempo todo, mesmo quando os
+// números batiam certinho com o programado.
+function parseNumBR(str){
+  if(!str)return null;
+  const cleaned=String(str).replace(',','.').replace(/[^\d.]/g,'');
+  const num=parseFloat(cleaned);
+  return isNaN(num)?null:num;
+}
+// Duração no formato "M:SS" ou "H:MM:SS" (mesmo formato salvo por
+// readTimeFields) → total em segundos.
+function durationStrToSec(str){
+  if(!str)return null;
+  const parts=String(str).split(':').map(n=>parseInt(n));
+  if(parts.some(isNaN))return null;
+  if(parts.length===3)return parts[0]*3600+parts[1]*60+parts[2];
+  if(parts.length===2)return parts[0]*60+parts[1];
+  return null;
+}
+// Média programada da SESSÃO INTEIRA (aquecimento + trecho forte +
+// desaquecimento), pra comparar com a média real que vem do relógio —
+// que também é sempre da sessão inteira, nunca só do trecho forte. Sem
+// isso, comparar "só o pace do tiro" com "a média de tudo" sempre fazia o
+// real parecer mais devagar do que realmente foi, mesmo quando a pessoa
+// foi bem — o aquecimento/desaquecimento (mais lentos, de propósito)
+// "diluíam" a média real, mas não entravam na conta do lado programado.
+// Usa timeLabel quando já existe (Fartlek já guarda isso certinho); pros
+// outros tipos (Tempo run/Intervalado), estima com o padrão fixo de 10min
+// de aquecimento + 10min de desaquecimento (usado em todo o app) no pace
+// fácil da planilha, e o restante da distância no pace-alvo do trecho
+// forte — não é 100% exato pro Intervalado (a recuperação trotada entre
+// tiros não é isolada aqui), mas já corrige o essencial: comparar sessão
+// inteira com sessão inteira, não trecho forte com sessão inteira.
+function estimatePlannedAvgPaceSec(dp,plan){
+  const distKm=parseNumBR(dp.dist);
+  if(!distKm)return null;
+  if(dp.timeLabel){
+    const totalMin=parseNumBR(dp.timeLabel);
+    if(totalMin)return(totalMin*60)/distKm;
+  }
+  const hardPaceSec=paceStrToSec(dp.pace);
+  if(!hardPaceSec||!plan.ez)return null;
+  const ezPaceSec=3600/plan.ez;
+  const warmCoolMin=20; // 10min aquecimento + 10min desaquecimento — padrão fixo do gerador
+  const warmCoolKm=(warmCoolMin*60)/ezPaceSec;
+  const hardKm=Math.max(0.3,distKm-warmCoolKm);
+  const hardMin=(hardKm*hardPaceSec)/60;
+  const totalMin=warmCoolMin+hardMin;
+  return(totalMin*60)/distKm;
+}
+// Junta até 3 treinos de qualidade concluídos, mais recentes primeiro,
+// dentro de 30 dias entre si. requireHR decide se só conta os que têm FC
+// registrada (sinal objetivo) ou qualquer um com pace (sinal mais fraco,
+// usado só quando não tem FC suficiente — aí a pessoa confirma na mão).
+function collectQualityCandidates(plan,requireHR){
+  const THIRTY_DAYS=30*86400000;
+  const todayMs=Date.now();
+  const candidates=[];
+  for(let wIdx=plan.weeks.length-1;wIdx>=0&&candidates.length<3;wIdx--){
+    const wk=plan.weeks[wIdx];
+    for(let dIdx=wk.days.length-1;dIdx>=0&&candidates.length<3;dIdx--){
+      const dp=wk.days[dIdx];
+      if(dp.rest)continue;
+      if(!/tempo|intervalado|fartlek/i.test(dp.type||''))continue;
+      const done=plan.done[`${wIdx}-${dIdx}`];
+      if(!done||typeof done!=='object')continue;
+      if(requireHR&&!done.avgHr)continue;
+      // Trava de segurança dupla — distância E tempo. Achamos um caso real
+      // (ver conversa) onde a distância batia certinho, mas o tempo
+      // digitado não tinha nada a ver com a sessão inteira: a pessoa
+      // preencheu Distância + Ritmo na conclusão manual, e o app calculou o
+      // Tempo sozinho (distância × ritmo) — só que o ritmo digitado era o
+      // ritmo SENTIDO no trecho forte, não a média da sessão inteira. Isso
+      // gera um tempo total bem menor que os ~32min reais de aquecimento+
+      // tiros+desaquecimento, mesmo com a distância batendo 100%. Por isso
+      // a checagem de distância sozinha não pega esse caso — precisa checar
+      // o tempo também.
+      const dpDistKm=parseNumBR(dp.dist);
+      const doneDistKm=parseNumBR(done.dist);
+      if(dpDistKm&&doneDistKm){
+        const distRatio=doneDistKm/dpDistKm;
+        if(distRatio<0.8||distRatio>1.25)continue;
+      }
+      const plannedSec=estimatePlannedAvgPaceSec(dp,plan);
+      if(!plannedSec)continue;
+      if(dpDistKm){
+        const plannedTotalSec=plannedSec*dpDistKm;
+        const doneTotalSec=durationStrToSec(done.duration);
+        if(plannedTotalSec&&doneTotalSec){
+          const durRatio=doneTotalSec/plannedTotalSec;
+          if(durRatio<0.8||durRatio>1.25)continue;
+        }
+      }
+      const realSec=paceStrToSec(done.pace);
+      if(!realSec)continue;
+      const wkStart=getWeekStartDate(plan,wIdx);
+      if(!wkStart)continue;
+      const d=new Date(wkStart);d.setDate(d.getDate()+dIdx);
+      if(todayMs-d.getTime()>THIRTY_DAYS)continue;
+      candidates.push({wIdx,dIdx,dp,done,date:d,plannedSec,realSec});
+    }
+  }
+  if(candidates.length<3)return null;
+  const oldest=candidates[candidates.length-1].date.getTime();
+  const newest=candidates[0].date.getTime();
+  if(newest-oldest>THIRTY_DAYS)return null;
+  return candidates;
+}
+// Teto máximo de ajuste por sugestão, baseado na diretriz oficial da
+// metodologia VDOT (Daniels' Running Formula): "nunca aumentar o ritmo de
+// treino em mais de 1 ponto de VDOT de uma vez, mesmo que uma prova muito
+// boa sugira um salto maior". Um ponto de VDOT NÃO é uma porcentagem fixa
+// — ele encolhe conforme o nível sobe (⁓2,3% pra VDOT 35, ⁓1,3% pra VDOT
+// 60) — por isso calculamos aqui em vez de usar um número fixo. Usa as
+// mesmas equações de Daniels que já embasam todo o resto do app.
+function daniels1VDOTPointCapPct(vo2){
+  if(!vo2||vo2<=0)return 0.02; // segurança — nunca deveria cair aqui
+  const tRef=30; // referência de ~30min (tempo run), mesma faixa das provas usadas pra calibrar VDOT
+  const pctVO2max=0.8+0.1894393*Math.exp(-0.012778*tRef)+0.2989558*Math.exp(-0.1932605*tRef);
+  const velocityFromVO2=v=>{
+    const targetVO2=v*pctVO2max;
+    const a=0.000104,b=0.182258,c=-(targetVO2+4.60);
+    return(-b+Math.sqrt(b*b-4*a*c))/(2*a);
+  };
+  const v1=velocityFromVO2(vo2);
+  const v2=velocityFromVO2(vo2+1);
+  return(v2-v1)/v1;
+}
+// Caminho único: olha só o PACE (sessão inteira programada × sessão
+// inteira real, já filtrado por tipo/janela/distância em
+// collectQualityCandidates) — sem comparar FC nenhuma. FC de sensor de
+// pulso é conhecidamente menos confiável em esforços que variam rápido
+// (intervalado, fartlek), então em vez de tentar validar com um dado que
+// pode estar errado, a proteção vira SEMPRE perguntar pra pessoa como foi
+// o esforço antes de aplicar qualquer coisa — mais simples, sem depender
+// de sensor, e sem o risco de comparar ruído de medição com ruído de
+// medição (o que já causou um bug real na versão anterior). Ajuste sempre
+// conservador (fração de 20%, teto de meio ponto de VDOT), já que não tem
+// mais nenhuma confirmação objetiva por trás — só a palavra da pessoa.
+function getAdaptiveSuggestion(plan){
+  if(!plan||!plan.weeks)return null;
+  const vdotCap=daniels1VDOTPointCapPct(plan.vo2);
+  const candidates=collectQualityCandidates(plan,false);
+  if(!candidates)return null;
+  let totalPct=0;
+  candidates.forEach(c=>{ totalPct+=(c.plannedSec-c.realSec)/c.plannedSec; });
+  const avgPct=totalPct/candidates.length;
+  if(Math.abs(avgPct)<0.03)return null;
+  const FRACTION=0.2,CAP=vdotCap*0.5;
+  let adjust=avgPct*FRACTION;
+  adjust=Math.max(-CAP,Math.min(CAP,adjust));
+  if(Math.abs(adjust)<0.002)return null;
+  // Assinatura baseada na DATA real dos treinos (não na posição semana/dia
+  // da planilha) — se a planilha for editada/recalculada e novos treinos de
+  // qualidade caírem por coincidência nas mesmas posições que já tinham
+  // sido dispensados antes, a data real ainda diferencia eles, então a
+  // pergunta volta a aparecer certinho, em vez de ficar presa achando que
+  // já foi respondida.
+  const signature='rpe:'+candidates.map(c=>fmtDate(c.date)).sort().join(',');
+  return{mode:'unconfirmed',avgPct,adjust,candidates,signature};
+}
+// Card de sugestão pra tela inicial — dispensável, nunca aplica sozinho.
+// Sempre pergunta como foi o esforço antes de considerar qualquer ajuste —
+// FC de sensor de pulso não é confiável o bastante em treino que varia
+// rápido (intervalado/fartlek) pra decidir sozinha, então a confirmação
+// humana é a proteção real aqui, não um dado de sensor.
+function buildAdaptiveSuggestionCard(plan){
+  if(!plan)return'';
+  const sug=getAdaptiveSuggestion(plan);
+  if(!sug)return'';
+  if(plan.adaptiveDismissedSignature===sug.signature)return''; // já viu essa exata leva de treinos, não repete
+  const faster=sug.adjust>0;
+  const pctTxt=(Math.abs(sug.avgPct)*100).toFixed(1).replace('.',',');
+  const body=faster
+    ?`Nos últimos 3 treinos de qualidade, seu ritmo saiu em média ${pctTxt}% mais rápido que o programado. Como esses treinos pareceram pra você?`
+    :`Nos últimos 3 treinos de qualidade, seu ritmo saiu em média ${pctTxt}% mais devagar que o programado. Como eles pareceram pra você?`;
+  return`<div class="cs-today" style="margin-top:10px;border-color:var(--acc)">
+    <div class="cs-today-eyebrow" style="color:var(--acc)"><svg class="gi"><use href="#i-lightbulb"></use></svg> COMO FOI O ESFORÇO?</div>
+    <div class="cs-today-body">${body}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+      <button onclick="answerAdaptiveRPE(${plan.id},true)" style="height:38px;border-radius:20px;border:none;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit">Pareceu normal, sem esforço extra</button>
+      <button onclick="answerAdaptiveRPE(${plan.id},false)" style="height:38px;border-radius:20px;border:1px solid var(--bdr2);background:none;color:var(--t2);font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit">Foi bem mais puxado que o normal</button>
+      <button onclick="dismissAdaptiveSuggestion(${plan.id},'${sug.signature}')" style="height:34px;border-radius:20px;border:none;background:none;color:var(--t3);font-weight:600;font-size:12px;cursor:pointer;font-family:inherit">Não sei dizer / pular</button>
+    </div>
+  </div>`;
+}
+// Resposta ao "como foi o esforço" — só chega aqui quando não tinha FC
+// suficiente pra decidir sozinho. Confirmando que pareceu normal, aplica
+// (com os limites mais conservadores já calculados em getAdaptiveSuggestion,
+// modo 'unconfirmed'). Dizendo que foi mais puxado, ou pulando, só descarta
+// — nunca aplica nada sem a pessoa confirmar que o esforço parece igual.
+async function answerAdaptiveRPE(planId,feltNormal){
+  const plan=savedPlans.find(p=>p.id===planId);if(!plan)return;
+  const sug=getAdaptiveSuggestion(plan);
+  if(!sug||sug.mode!=='unconfirmed'){renderCalcSummary();return;}
+  if(!feltNormal){
+    plan.adaptiveDismissedSignature=sug.signature;
+    persistAccountPlans();
+    renderCalcSummary();
+    showToast('Entendido — não vamos ajustar o ritmo por enquanto.');
+    return;
+  }
+  await applyAdaptiveSuggestion(planId);
+}
+window.answerAdaptiveRPE=answerAdaptiveRPE;
+function dismissAdaptiveSuggestion(planId,signature){
+  const plan=savedPlans.find(p=>p.id===planId);if(!plan)return;
+  plan.adaptiveDismissedSignature=signature;
+  persistAccountPlans();
+  renderCalcSummary();
+}
+async function applyAdaptiveSuggestion(planId){
+  const plan=savedPlans.find(p=>p.id===planId);if(!plan)return;
+  const sug=getAdaptiveSuggestion(plan);
+  if(!sug){showToast('Essa sugestão não é mais válida.');renderCalcSummary();return;}
+  const faster=sug.adjust>0;
+  const pctTxt=(Math.abs(sug.adjust)*100).toFixed(1).replace('.',',');
+  const choice=await lwConfirmModal(
+    'Recalcular ritmo?',
+    `Vamos ajustar seu ritmo em ${pctTxt}% (${faster?'mais rápido':'mais devagar'}) nas próximas semanas — só os treinos ainda não concluídos. Dias já passados ou já marcados como feitos não mudam. O VO₂ da planilha também será atualizado junto, já que é ele que define esses ritmos.`,
+    'Recalcular','Cancelar'
+  );
+  if(choice!=='a')return;
+
+  const prof=PROFILES[plan.profKey]||PROFILES.inter;
+  const vVO2old=plan.ez&&prof.paces.ez?plan.ez/prof.paces.ez:(plan.vo2/3.5);
+  const vVO2new=vVO2old*(1+sug.adjust);
+  const newVo2=Math.round(vVO2new*3.5*10)/10;
+  const pf=prof.paces;
+  const ez=vVO2new*pf.ez,mod=vVO2new*pf.mod;
+  let tempo=vVO2new*pf.tempo,intv=vVO2new*pf.intv;
+  ({tempo,intv}=applyQualityPaceFloor(tempo,intv,plan.raceSpeed,plan.race));
+  const isShort=plan.race==='5k'||plan.race==='10k';
+  const recalcTargetAnchor=plan.hasTargetDate&&plan.targetRaceDate?computeTargetDateAnchor(plan.targetRaceDate,plan.planWeeks):null;
+  const recalcRaceDayIndex=recalcTargetAnchor?recalcTargetAnchor.raceDayIndex:(plan.race==='5k'?5:6);
+  let newWeeks,newLp;
+  if(isShort){
+    ({weeks:newWeeks}=buildDaysShort(plan.race,plan.planWeeks,prof,ez,mod,tempo,intv,plan.raceSpeed,recalcRaceDayIndex));
+    newLp=plan.lp;
+  }else{
+    ({weeks:newWeeks,lp:newLp}=buildDays(plan.race,plan.planWeeks,prof,ez,mod,tempo,intv,plan.raceSpeed,plan.obj,recalcRaceDayIndex));
+  }
+  let todayGlobalIdx=0;
+  if(plan.startTimestamp){
+    const start=new Date(plan.startTimestamp);
+    const dow=start.getDay();
+    const daysToMon=dow===0?-6:1-dow;
+    const planStart=new Date(start);
+    planStart.setDate(planStart.getDate()+daysToMon);
+    planStart.setHours(0,0,0,0);
+    const today=new Date();today.setHours(0,0,0,0);
+    todayGlobalIdx=Math.round((today-planStart)/86400000);
+  }
+  const oldWeeks=plan.weeks;
+  const mergedWeeks=newWeeks.map((wk,wIdx)=>{
+    const oldWk=oldWeeks[wIdx];
+    if(!oldWk)return wk;
+    const days=wk.days.map((d,dIdx)=>{
+      const globalIdx=wIdx*7+dIdx;
+      const isDone=!!plan.done[`${wIdx}-${dIdx}`];
+      const oldDay=oldWk.days[dIdx];
+      if(oldDay&&(globalIdx<todayGlobalIdx||isDone))return oldDay;
+      return d;
+    });
+    return{...wk,days};
+  });
+  plan.vo2=newVo2;
+  plan.vo2IsReal=false;
+  plan.vo2Method='Ajuste automático (desempenho recente)';
+  plan.adaptiveVo2AppliedAt=Date.now();
+  plan.ez=ez;plan.mod=mod;plan.tempo=tempo;plan.intv=intv;plan.lp=newLp;
+  plan.weeks=mergedWeeks;
+  plan.totalWorkouts=mergedWeeks.reduce((acc,wk)=>acc+wk.days.filter(d=>!d.rest).length,0);
+  plan.intensityDist=calcIntensityDist(mergedWeeks);
+  plan.adaptiveDismissedSignature=sug.signature; // não sugere de novo com base nos mesmos 3 treinos
+  persistAccountPlans();
+  if(wzSummaryPlanId===plan.id)wzSaveSummaryStateFromPlan(plan);
+  renderSavedList();
+  renderCalcSummary();
+  await lwAlertModal(
+    'Ritmos atualizados pras próximas semanas',
+    'Se você já tinha enviado essa planilha pro relógio, pode reenviar sem medo — o intervals.icu reconhece os mesmos treinos pela data e tipo, e só atualiza o ritmo neles. Não duplica nada no seu calendário.',
+    'Entendi'
+  );
+}
+window.applyAdaptiveSuggestion=applyAdaptiveSuggestion;
+window.dismissAdaptiveSuggestion=dismissAdaptiveSuggestion;
 
 async function deletePlan(id){
   const r=await lwConfirmModal('Remover planilha','Tem certeza que deseja remover essa planilha?','Remover','Cancelar');
@@ -9493,7 +10114,7 @@ async function deletePlan(id){
 /* ══════════════════════════════════════════════════════════
    MEUS TREINOS
 ══════════════════════════════════════════════════════════ */
-function calcProgress(plan){const done=Object.values(plan.done).filter(Boolean).length;return{done,total:plan.totalWorkouts,pct:Math.round(done/Math.max(1,plan.totalWorkouts)*100)}}
+function calcProgress(plan){const done=plan.doneCleared?(plan.doneCountSnapshot||0):Object.values(plan.done).filter(Boolean).length;return{done,total:plan.totalWorkouts,pct:Math.round(done/Math.max(1,plan.totalWorkouts)*100)}}
 // Troca o dia a dia (plan.weeks) de uma planilha CONCLUÍDA por um resumo
 // leve — mesma regra de "concluída" usada em todo o resto do app (100%
 // dos treinos OU já passou 1 dia do último treino real do calendário, ver
@@ -9516,6 +10137,29 @@ function compactCompletedPlanIfNeeded(plan){
   plan.compacted=true;
   plan.completedAt=plan.completedAt||new Date().toLocaleDateString('pt-BR');
   return true;
+}
+// Além de esvaziar `weeks` (acima), some também com `done` das planilhas
+// concluídas MAIS ANTIGAS — mantém o detalhe (dist/duração/pace/laps de
+// cada dia) só nas KEEP_FULL_DONE_COUNT planilhas concluídas mais
+// recentes. Nunca mexe na planilha ativa (ela nem é 'compacted'). Antes de
+// zerar, guarda quantos treinos tinha em doneCountSnapshot — sem isso a
+// barra de progresso voltaria a mostrar 0% pra uma planilha antiga que na
+// verdade foi 100% concluída. Nenhum dado real se perde: cada treino
+// realizado já tem uma cópia completa e independente (incluindo laps/map)
+// na subcoleção `realizados`/Realizados — isso aqui só reduz o que fica
+// "grudado" no documento único de planilhas.
+const KEEP_FULL_DONE_COUNT=3;
+function pruneOldFinishedPlansData(){
+  const finishedOrdered=savedPlans.filter(p=>p.compacted).sort((a,b)=>b.id-a.id); // mais recente primeiro
+  let changed=false;
+  finishedOrdered.slice(KEEP_FULL_DONE_COUNT).forEach(p=>{
+    if(p.doneCleared)return; // já foi podada antes, não repete
+    p.doneCountSnapshot=Object.values(p.done||{}).filter(Boolean).length;
+    p.done={};
+    p.doneCleared=true;
+    changed=true;
+  });
+  return changed;
 }
 // Sequência de semanas seguidas batendo 100% da planilha (tipo "streak" do
 // Strava/Duolingo). Conta de trás pra frente a partir da semana mais
@@ -9627,6 +10271,28 @@ async function toggleDone(planId,wIdx,dIdx){
   const key=`${wIdx}-${dIdx}`;
   const wasDone=!!plan.done[key];
   if(wasDone){
+    const prevData=plan.done[key];
+    // Se tem dados reais associados (veio do relógio/intervals.icu, do
+    // Treino ao Vivo, ou foi digitado manualmente), desmarcar apaga tudo
+    // isso de vez — sem confirmação, era fácil perder um treino real sem
+    // querer com um toque errado. Um "true" simples (sem dados) não precisa
+    // de confirmação, não tem nada real pra perder.
+    if(prevData&&typeof prevData==='object'){
+      const isSyncable=prevData.source==='watch'||prevData.source==='icu';
+      const detailBits=[prevData.dist,prevData.duration,prevData.pace?`pace ${prevData.pace}`:null].filter(Boolean).join(' · ');
+      const detailTxt=detailBits?` (${detailBits})`:'';
+      let title,msg;
+      if(isSyncable){
+        title='Desmarcar este treino?';
+        msg=`Esse treino foi sincronizado do relógio/intervals.icu${detailTxt}. Ao desmarcar, ele sai da planilha e de Realizados agora — mas se a atividade real ainda existir no intervals.icu, a próxima sincronização deve trazê-lo de volta sozinho (vinculado de novo, ou como "não programado" se a data não bater exatamente). Quer desmarcar mesmo assim?`;
+      } else {
+        title='Desmarcar este treino?';
+        const srcLabel=prevData.source==='live'?'registrado pelo Treino ao Vivo':'digitado manualmente';
+        msg=`Esse treino foi ${srcLabel}${detailTxt}. Diferente de um treino sincronizado do relógio, esses dados não existem em nenhum outro lugar — desmarcar apaga tudo isso e remove o registro de Realizados, sem chance de recuperar depois. Quer desmarcar mesmo assim?`;
+      }
+      const choice=await lwConfirmModal(title,msg,'Desmarcar mesmo assim','Cancelar');
+      if(choice!=='a')return;
+    }
     plan.done[key]=false;
     finishToggleDoneUI(planId,wIdx,dIdx);
     return;
@@ -9661,7 +10327,7 @@ async function toggleDone(planId,wIdx,dIdx){
   openManualCompletionModal(planId,wIdx,dIdx);
 }
 
-function finishToggleDoneUI(planId,wIdx,dIdx){
+function finishToggleDoneUI(planId,wIdx,dIdx,extra){
   const plan=savedPlans.find(p=>p.id===planId);if(!plan)return;
   const key=`${wIdx}-${dIdx}`;
   const isDoneNow=!!plan.done[key];
@@ -9689,20 +10355,112 @@ function finishToggleDoneUI(planId,wIdx,dIdx){
   }
   persistAccountPlans();
   syncTodayViewsForPlanDay(planId);
-  if(isDoneNow)logCompletion(plan,wIdx,dIdx);else unlogCompletion(planId,wIdx,dIdx);
+  if(isDoneNow)logCompletion(plan,wIdx,dIdx,extra);else unlogCompletion(planId,wIdx,dIdx);
   if(typeof renderRealizadosList==='function' && document.getElementById('saved-realizados-tab') && document.getElementById('saved-realizados-tab').style.display!=='none')renderRealizadosList();
+}
+
+// ── Vincular manualmente um treino "não programado" a um dia real da
+// planilha. Usado quando o treino veio do relógio numa data diferente da
+// programada (ex: carregou o treino de quinta mas rodou na quarta), ou
+// quando é um treino livre sem nenhum vínculo com a planilha. Nunca
+// acontece sozinho — sempre a pessoa escolhendo o dia certo.
+function openVincularPicker(entryId,showAll){
+  const entry=completedLog.find(e=>e.id===entryId);
+  if(!entry){showToast('Registro não encontrado.');return;}
+  const old=document.getElementById('vincular-picker-modal');if(old)old.remove();
+  // Só existe uma planilha ativa por vez no app (gerar uma nova substitui a
+  // anterior — ver checkAndReplaceActivePlan) — então só faz sentido
+  // procurar candidatos nela, não em planilhas antigas/já concluídas.
+  const plan=savedPlans.find(p=>p.id===wzSummaryPlanId)||null;
+  if(!plan||!plan.weeks||!plan.weeks.length){showToast('Nenhuma planilha atual pra vincular.');return;}
+  const entryDate=new Date(entry.date);
+  const candidates=[];
+  plan.weeks.forEach((wk,wIdx)=>{
+    wk.days.forEach((dp,dIdx)=>{
+      if(dp.rest)return;
+      if(plan.done[`${wIdx}-${dIdx}`])return; // já concluído — não é candidato
+      const wkStart=getWeekStartDate(plan,wIdx);
+      if(!wkStart)return;
+      const d=new Date(wkStart);d.setDate(d.getDate()+dIdx);
+      candidates.push({wIdx,dIdx,dp,date:d,diff:Math.abs(d-entryDate)});
+    });
+  });
+  candidates.sort((a,b)=>a.diff-b.diff);
+  // Sempre pega os N mais próximos por proximidade de data — não por um
+  // prazo fixo de dias. Assim, quando um candidato sai da lista (foi
+  // concluído), o próximo da fila entra automaticamente no lugar dele, em
+  // vez de a lista só encolher (antes era filtrado por "dentro de X dias
+  // corridos", o que não se auto-completava).
+  const DEFAULT_COUNT=10;
+  const pool=showAll?candidates:candidates.slice(0,DEFAULT_COUNT);
+  const top=pool.slice(0,20);
+  const hasMore=!showAll&&candidates.length>top.length;
+  const DAYS_BR=['Seg','Ter','Qua','Qui','Sex','Sab','Dom'];
+  const rowsHtml=top.length?top.map(c=>{
+    return`<button onclick="vincularNaoProgramado('${entryId}',${plan.id},${c.wIdx},${c.dIdx})" style="width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--s2);border:1.5px solid var(--bdr2);border-radius:var(--r);padding:.7rem .9rem;margin-bottom:8px;cursor:pointer;font-family:inherit">
+      <span style="min-width:0">
+        <span style="display:block;font-size:11px;color:var(--t3);font-weight:700">${DAYS_BR[c.dIdx]} · ${fmtDate(c.date)}</span>
+        <span style="display:block;font-size:13.5px;font-weight:800;color:var(--t1)">${c.dp.type}${c.dp.dist?' · '+c.dp.dist:''}</span>
+      </span>
+      <svg class="gi" style="color:var(--acc);flex-shrink:0"><use href="#i-chevron_right"></use></svg>
+    </button>`;
+  }).join(''):'<p style="color:var(--t3);font-size:13px">Nenhum treino pendente encontrado na sua planilha atual.</p>';
+  const moreBtnHtml=hasMore?`<button onclick="openVincularPicker('${entryId}',true)" style="width:100%;text-align:center;background:none;border:1.5px dashed var(--bdr2);border-radius:var(--r);padding:.65rem;margin-bottom:8px;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--acc)">Ver mais dias da planilha</button>`:'';
+  const modal=document.createElement('div');
+  modal.id='vincular-picker-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:220;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML=`<div class="modal-box" style="max-width:380px;max-height:80vh;overflow-y:auto;padding:1.5rem 1.3rem;text-align:left">
+    <div class="modal-title">Vincular a um treino da planilha</div>
+    <div class="modal-sub" style="text-align:left;margin-bottom:1rem">Escolha o dia da planilha que corresponde a esse treino. Ele será marcado como concluído com os dados reais, e o registro de "não programado" será removido.</div>
+    ${rowsHtml}
+    ${moreBtnHtml}
+    <button class="btn-modal-cancel" style="width:100%;height:44px;font-size:13.5px;margin-top:6px" onclick="document.getElementById('vincular-picker-modal').remove()">Cancelar</button>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function vincularNaoProgramado(entryId,planId,wIdx,dIdx){
+  const entry=completedLog.find(e=>e.id===entryId);
+  const plan=savedPlans.find(p=>p.id===planId);
+  if(!entry||!plan){showToast('Não foi possível vincular.');return;}
+  const key=`${wIdx}-${dIdx}`;
+  plan.done[key]={real:true,dist:entry.dist||null,duration:entry.duration||null,pace:entry.pace||null,avgHr:entry.avgHr||null,activityId:entry.activityId||null,source:entry.source||'watch',completedAt:entry.completedAt||entry.date||Date.now()};
+  // Remove o registro solto de "não programado" — a partir de agora o
+  // vínculo de verdade é criado pelo finishToggleDoneUI/logCompletion
+  // abaixo, com um id diferente (ligado ao dia da planilha), então não
+  // duplica nada no banco.
+  completedLog=completedLog.filter(e=>e.id!==entryId);
+  await persistCompletedRemoval(entryId);
+  finishToggleDoneUI(planId,wIdx,dIdx);
+  const pickerModal=document.getElementById('vincular-picker-modal');if(pickerModal)pickerModal.remove();
+  const detailModal=document.getElementById('realizado-detail-modal');if(detailModal)detailModal.remove();
+  renderCalcSummary();
+  showToast('Treino vinculado à planilha!');
 }
 
 // ── Registro de treinos "Realizados" — cópia independente da planilha,
 // gravada no momento da conclusão. Sobrevive mesmo se a planilha for
 // apagada depois (é justamente o ponto: virar um histórico permanente).
 function completedLogId(planId,wIdx,dIdx){ return `${planId}-${wIdx}-${dIdx}`; }
-function logCompletion(plan,wIdx,dIdx){
+function logCompletion(plan,wIdx,dIdx,extra){
   if(!currentUser)return; // sem conta, não registra em Realizados
   const day=plan.weeks[wIdx]&&plan.weeks[wIdx].days[dIdx];
   if(!day||day.rest)return;
   const doneVal=plan.done[`${wIdx}-${dIdx}`];
   const real=(doneVal&&typeof doneVal==='object')?doneVal:null;
+  // Marcado como feito sem NENHUM dado real associado (o "true" simples,
+  // vindo do botão de marcar sem preencher nada) — só nesse caso faz
+  // sentido usar o alvo da planilha como estimativa de exibição. Quando
+  // `real` existe como objeto (veio do relógio, Treino ao Vivo, digitado
+  // com algum campo preenchido, ou vinculado manualmente a um "não
+  // programado"), o dado dele é sempre a fonte da verdade — mesmo quando
+  // um campo específico vier vazio (ex: atividade sem distância registrada
+  // no relógio). Bug real encontrado em teste: antes, um campo real vazio
+  // (tipo dist:null vindo de um treino sem GPS) caía pro alvo da planilha
+  // do mesmo jeito que o "true" simples — fazendo um treino sem distância
+  // nenhuma aparecer com a distância PROGRAMADA em Realizados, como se
+  // fosse dado real.
+  const isPlainCheckmark=doneVal===true;
   // De onde veio essa conclusão — mostrado como observação discreta no card
   // de Realizados. 'watch' e 'live' já vêm marcados explicitamente em quem
   // grava plan.done (ver icuCheckPlanCompletionsInner e lwFinishWorkout);
@@ -9723,13 +10481,22 @@ function logCompletion(plan,wIdx,dIdx){
     // sempre que os dois dias não baterem.
     completedAt:(real&&real.completedAt)?real.completedAt:Date.now(),
     type:day.type||'Treino',
-    dist:(real&&real.dist)?real.dist:(day.dist||null),
+    dist:real?(real.dist||null):(isPlainCheckmark?(day.dist||null):null),
     duration:(real&&real.duration)?real.duration:null,
-    pace:(real&&real.pace)?real.pace:(day.pace||null),
+    pace:real?(real.pace||null):(isPlainCheckmark?(day.pace||null):null),
     avgHr:(real&&real.avgHr)?real.avgHr:null,
     activityId:(real&&real.activityId)?real.activityId:null,
     source,
-    planName:plan.name||''
+    planName:plan.name||'',
+    // laps: leve (algumas centenas de bytes), continua vindo direto de
+    // plan.done — não precisa de tratamento especial, o documento único de
+    // planilhas aguenta isso numa boa mesmo com anos de uso sem limpeza.
+    ...(real&&real.laps?{laps:real.laps}:{}),
+    // map: só chega aqui via `extra` (passado por finishToggleDoneUI, vindo
+    // do Treino ao Vivo) — de propósito NUNCA fica em plan.done/no documento
+    // único de planilhas, só nesse documento independente da subcoleção
+    // `realizados` (mesma que já não tem teto prático de tamanho).
+    ...(extra&&extra.map?{map:extra.map}:{})
   };
   const idx=completedLog.findIndex(e=>e.id===entry.id);
   if(idx>=0)completedLog[idx]=entry;else completedLog.unshift(entry);
@@ -9745,8 +10512,13 @@ function logCompletion(plan,wIdx,dIdx){
     if(broken&&broken.length){
       // Feedback imediato: se esse treino bateu algum recorde, avisa na
       // hora (em vez da pessoa só descobrir depois, abrindo os cards de
-      // Recordes/Marcas na tela inicial).
-      showToast(broken.length===1?`🏆 Novo recorde: ${broken[0]}!`:`🏆 Novos recordes: ${broken.join(', ')}!`,'warm');
+      // Recordes/Marcas na tela inicial). Antes era um toast (some sozinho
+      // em ~3s) — trocado por um modal que fica na tela até a pessoa tocar
+      // em "Show!" de propósito: um toast passa batido fácil bem no
+      // momento em que a pessoa acabou de terminar de correr (ainda
+      // ofegante, guardando o celular etc.) — pedido explícito, vale pra
+      // TODOS os recordes batidos, não só alguns.
+      showRecordModal(broken);
     }
   }
 }
@@ -9857,6 +10629,11 @@ function openManualCompletionModal(planId,wIdx,dIdx){
           <input id="mdone-pace" inputmode="numeric" placeholder="0:00" oninput="shareMaskPace(this);mdoneRecalcTimeFromPace()" onblur="padTimeOnBlur(this)" style="flex:1;min-width:0;border:none;background:none;padding:7px 4px 7px 9px;font-size:13px;font-family:inherit;color:var(--t1)"/>
           <span style="color:var(--t3);font-size:12px;padding-right:9px">/km</span>
         </div></div>
+      <div style="margin-top:10px"><label style="font-size:10.5px;color:var(--t3);text-transform:uppercase">FC média <span style="text-transform:none;color:var(--t3);font-weight:400">(opcional — só se souber, de um monitor à parte)</span></label>
+        <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:var(--r);background:var(--s1);overflow:hidden;max-width:160px">
+          <input id="mdone-hr" inputmode="numeric" placeholder="0" maxlength="3" oninput="shareMaskNumber(this)" style="flex:1;min-width:0;border:none;background:none;padding:7px 4px 7px 9px;font-size:13px;font-family:inherit;color:var(--t1)"/>
+          <span style="color:var(--t3);font-size:12px;padding-right:9px">bpm</span>
+        </div></div>
     </div>
     <div style="display:flex;gap:8px">
       <button onclick="skipManualCompletion(${planId},${wIdx},${dIdx})" style="flex:1;padding:11px;border-radius:var(--rb);border:1px solid var(--bdr2);background:none;color:var(--t2);font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit">Pular</button>
@@ -9879,10 +10656,11 @@ function confirmManualCompletion(planId,wIdx,dIdx){
   const dist=(document.getElementById('mdone-dist')||{}).value||'';
   const duration=readTimeFields('mdone-t');
   const pace=normalizePaceStr((document.getElementById('mdone-pace')||{}).value||'');
-  if(!dist&&!duration&&!pace){
+  const hr=(document.getElementById('mdone-hr')||{}).value||'';
+  if(!dist&&!duration&&!pace&&!hr){
     plan.done[key]=true;
   }else{
-    plan.done[key]={real:true,dist:dist?`${dist}km`:null,duration:duration||null,pace:pace||null,source:'manual',completedAt:Date.now()};
+    plan.done[key]={real:true,dist:dist?`${dist}km`:null,duration:duration||null,pace:pace||null,avgHr:hr?`${hr}`:null,source:'manual',completedAt:Date.now()};
   }
   const modal=document.getElementById('manual-done-modal');if(modal)modal.remove();
   finishToggleDoneUI(planId,wIdx,dIdx);
@@ -9983,7 +10761,7 @@ function paceBandFromStr(paceStr,tolSec){
   if(!m)return null;
   const base=parseInt(m[1],10)*60+parseInt(m[2],10);
   const fast=Math.max(1,base-tolSec),slow=base+tolSec;
-  const fmt=s=>{const mi=Math.floor(s/60),ss=Math.round(s%60);return`${mi}:${String(ss).padStart(2,'0')}`};
+  const fmt=s=>{let mi=Math.floor(s/60),ss=Math.round(s%60);if(ss===60){ss=0;mi+=1;}return`${mi}:${String(ss).padStart(2,'0')}`};
   return`${fmt(fast)}/km-${fmt(slow)}/km`;
 }
 // Tolerância (segundos/km) que o EXPORTADOR (garminStepsForDay/paceTarget) usa
@@ -10124,7 +10902,8 @@ function mdoneRecalcPace(){
   const totalSec=h*3600+m*60+s;
   if(!distVal||distVal<=0||!totalSec)return;
   const paceSec=totalSec/distVal;
-  const mm=Math.floor(paceSec/60), ss=Math.round(paceSec%60);
+  let mm=Math.floor(paceSec/60), ss=Math.round(paceSec%60);
+  if(ss===60){ss=0;mm+=1;}
   paceEl.value=`${mm}:${String(ss).padStart(2,'0')}`;
 }
 // Caminho inverso: distância + ritmo já digitados → calcula o tempo total
@@ -10258,7 +11037,8 @@ function shareRecalcPace(){
   else totalSec=durParts[0]*60;
   if(!totalSec)return;
   const paceSec=totalSec/distVal;
-  const mm=Math.floor(paceSec/60), ss=Math.round(paceSec%60);
+  let mm=Math.floor(paceSec/60), ss=Math.round(paceSec%60);
+  if(ss===60){ss=0;mm+=1;}
   const paceVal=`${mm}:${String(ss).padStart(2,'0')}`;
   shareCtx.paceNum=paceVal;
   const paceEl=document.getElementById('share-f-pace');
@@ -10785,7 +11565,7 @@ function openDayDetailModal(planId,wIdx,dIdx){
   const longExplainHtml=buildLongExplainHTML(plan,wk,dp);
   const realInfoModal=(plan.done[`${wIdx}-${dIdx}`]&&typeof plan.done[`${wIdx}-${dIdx}`]==='object')?plan.done[`${wIdx}-${dIdx}`]:null;
   const scheduledMs=weekStart?weekStart.getTime()+dIdx*86400000:null;
-  const realInfoHtml=realInfoModal?`<div class="stat-card" style="margin-top:.6rem;padding:10px 12px">${formatRealInfoBlock(realInfoModal,scheduledMs)}</div>`:'';
+  const realInfoHtml=realInfoModal?`<div class="stat-card" style="margin-top:.6rem;padding:10px 12px">${formatRealInfoBlock(realInfoModal,scheduledMs,planId,wIdx,dIdx)}</div>`:'';
   const modal=document.createElement('div');
   modal.id='day-detail-modal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:210;display:flex;align-items:center;justify-content:center;padding:1rem';
@@ -10802,7 +11582,9 @@ function openDayDetailModal(planId,wIdx,dIdx){
       </div>
     </div>`;
   document.body.appendChild(modal);
-  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  let _mdownOnBackdrop=false;
+    modal.addEventListener('mousedown',e=>{_mdownOnBackdrop=(e.target===modal);});
+    modal.addEventListener('click',e=>{if(e.target===modal&&_mdownOnBackdrop)modal.remove();});
 }
 function toggleWeeksPanel(planId,forceOpen){
   const panel=document.getElementById(`swpanel-${planId}`);const btn=document.getElementById(`swbtn-${planId}`);
@@ -10866,7 +11648,9 @@ function openWatchExportModal(planId){
       </div>
     </div>`;
   document.body.appendChild(modal);
-  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  let _mdownOnBackdrop=false;
+    modal.addEventListener('mousedown',e=>{_mdownOnBackdrop=(e.target===modal);});
+    modal.addEventListener('click',e=>{if(e.target===modal&&_mdownOnBackdrop)modal.remove();});
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -11142,6 +11926,7 @@ function openRealizadoDetailModal(logId){
       ${entry.planName?`<div class="modal-sub" style="text-align:left;margin-bottom:.5rem">${entry.planName}</div>`:''}
       <div class="stat-card" style="margin-top:.6rem;padding:10px 12px">${realInfoHtml}</div>
       <div class="modal-actions" style="flex-direction:column;gap:10px;margin-top:1.1rem;flex-shrink:0">
+        ${entry.unplanned?`<button class="btn-modal-ok" style="width:100%;height:48px;font-size:14.5px;background:var(--acc)" onclick="document.getElementById('realizado-detail-modal').remove();clearModalState();openVincularPicker('${entry.id}')"><svg class="gi"><use href="#i-link"></use></svg> Vincular a um treino da planilha</button>`:''}
         <button class="btn-modal-ok" style="width:100%;height:48px;font-size:14.5px" onclick="document.getElementById('realizado-detail-modal').remove();clearModalState();openShareModalFromLog('${entry.id}')"><svg class="gi"><use href="#i-share"></use></svg> Compartilhar</button>
         <button class="btn-modal-cancel" style="width:100%;height:44px;font-size:13.5px" onclick="document.getElementById('realizado-detail-modal').remove();clearModalState()">Fechar</button>
         <button style="width:100%;height:40px;font-size:13px;background:none;border:none;color:var(--rd);cursor:pointer;font-family:inherit;font-weight:600" onclick="clearModalState();deleteRealizadoEntry('${entry.id}')"><svg class="gi" style="font-size:15px;vertical-align:-2px"><use href="#i-delete"></use></svg> Excluir registro</button>
@@ -11217,13 +12002,22 @@ function openVo2HistoryModal(){
   div.innerHTML=`<div style="background:var(--bg);border-radius:16px 16px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 18px);width:100%;max-width:480px;max-height:80vh;overflow-y:auto">
     <div id="vo2-history-modal-title" style="font-size:15px;font-weight:800;color:var(--t1);margin-bottom:12px">Histórico de VO₂ (${vo2TestHistory.length})</div>
     <div id="vo2-history-modal-list"></div>
-    <button onclick="document.getElementById('vo2-history-modal').remove()" style="width:100%;margin-top:14px;height:44px;border:none;background:var(--s2);border-radius:var(--rb);color:var(--t2);font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit">Fechar</button>
+    <button onclick="closeVo2HistoryModal()" style="width:100%;margin-top:14px;height:44px;border:none;background:var(--s2);border-radius:var(--rb);color:var(--t2);font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit">Fechar</button>
   </div>`;
   document.body.appendChild(div);
-  div.addEventListener('click',e=>{ if(e.target===div)div.remove(); });
+  // Trava o scroll da tela de trás (mesmo padrão já usado no onboarding e no
+  // overlay do treino ao vivo) — sem isso, arrastar o dedo dentro da lista
+  // (ou no fundo escurecido) também rolava a tela inicial por baixo do modal.
+  document.body.style.overflow='hidden';
+  div.addEventListener('click',e=>{ if(e.target===div)closeVo2HistoryModal(); });
   renderVo2HistoryModalList();
 }
 window.openVo2HistoryModal=openVo2HistoryModal;
+function closeVo2HistoryModal(){
+  const el=document.getElementById('vo2-history-modal'); if(el)el.remove();
+  document.body.style.overflow='';
+}
+window.closeVo2HistoryModal=closeVo2HistoryModal;
 // Exclui um teste do histórico pelo índice REAL no array (não da página
 // exibida) — como tanto o painel (últimos 5) quanto o modal usam
 // slice(0,N) a partir do início, o índice dentro da lista visível sempre
@@ -11524,6 +12318,7 @@ function renderSavedList(){
   // `compacted:true`), e só persiste se algo realmente mudou.
   let anyCompacted=false;
   savedPlans.forEach(plan=>{ if(compactCompletedPlanIfNeeded(plan))anyCompacted=true; });
+  if(pruneOldFinishedPlansData())anyCompacted=true;
   if(anyCompacted){ saveSavedPlansLocalCache(); persistAccountPlans(); }
   if(savedPlans.length===0){
     wrap.innerHTML=`<div class="saved-empty"><div class="saved-empty-icon"><svg class="gi"><use href="#i-list_alt"></use></svg></div><h3>Nenhuma planilha salva ainda</h3><p>Calcule seu VO2 Máx, configure uma planilha<br>e clique em <strong style="color:var(--gr)">"Salvar em Meus Treinos"</strong>.</p></div>`;return;
@@ -11588,7 +12383,7 @@ function renderSavedList(){
       </div>
 
       <div class="saved-weeks-panel" id="swpanel-${plan.id}">
-        ${plan.compacted?`<div style="text-align:center;color:var(--t3);font-size:13px;padding:1rem 0;line-height:1.6">Esta planilha foi concluída — o dia a dia dela não fica mais salvo em detalhe (seus recordes e progresso continuam guardados normalmente).</div>`:`
+        ${plan.compacted?`<div style="text-align:center;color:var(--t3);font-size:13px;padding:1rem 0;line-height:1.6">Esta planilha foi concluída — o dia a dia dela não fica mais salvo em detalhe (seus recordes e progresso continuam guardados normalmente).${plan.doneCleared?' Pra ver os treinos individuais dessa planilha, veja a aba <strong style="color:var(--t2)">Realizados</strong>.':''}</div>`:`
         ${plan.intensityDist?buildIntensityBoxHTML(plan.intensityDist,plan.race==='42'):''}
         ${plan.weeks.map((wk,wIdx)=>{
           const weekDone=wk.days.filter((d,di)=>!d.rest&&plan.done[`${wIdx}-${di}`]).length;
@@ -11647,6 +12442,8 @@ function renderSavedList(){
             <div class="mc-grid">
               <div class="mc"><p class="mc-lbl">Pace de prova</p><p class="mc-val" style="color:var(--acc)">${s2p(plan.raceSpeed)} <span class="mc-unit">min/km</span></p></div>
               <div class="mc"><p class="mc-lbl">Tempo estimado</p><p class="mc-val">${_rh10>0?_rh10+'h':''}${_rm10.toString().padStart(_rh10>0?2:1,'0')} <span class="mc-unit">min</span></p></div>
+              <div class="mc"><p class="mc-lbl">Pace fácil (Z2)</p><p class="mc-val">${s2p(plan.ez)} <span class="mc-unit">min/km</span></p></div>
+              <div class="mc"><p class="mc-lbl">Pace intervalado</p><p class="mc-val" style="color:var(--rd)">${s2p(plan.intv)} <span class="mc-unit">min/km</span></p></div>
             </div>
             <div class="info-box" style="margin-top:.75rem;margin-bottom:0"><strong>Metodologia:</strong> Inspirado nos princípios de Jack Daniels e Pete Pfitzinger para 8K/10K (perfil ${_prof10.label.toLowerCase()}) — inclui variantes de longão (progressivo, steady state, final forte) na fase de desenvolvimento, adaptadas ao perfil.</div>
           </div>`;
@@ -11790,7 +12587,7 @@ class FitWriter{
         this.pushBytes(arr);
       } else if(f.type==='uint16'||f.type==='sint16'){
         this.pushUint16(v==null?0xFFFF:v);
-      } else if(f.type==='uint32'){
+      } else if(f.type==='uint32'||f.type==='sint32'){
         this.pushUint32(v==null?0xFFFFFFFF:v);
       } else {
         this.pushByte(v==null?0xFF:v);
@@ -11970,6 +12767,89 @@ function buildFitWorkoutFile(name, steps, fileIdentity, fileNonce, scheduledAt){
     // campos: time_created, serial_number, manufacturer(255), product(0), scheduled_at, completed(0=false), type(0=workout)
     body.writeMessage(3, SCHEDULE_FIELDS, [scheduledFitTs, ident.serialNumber, 255, 0, scheduledFitTs, 0, 0]);
   }
+
+  return wrapFitBody(body.toBytes(), fileNonce);
+}
+
+// ── .FIT tipo ACTIVITY (registro do que rolou de verdade — GPS, distância
+// acumulada, velocidade/pace instantâneo por ponto) ── diferente do
+// buildFitWorkoutFile acima, que gera a ESTRUTURA planejada do treino
+// (steps/etapas). Usado só pelo Treino ao Vivo, no fim (lwFinishWorkout),
+// pra subir a atividade real pro intervals.icu via POST .../activities —
+// dali, se o Strava estiver conectado nas configurações do intervals.icu,
+// ele repassa sozinho, mesmo sem esse app ter gravado mapa nenhum.
+const MSG_RECORD=20, MSG_LAP=19, MSG_SESSION=18, MSG_ACTIVITY=34, MSG_EVENT=21;
+const RECORD_FIELDS=[{num:253,type:'uint32'},{num:0,type:'sint32'},{num:1,type:'sint32'},{num:5,type:'uint32'},{num:6,type:'uint16'}];
+const LAP_FIELDS=[{num:253,type:'uint32'},{num:2,type:'uint32'},{num:7,type:'uint32'},{num:8,type:'uint32'},{num:9,type:'uint32'},{num:13,type:'uint16'}];
+const SESSION_FIELDS=[{num:253,type:'uint32'},{num:2,type:'uint32'},{num:5,type:'enum'},{num:6,type:'enum'},{num:7,type:'uint32'},{num:8,type:'uint32'},{num:9,type:'uint32'},{num:13,type:'uint16'},{num:25,type:'uint16'},{num:26,type:'uint16'}];
+const ACTIVITY_FIELDS=[{num:253,type:'uint32'},{num:0,type:'uint32'},{num:1,type:'uint16'},{num:2,type:'enum'},{num:3,type:'enum'},{num:4,type:'enum'},{num:5,type:'uint32'}];
+const EVENT_FIELDS=[{num:253,type:'uint32'},{num:0,type:'enum'},{num:1,type:'enum'}];
+// Conversão grau decimal -> semicírculos (unidade de ângulo do protocolo FIT p/ lat/long)
+function degToSemicircle(deg){ return Math.round(deg*(2147483648/180)); }
+
+// track: array de {t(ms epoch),lat,lng,distM,speedMps} — vem de LW.track,
+// um item por fix de GPS aceito durante o treino (ver lwOnPosition).
+// meta: {startedAtMs, endedAtMs, totalTimeSec, totalDistM}
+// laps: opcional — array de {startMs,endMs,distM,timeSec}, um item por
+// etapa/repetição real do treino (ver lwFinishWorkout, que monta isso a
+// partir de LW.stepHistory). Cada item vira uma mensagem "lap" própria no
+// .fit — é o que faz um tiro de 400m aparecer como split separado no
+// Strava/intervals.icu, em vez de tudo junto num lap só. distM/timeSec de
+// cada lap vêm do próprio app (preciso, independe de ter sinal de GPS
+// naquele trecho); startMs/endMs (relógio de parede) só decidem quais
+// pontos do "track" caem em cada lap. Sem essa lista (ou lista vazia), cai
+// no comportamento antigo: um único lap cobrindo o treino inteiro.
+function buildFitActivityFile(name, track, meta, laps, fileIdentity, fileNonce){
+  const FIT_EPOCH_OFFSET=631065600; // segundos entre Unix epoch e FIT epoch (31/12/1989 UTC)
+  const ident=fileIdentity||makeFitIdentity();
+  const startFitTs=Math.floor((meta.startedAtMs||Date.now())/1000)-FIT_EPOCH_OFFSET;
+  const endFitTs=Math.floor((meta.endedAtMs||Date.now())/1000)-FIT_EPOCH_OFFSET;
+  const lapList=(laps&&laps.length)?laps:[{startMs:meta.startedAtMs,endMs:meta.endedAtMs,distM:meta.totalDistM,timeSec:meta.totalTimeSec}];
+
+  const body=new FitWriter();
+
+  body.defineMessage(MSG_FILE_ID, FILE_ID_FIELDS, 0);
+  // type=4 (activity — diferente do 5/workout usado no arquivo de treino planejado)
+  body.writeMessage(0, FILE_ID_FIELDS, [4,255,0,startFitTs,ident.serialNumber]);
+
+  body.defineMessage(MSG_EVENT, EVENT_FIELDS, 1);
+  body.writeMessage(1, EVENT_FIELDS, [startFitTs,0,0]); // event=timer(0), event_type=start(0)
+
+  if(track&&track.length){
+    body.defineMessage(MSG_RECORD, RECORD_FIELDS, 2);
+    track.forEach(p=>{
+      const ts=Math.floor(p.t/1000)-FIT_EPOCH_OFFSET;
+      const speedMm=Math.min(65534,Math.max(0,Math.round((p.speedMps||0)*1000)));
+      body.writeMessage(2, RECORD_FIELDS,
+        [ts, degToSemicircle(p.lat), degToSemicircle(p.lng), Math.round(p.distM*100), speedMm]);
+    });
+  }
+
+  const totalElapsedMs=Math.round((meta.totalTimeSec||0)*1000);
+  const totalDistCm=Math.round((meta.totalDistM||0)*100);
+  const avgSpeedMm=meta.totalTimeSec>0?Math.min(65534,Math.round((meta.totalDistM/meta.totalTimeSec)*1000)):0;
+
+  body.defineMessage(MSG_LAP, LAP_FIELDS, 3);
+  lapList.forEach(lap=>{
+    const lapStartFitTs=Math.floor((lap.startMs||meta.startedAtMs)/1000)-FIT_EPOCH_OFFSET;
+    const lapEndFitTs=Math.floor((lap.endMs||meta.endedAtMs)/1000)-FIT_EPOCH_OFFSET;
+    const lapElapsedMs=Math.round((lap.timeSec||0)*1000);
+    const lapDistCm=Math.round((lap.distM||0)*100);
+    const lapAvgSpeedMm=lap.timeSec>0?Math.min(65534,Math.round((lap.distM/lap.timeSec)*1000)):0;
+    body.writeMessage(3, LAP_FIELDS, [lapEndFitTs, lapStartFitTs, lapElapsedMs, lapElapsedMs, lapDistCm, lapAvgSpeedMm]);
+  });
+
+  body.defineMessage(MSG_SESSION, SESSION_FIELDS, 4);
+  // sport=1 (running), sub_sport=0 (generic), first_lap_index=0, num_laps=lapList.length
+  body.writeMessage(4, SESSION_FIELDS,
+    [endFitTs, startFitTs, 1, 0, totalElapsedMs, totalElapsedMs, totalDistCm, avgSpeedMm, 0, lapList.length]);
+
+  body.defineMessage(MSG_EVENT, EVENT_FIELDS, 5);
+  body.writeMessage(5, EVENT_FIELDS, [endFitTs,0,4]); // event=timer(0), event_type=stop_all(4)
+
+  body.defineMessage(MSG_ACTIVITY, ACTIVITY_FIELDS, 6);
+  // total_timer_time, num_sessions=1, type=manual(0), event=activity(26), event_type=stop(1), local_timestamp
+  body.writeMessage(6, ACTIVITY_FIELDS, [endFitTs, totalElapsedMs, 1, 0, 26, 1, endFitTs]);
 
   return wrapFitBody(body.toBytes(), fileNonce);
 }
@@ -12283,8 +13163,12 @@ function dayToGarminSteps(day, plan){
     // Segmento principal a tempo pace — desconta a distância real coberta
     // nos 20min de aquec.+desaq. (por tempo) no ritmo ez, em vez de um valor
     // fixo (2km), pra o total bater com o km mostrado no app.
+    // PRIORIDADE: usa day.tempoSegM (já travado na hora de montar o texto)
+    // quando disponível — mesma razão do Longão: evita o segmento enviado
+    // divergir do que a pessoa viu na tela por causa de um ez diferente no
+    // momento do envio.
     const warmCoolM=Math.round((planN.ez||8)*1200/3.6);
-    const mainDist=Math.max(3000,dist-warmCoolM);
+    const mainDist=day.tempoSegM||Math.max(3000,dist-warmCoolM);
     steps.push(garminStep(order++,'interval',{type:'distance',value:mainDist},
       paceTarget(day.pace||s2p(planN.tempo||planN.mod),8),'Tempo run Z4 — limiar'));
     addCooldown(600);
@@ -12345,16 +13229,26 @@ function dayToGarminSteps(day, plan){
     // que aparece no intervals.icu/relógio fica maior que o km da planilha
     // (ex: planilha diz 27km, mas 26km em distância + ~1,5km reais de
     // aquec./desaq. dava ~27,5km no relógio).
+    // PRIORIDADE: se a planilha já trouxe os metros exatos calculados na
+    // hora de montar o texto (day.longSplitM), usa eles direto — bug real
+    // encontrado em teste: recalcular aqui do zero com o ez do momento do
+    // ENVIO podia dar um resultado levemente diferente do texto que a
+    // pessoa via na tela (ex: planilha mostrando "2.8km" em cada metade,
+    // relógio recebendo "2.5km" — o corte de segurança de 5km mínimo batia
+    // num ez diferente do usado pro texto). Usar o valor já travado no dia
+    // elimina essa divergência de vez, não importa a causa exata dela.
+    const hasLockedSplit=day.longSplitM&&day.longSplitM.mainM;
     const warmCoolM=Math.round((planN.ez||8)*600/3.6);
-    const mainDist=Math.max(5000,dist-warmCoolM);
+    const mainDist=hasLockedSplit?day.longSplitM.mainM:Math.max(5000,dist-warmCoolM);
     steps.push(garminStep(order++,'warmup',{type:'time',value:300},
       paceTarget(s2p(planN.ez),20),'Aquecimento 5min'));
     if(subtype==='Progressivo'||subtype==='Final Forte'||subtype==='MP Progressivo'){
       // Primeira metade fácil, segunda metade mais forte
-      const half=Math.round(mainDist/2);
+      const half=hasLockedSplit?day.longSplitM.halfM:Math.round(mainDist/2);
+      const rest=hasLockedSplit?day.longSplitM.restM:(mainDist-half);
       steps.push(garminStep(order++,'active',{type:'distance',value:half},
         paceTarget(s2p(planN.ez),20),'Longão parte 1 Z1-Z2'));
-      steps.push(garminStep(order++,'interval',{type:'distance',value:mainDist-half},
+      steps.push(garminStep(order++,'interval',{type:'distance',value:rest},
         paceTarget(day.pace||s2p(planN.mod),15),'Longão parte 2 progressivo Z3'));
     } else {
       // Ritmo de Prova ou Steady State: corrida contínua no ritmo alvo
@@ -12373,11 +13267,14 @@ function dayToGarminSteps(day, plan){
     // intervals.icu/relógio ficar maior que o km mostrado no app. Agora
     // desconta a distância real coberta nesses 10min (no ritmo ez) antes de
     // dividir o restante entre o trecho Z2 e o trecho no pace de prova.
+    // PRIORIDADE: usa day.mpSplitM (já travado na hora de montar o texto)
+    // quando disponível — mesma razão do Longão/Tempo run.
     const dist=totalDist||16000;
     const warmCoolM=Math.round((planN.ez||8)*600/3.6);
     const distAdjusted=Math.max(8000,dist-warmCoolM);
-    const mpSeg=Math.round(distAdjusted*0.60);
-    const warmSeg=Math.max(2000,distAdjusted-mpSeg);
+    const hasLockedMP=day.mpSplitM&&day.mpSplitM.mpSegM;
+    const mpSeg=hasLockedMP?day.mpSplitM.mpSegM:Math.round(distAdjusted*0.60);
+    const warmSeg=hasLockedMP?day.mpSplitM.warmSegM:Math.max(2000,distAdjusted-mpSeg);
     steps.push(garminStep(order++,'warmup',{type:'time',value:300},
       paceTarget(s2p(planN.ez),20),'Aquecimento 5min'));
     steps.push(garminStep(order++,'active',{type:'distance',value:warmSeg},
@@ -12406,16 +13303,21 @@ function dayToGarminSteps(day, plan){
     // Fartlek Build: reps crescentes, acelerações de 90s–3min
     const dist=totalDist||10000;
     addWarmup(600);
-    // Extrai reps e duração do detail ("Nx(Xs Z5 + 2min Z2)")
+    // Extrai reps e duração do detail ("Nx(Xs Z5...)" formato antigo, ou
+    // "Nx(XminYs Z5...)"/"Nx(Xmin Z5...)" formato novo) — sempre lendo a
+    // duração da PRÓPRIA série logo após o "×(", não de qualquer "min" que
+    // apareça em outro lugar do texto (ex: "10min" do aquecimento).
     let reps=4, acSec=120;
     if(day.detail){
-      // Captura a unidade (min ou s) da PRÓPRIA duração da série, não de
-      // qualquer "min" que apareça em outro lugar do texto (ex: "10min" do
-      // aquecimento) — isso causava um bug grave: uma série de "90s" virava
-      // 90 MINUTOS no arquivo exportado, porque o texto também mencionava
-      // "10min" no aquecimento/desaquecimento.
-      const rm=day.detail.match(/(\d+)×\((\d+)(min|s)\b/i);
-      if(rm){reps=parseInt(rm[1]);const val=parseInt(rm[2]);acSec=/min/i.test(rm[3])?val*60:val;}
+      const repMatch=day.detail.match(/(\d+)×\(/);
+      if(repMatch)reps=parseInt(repMatch[1]);
+      const segment=day.detail.split('×(')[1]||'';
+      const combo=segment.match(/^(\d+)min(\d+)s/i);
+      const minOnly=segment.match(/^(\d+)min\b/i);
+      const secOnly=segment.match(/^(\d+)s\b/i);
+      if(combo)acSec=parseInt(combo[1])*60+parseInt(combo[2]);
+      else if(minOnly)acSec=parseInt(minOnly[1])*60;
+      else if(secOnly)acSec=parseInt(secOnly[1]);
     }
     const fastStep=garminStep(1,'interval',{type:'time',value:acSec},
       paceTarget(day.pace||s2p(planN.intv),10),'Fartlek Build Z5');
@@ -12518,6 +13420,22 @@ function buildWorkoutLabel(scheduledAt, dayName, day){
   const mm=String(scheduledAt.getMonth()+1).padStart(2,'0');
   const distPart=day.dist?` ${day.dist}`:'';
   return `${day.type}${distPart} ${dd}/${mm} ${dayName}`.slice(0,31);
+}
+// Base usada SÓ pra montar o external_id (não é o nome exibido). De
+// propósito SEM a distância — treinos por tempo (ex: Fartlek "~5km") têm a
+// distância estimada RECALCULADA toda vez que o pace muda (recálculo de
+// VO2, sugestão adaptativa, etc.), mesmo sendo o mesmíssimo treino daquele
+// dia. Se a distância entrasse no ID, mudar o pace mudava o ID, e o
+// intervals.icu deixava de reconhecer como o mesmo treino — criando um
+// segundo em vez de atualizar o existente (bug real encontrado em teste:
+// "Fartlek ~5km" virou dois treinos no relógio depois de recalcular pra
+// "Fartlek ~5.3km"). Tipo + data + dia da semana já são suficientes pra
+// identificar o treino de forma estável — só a distância que não podia
+// entrar aqui.
+function icuIdBasis(scheduledAt, dayName, day){
+  const dd=String(scheduledAt.getDate()).padStart(2,'0');
+  const mm=String(scheduledAt.getMonth()+1).padStart(2,'0');
+  return `${day.type} ${dd}/${mm} ${dayName}`.slice(0,31);
 }
 
 function buildWorkoutFilename(scheduledAt, dayName, day){
@@ -13014,7 +13932,9 @@ function showGarminInstructionModal(count, planName, planId){
   </div>`;
 
   document.body.appendChild(modal);
-  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  let _mdownOnBackdrop=false;
+    modal.addEventListener('mousedown',e=>{_mdownOnBackdrop=(e.target===modal);});
+    modal.addEventListener('click',e=>{if(e.target===modal&&_mdownOnBackdrop)modal.remove();});
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -14037,7 +14957,7 @@ const ICU_DAYS_BR=['Seg','Ter','Qua','Qui','Sex','Sab','Dom'];
 // Monta o bloco "Realizado" completo (HTML): título em destaque roxo-claro
 // + uma linha por informação, com legenda (Distância, Tempo, Ritmo, FC
 // média, Calorias) — só inclui o que a atividade realmente tiver disponível.
-function formatRealInfoBlock(r,scheduledMs){
+function formatRealInfoBlock(r,scheduledMs,planId,wIdx,dIdx){
   if(!r)return'';
   const rows=[];
   rows.push(['Distância',r.dist||'—']);
@@ -14053,7 +14973,23 @@ function formatRealInfoBlock(r,scheduledMs){
   // deixa isso explícito — senão a data que aparece em outros lugares (ex:
   // Recordes Pessoais) pode parecer inconsistente com a data programada.
   const realizadoEmHtml=realizadoEmNoteHtml(r.completedAt,scheduledMs);
-  return`<div style="font-weight:800;color:var(--acc);font-size:13.5px;margin-bottom:6px">Realizado</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 18px">${cellsHtml}</div>${realizadoEmHtml}`;
+  const lapsHtml=formatRealLapsHtml(r.laps);
+  const mapHtml=lwMiniMapSlotHtml(r,planId,wIdx,dIdx);
+  return`<div style="font-weight:800;color:var(--acc);font-size:13.5px;margin-bottom:6px">Realizado</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 18px">${cellsHtml}</div>${mapHtml}${lapsHtml}${realizadoEmHtml}`;
+}
+// Lista "Tiro 1: 411m em 1:39 (4:00/km) · Recuperação: 205m em 1:33 ..." —
+// vem do resumo leve gravado em plan.done[key].laps (ver lwFinishWorkout).
+// Cada lap é só {l:label, d:distM, t:timeSec, p:paceSec}; formata aqui na
+// hora de exibir, sem guardar texto formatado no storage.
+function formatRealLapsHtml(laps){
+  if(!laps||!laps.length)return'';
+  const rows=laps.map(l=>{
+    const distTxt=l.d>=1000?`${(l.d/1000).toFixed(2)}km`:`${l.d}m`;
+    const timeTxt=lwFmtDurationDisplay(l.t);
+    const paceTxt=(l.p&&isFinite(l.p))?` <span style="color:var(--t3)">(${lwFmtPaceSecPerKm(l.p)}/km)</span>`:'';
+    return`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:4px 0;border-bottom:1px solid var(--bdr2)"><span style="font-size:12.5px;color:var(--t2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.l}</span><span style="font-size:12.5px;color:var(--t1);font-weight:700;white-space:nowrap">${distTxt} em ${timeTxt}${paceTxt}</span></div>`;
+  }).join('');
+  return`<div style="margin-top:10px"><div style="font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px">Tiros / etapas</div>${rows}</div>`;
 }
 // Nota "Realizado em: DD/MM/AAAA" — só aparece quando o momento real da
 // conclusão (completedAt) cai num dia de calendário diferente do dia de
@@ -14066,10 +15002,10 @@ function realizadoEmNoteHtml(completedAt,scheduledMs){
   return`<div style="margin-top:6px;font-size:11.5px;color:var(--t3)">Realizado em: <strong style="color:var(--t2)">${fmtDateFull(a)}</strong></div>`;
 }
 function icuReconstructExternalId(scheduledAt,dayName,day){
-  const name=buildWorkoutLabel(scheduledAt,dayName,day);
+  const idBasis=icuIdBasis(scheduledAt,dayName,day);
   const dateStr=scheduledAt.toISOString().slice(0,10)+'T00:00:00';
   return'vo2max_'+dateStr.slice(0,10).replace(/-/g,'')+'_'+
-    name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20);
+    idBasis.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20);
 }
 
 // Busca no intervals.icu quais dias da planilha (ainda não marcados como feitos)
@@ -14274,10 +15210,21 @@ async function icuCheckPlanCompletionsInner(plan,apiKey,athleteId,usedActivityId
         // (ex: corrida livre sem treino carregado), cai de volta no
         // critério de distância/duração de sempre, sem mudar nada do
         // comportamento antigo.
+        // ATENÇÃO: antes, quando o nome não batia, caía de volta pra
+        // "candidates" inteiro (qualquer atividade daquela data, escolhida
+        // só por distância/duração parecida). Isso vinculava incorretamente
+        // um treino LIVRE (sem nome de planilha nenhum) a um dia programado
+        // só porque a distância coincidia por acaso — caso real encontrado
+        // em teste: treino livre no relógio no mesmo dia de um Fartlek
+        // programado, sem nome batendo, vinculou errado. Corrigido: sem
+        // nome batendo, não vincula automático de jeito nenhum — cai pra
+        // "não programado", de onde a pessoa pode vincular na mão se quiser
+        // (ver openVincularPicker). Segue a mesma regra de sempre: melhor
+        // ficar sem vincular a nada do que vincular errado.
         const nameMatches=p.namePrefix
           ? candidates.filter(a=>(a.name||'').toLowerCase().includes(p.namePrefix))
           : [];
-        const pool=nameMatches.length?nameMatches:candidates;
+        const pool=nameMatches;
         act=pool.reduce((best,a)=>{
           if(!best)return a;
           if(p.plannedDistKm!=null && a.distance && best.distance){
@@ -14514,7 +15461,9 @@ function showIntervalsConfigModal(onOk, forceForm){
     </div>`;
     modal._onOk = onOk;
     document.body.appendChild(modal);
-    modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+    let _mdownOnBackdrop=false;
+    modal.addEventListener('mousedown',e=>{_mdownOnBackdrop=(e.target===modal);});
+    modal.addEventListener('click',e=>{if(e.target===modal&&_mdownOnBackdrop)modal.remove();});
     return;
   }
 
@@ -14529,35 +15478,39 @@ function showIntervalsConfigModal(onOk, forceForm){
 
     <!-- EXPLICAÇÃO -->
     <div style="padding:1rem 1.4rem 0;font-size:13px;color:var(--t2);line-height:1.7">
-      Este app não fala diretamente com o relógio. Ele manda os treinos pro <strong>intervals.icu</strong>, um serviço gratuito que faz a ponte — e depois de conectar aqui, você também vincula sua conta Garmin, Amazfit (Zepp) ou outra compatível <strong>dentro do intervals.icu</strong> (uma vez só) em <a href="https://intervals.icu/settings" target="_blank" style="color:#6633cc;font-weight:700">Configurações → Connections</a>. A partir daí, os treinos chegam sozinhos no relógio.
-      <div style="font-size:12.5px;font-style:italic;color:var(--t3);margin-top:6px">Consulte a compatibilidade da marca do seu relógio no site do intervals.icu.</div>
+      Este app envia os treinos para o <strong>Intervals.icu</strong>, um serviço gratuito que sincroniza com Garmin, Amazfit (Zepp), COROS e outras marcas compatíveis. Depois de conectar sua conta uma única vez, os treinos serão enviados automaticamente para o relógio.
     </div>
 
-    <!-- PASSO 1 -->
+    <!-- PASSO 1 — Conta + relógio -->
     <div id="icu-step1" style="padding:1.4rem">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.2rem">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
         <div style="width:28px;height:28px;border-radius:50%;background:#6a5fc4;color:#fff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
-        <div style="font-size:14px;font-weight:800;color:var(--t1)">Abra sua conta no intervals.icu</div>
+        <div style="font-size:14px;font-weight:800;color:var(--t1)">Conecte seu relógio</div>
       </div>
-      <div style="font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:1.2rem">
-        Clique no botão abaixo — vamos abrir a página de configurações diretamente na seção correta. Se você não tiver conta, <a href="https://intervals.icu" target="_blank" style="color:#6633cc;font-weight:700">crie uma grátis aqui</a>.
+      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:1rem">
+        <p style="margin:0 0 .8rem">Clique no botão abaixo para abrir a página <strong>Connections</strong> do intervals.icu. Se ainda não tiver uma conta, <a href="https://intervals.icu/signup" target="_blank" style="color:#6633cc;font-weight:700">crie uma gratuitamente</a>.</p>
+        <p style="margin:0 0 .8rem">Localize a marca do seu relógio (Garmin, Amazfit/Zepp, COROS etc.) e conecte sua conta. Em algumas marcas existe um botão <strong>Conectar</strong>; em outras, basta clicar em uma das opções de sincronização para fazer o login e autorizar o acesso.</p>
+        <p style="margin:0">Depois de conectar, <strong>marque todas as opções de sincronização</strong> exibidas para a sua marca. Os nomes e a quantidade de opções podem variar, mas é importante não deixar nenhuma desmarcada para que os treinos sejam sincronizados corretamente.</p>
+        <div style="font-size:12.5px;font-style:italic;color:var(--t3);margin-top:6px">Consulte a compatibilidade da marca do seu relógio no site do intervals.icu.</div>
       </div>
-      <button onclick="icuAbrirSettings()" style="width:100%;height:50px;border-radius:var(--rb);border:none;background:#6a5fc4;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:none">Abrir configurações →</button>
-      <div style="font-size:12.5px;color:var(--t3);text-align:center;margin-top:8px">A página abre numa nova aba. Deixe este app aberto.</div>
+      <button onclick="icuAbrirConnections()" style="width:100%;height:50px;border-radius:var(--rb);border:none;background:#6a5fc4;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:none">Abrir Connections →</button>
+      <div style="font-size:12.5px;color:var(--t3);text-align:center;margin:8px 0 10px">A página abre numa nova aba. Deixe este app aberto.</div>
+      <button onclick="icuMarcarRelogioConectado()" id="icu-relogio-ok-btn" style="width:100%;height:44px;border-radius:var(--rb);border:none;background:var(--s3);color:var(--t1);font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px"><svg class="gi" style="font-size:16px"><use href="#i-check"></use></svg> Já conectei meu relógio</button>
     </div>
 
     <!-- DIVISOR -->
     <div style="border-top:1px dashed var(--bdr2);margin:0 1.4rem"></div>
 
-    <!-- PASSO 2 -->
+    <!-- PASSO 2 — API Key -->
     <div id="icu-step2" style="padding:1.4rem">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
         <div style="width:28px;height:28px;border-radius:50%;background:#6a5fc4;color:#fff;font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
         <div style="font-size:14px;font-weight:800;color:var(--t1)">Copie e cole sua API Key aqui</div>
       </div>
       <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:1rem">
-        Na página que abriu, <strong>role até o final</strong> e procure a seção <strong>"Configurações de Desenvolvedor"</strong>. Clique em <strong>"Gerar Chave de API"</strong> (ou copie a existente). Cole abaixo:
+        Clique abaixo pra abrir as <strong>Configurações</strong>, <strong>role até o final</strong> e procure <strong>"Configurações de Desenvolvedor"</strong>. O campo <strong>"Chave API"</strong> aparece como <code style="background:var(--s3);padding:1px 6px;border-radius:4px">none</code> — clique no lápis ao lado, e na tela que abrir clique em <strong>"GERAR"</strong>. Vai aparecer uma sequência longa de letras e números — não tem botão "Copiar", <strong>toque na própria chave</strong> pra copiar. Cole ela abaixo:
       </div>
+      <button onclick="icuAbrirSettings()" style="width:100%;height:44px;border-radius:var(--rb);border:1.5px solid #6a5fc4;background:transparent;color:#6a5fc4;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit;margin-bottom:12px">Abrir configurações →</button>
 
       <!-- Campo API Key com detecção automática -->
       <div style="position:relative;margin-bottom:6px">
@@ -14581,7 +15534,9 @@ function showIntervalsConfigModal(onOk, forceForm){
 
   modal._onOk = onOk;
   document.body.appendChild(modal);
-  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  let _mdownOnBackdrop=false;
+    modal.addEventListener('mousedown',e=>{_mdownOnBackdrop=(e.target===modal);});
+    modal.addEventListener('click',e=>{if(e.target===modal&&_mdownOnBackdrop)modal.remove();});
 
   // Listeners
   const keyInput = document.getElementById('icu-api-key');
@@ -14601,6 +15556,22 @@ function icuAbrirSettings(){
   window.open('https://intervals.icu/settings', '_blank');
   // Feedback visual
   showToast('intervals.icu aberto! Copie sua API Key e cole aqui.');
+}
+// Abre direto a página de Connections (onde conecta Garmin/Amazfit/Coros/etc),
+// separada da de Configurações gerais — o intervals.icu suporta esse link
+// direto, então evita a pessoa ter que procurar o menu certo.
+function icuAbrirConnections(){
+  window.open('https://intervals.icu/settings/connections', '_blank');
+}
+// Só feedback visual (não valida nada via API) — marca o passo 2 como
+// concluído pra pessoa saber que pode seguir tranquila pro passo 3.
+function icuMarcarRelogioConectado(){
+  const btn=document.getElementById('icu-relogio-ok-btn');
+  if(btn){
+    btn.style.background='#00a855';btn.style.color='#fff';
+    btn.innerHTML='<svg class="gi" style="font-size:16px"><use href="#i-check_circle"></use></svg> Relógio conectado';
+  }
+  showToast('Beleza! Agora é só pegar sua API Key no passo 3.');
 }
 
 // Quando o usuário cola a API Key: valida formato e tenta inferir o ID
@@ -14783,8 +15754,9 @@ function buildIcuDescription(steps){
   function mpsToStr(mps){
     if(!mps||mps<=0)return null;
     const secPerKm=1000/mps;
-    const m=Math.floor(secPerKm/60);
-    const s=Math.round(secPerKm%60);
+    let m=Math.floor(secPerKm/60);
+    let s=Math.round(secPerKm%60);
+    if(s===60){s=0;m+=1;}
     return `${m}:${String(s).padStart(2,'0')}`;
   }
   // Formata duração/distância a partir do endCondition do step Garmin JSON
@@ -14847,8 +15819,13 @@ function icuBuildEventItem(workout, index, nonce){
     ? workout.scheduledAt.toISOString().slice(0,10) + 'T00:00:00'
     : new Date().toISOString().slice(0,10) + 'T00:00:00';
 
+  // idBasis (sem distância) quando disponível — mantém o external_id
+  // estável mesmo quando o pace muda a distância estimada do treino (ver
+  // icuIdBasis). Cai pro nome completo só como segurança pra chamadas
+  // antigas que porventura não tragam idBasis.
+  const idSource = workout.idBasis || workout.name;
   const externalId = 'vo2max_' + dateStr.slice(0,10).replace(/-/g,'') + '_' +
-    workout.name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20);
+    idSource.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20);
 
   const description = buildIcuDescription(workout.steps);
 
@@ -14870,7 +15847,13 @@ function icuBuildEventItem(workout, index, nonce){
 async function icuSyncThresholdPace(apiKey, athleteId){
   const cfg=icuGetConfig();
   if(!cfg.thresholdPaceMs) return; // usuário não informou — não sobrescreve nada no perfil dele
-  if(cfg._thresholdSynced===cfg.thresholdPaceMs) return; // já está sincronizado, evita chamada repetida
+  // Só sincroniza UMA VEZ, na primeira conexão — é só um valor padrão pra a
+  // pessoa não precisar preencher nada na hora de conectar. Dali em diante,
+  // quem manda no limiar é o próprio intervals.icu/relógio; o app nunca mais
+  // escreve por cima disso, mesmo em reenvios futuros. O ritmo real de cada
+  // treino continua vindo certo pela descrição (texto absoluto), então isso
+  // não depende do limiar sincronizado aqui pra funcionar.
+  if(cfg._thresholdSynced) return; // já sincronizou uma vez — nunca mais mexe
 
   const authHeader = 'Basic ' + btoa('API_KEY:' + apiKey);
   const athletePath = athleteId || '0';
@@ -14883,7 +15866,7 @@ async function icuSyncThresholdPace(apiKey, athleteId){
       body: JSON.stringify({ threshold_pace: cfg.thresholdPaceMs })
     });
     if(r.ok){
-      icuSaveConfig({...cfg, _thresholdSynced: cfg.thresholdPaceMs});
+      icuSaveConfig({...cfg, _thresholdSynced: true});
     } else {
       console.warn('[intervals.icu] falha ao sincronizar threshold_pace', r.status, await r.text().catch(()=>''));
     }
@@ -14895,13 +15878,141 @@ async function icuSyncThresholdPace(apiKey, athleteId){
 // ── Envio para intervals.icu via bulk endpoint (sem duplicatas) ──────
 // Endpoint: POST /api/v1/athlete/{id}/events/bulk?upsert=true
 // Envia em lotes de 20 para não exceder o limite de payload.
-async function icuSendWorkouts(workouts, apiKey, athleteId){
+// Apaga do intervals.icu eventos "órfãos" — treinos que o próprio app já
+// mandou antes (identificáveis pelo prefixo vo2max_ no external_id), mas
+// que não correspondem a NENHUM dia da leva que está sendo enviada agora
+// (sobras de uma planilha antiga substituída, ou de datas que mudaram
+// depois de um recálculo). Bug real encontrado em teste: sem isso, um dia
+// já concluído (que agora pulamos no reenvio, de propósito) podia deixar
+// visível no relógio um evento velho e desatualizado que tinha ficado
+// "escondido" atrás dos reenvios anteriores.
+//
+// Proteções, pra nunca apagar algo que não devia:
+// - Só considera eventos com o prefixo vo2max_ — nunca mexe em nada criado
+//   manualmente pela pessoa ou por outro app.
+// - Só olha "eventos" (treino PROGRAMADO), nunca "atividades" (treino REAL
+//   registrado) — são coisas separadas na API do intervals.icu; atividades
+//   não entram nessa busca de jeito nenhum.
+// - Só apaga o que não bate com NENHUM external_id da leva atual — ou seja,
+//   só o que já estava "invisível"/sem função nenhuma pro app.
+// - Se a busca falhar (erro de rede, etc), não arrisca apagar nada — só
+//   desiste silenciosamente, o envio normal continua de qualquer jeito.
+async function icuCleanupOrphanedEvents(plan, workouts, apiKey, athleteId){
+  if(!workouts||!workouts.length)return 0;
+  const dates=workouts.map(w=>w.scheduledAt).filter(Boolean);
+  if(!dates.length)return 0;
+  const oldest=new Date(Math.min(...dates.map(d=>d.getTime())));
+  const newest=new Date(Math.max(...dates.map(d=>d.getTime())));
+  oldest.setDate(oldest.getDate()-1); // folga de 1 dia pra cobrir qualquer diferença de fuso
+  newest.setDate(newest.getDate()+1);
+  const authHeader='Basic '+btoa('API_KEY:'+apiKey);
+  const athletePath=athleteId||'0';
+  const oldestStr=oldest.toISOString().slice(0,10);
+  const newestStr=newest.toISOString().slice(0,10);
+  let events=[];
+  try{
+    const r=await fetch(`https://intervals.icu/api/v1/athlete/${encodeURIComponent(athletePath)}/events?oldest=${oldestStr}&newest=${newestStr}`,{headers:{'Authorization':authHeader}});
+    if(r.ok)events=await r.json();
+    else return 0; // não conseguiu listar com segurança — não arrisca apagar
+  }catch(e){return 0;}
+  // BUG CORRIGIDO (achado em teste real): o conjunto de "válidos" precisa
+  // ser TODOS os dias da planilha dentro dessa janela de datas — inclusive
+  // os já concluídos, que são pulados de propósito no reenvio (ver
+  // intervalsExportFromSaved/intervalsWeeklyExportFromSaved) mas cujo
+  // EVENTO no intervals.icu continua legítimo e não pode ser tratado como
+  // órfão só por não ter feito parte desse envio específico. Sem essa
+  // correção, isso apagava (sem recriar) o evento de qualquer dia já
+  // concluído sempre que a semana dele era reenviada — exatamente o oposto
+  // do que a limpeza deveria fazer.
+  const validExtIds=new Set();
+  if(plan&&plan.weeks){
+    const DAYS_BR=['Seg','Ter','Qua','Qui','Sex','Sab','Dom'];
+    plan.weeks.forEach((wk,wIdx)=>{
+      wk.days.forEach((day,dIdx)=>{
+        if(day.rest||day.type==='Descanso'||day.type==='Caminhar')return;
+        let scheduledAt=null;
+        if(plan.startTimestamp){
+          const weekStart=getWeekStartDate(plan,wIdx);
+          if(weekStart){scheduledAt=new Date(weekStart);scheduledAt.setDate(weekStart.getDate()+dIdx);}
+        }
+        // Mesmo fallback usado no envio (intervalsExportFromSaved/
+        // intervalsWeeklyExportFromSaved): planilha sem startTimestamp
+        // (não deveria acontecer, mas se acontecer) ancora na segunda-feira
+        // da semana atual. Sem isso, validExtIds ficava vazio nesse caso e
+        // TODO evento vo2max_ da janela virava "órfão" e era apagado —
+        // inclusive dias já concluídos, que nunca seriam recriados.
+        if(!scheduledAt){
+          const planStart=mondayOfCurrentWeek();
+          scheduledAt=new Date(planStart);
+          scheduledAt.setDate(planStart.getDate()+wIdx*7+dIdx);
+        }
+        if(scheduledAt<oldest||scheduledAt>newest)return;
+        const dayName=DAYS_BR[dIdx];
+        const idBasis=icuIdBasis(scheduledAt,dayName,day);
+        const dateStr=scheduledAt.toISOString().slice(0,10)+'T00:00:00';
+        validExtIds.add('vo2max_'+dateStr.slice(0,10).replace(/-/g,'')+'_'+idBasis.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20));
+      });
+    });
+  } else {
+    // Sem plano pra consultar (ex: export de planilha ainda não salva) —
+    // nesse caso não existe a lógica de "pular dia concluído" mesmo, então
+    // usar só os workouts enviados agora já cobre 100% dos dias válidos.
+    workouts.forEach(w=>{
+      const dateStr=w.scheduledAt.toISOString().slice(0,10)+'T00:00:00';
+      const idSource=w.idBasis||w.name;
+      validExtIds.add('vo2max_'+dateStr.slice(0,10).replace(/-/g,'')+'_'+idSource.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20));
+    });
+  }
+  const orphans=(events||[]).filter(ev=>ev.external_id&&ev.external_id.startsWith('vo2max_')&&!validExtIds.has(ev.external_id));
+  for(const ev of orphans){
+    try{
+      await fetch(`https://intervals.icu/api/v1/athlete/${encodeURIComponent(athletePath)}/events/${ev.id}`,{method:'DELETE',headers:{'Authorization':authHeader}});
+    }catch(e){}
+  }
+  return orphans.length;
+}
+// Sobe uma atividade REAL (com GPS/pace) pro intervals.icu — endpoint
+// diferente do events/bulk (que só manda treino PLANEJADO). Multipart, um
+// .fit por vez. Se o Strava estiver conectado nas configurações da conta do
+// intervals.icu, ele repassa a atividade pra lá sozinho, sem precisar mexer
+// em nada do lado do Strava — mesmo essa atividade não tendo sido gravada
+// com mapa em nenhum app do Strava.
+// Fonte: https://forum.intervals.icu/t/intervals-icu-api-integration-cookbook/80090
+// POST /api/v1/athlete/{id}/activities?name=...  (multipart, campo "file")
+async function icuUploadActivity(fitBytes, name, apiKey, athleteId){
+  try{
+    const authHeader='Basic '+btoa('API_KEY:'+apiKey);
+    const athletePath=athleteId||'0';
+    const blob=new Blob([fitBytes],{type:'application/octet-stream'});
+    const fd=new FormData();
+    fd.append('file', blob, 'treino.fit');
+    const qs=name?('?name='+encodeURIComponent(name)):'';
+    const endpoint=`https://intervals.icu/api/v1/athlete/${encodeURIComponent(athletePath)}/activities${qs}`;
+    const r=await fetch(endpoint,{method:'POST',headers:{'Authorization':authHeader},body:fd});
+    if(!r.ok){
+      const errText=await r.text().catch(()=>'');
+      console.warn('[intervals.icu] erro upload activity', r.status, errText);
+      return{ok:false,status:r.status,error:errText};
+    }
+    const data=await r.json().catch(()=>null);
+    return{ok:true,data};
+  }catch(e){
+    console.warn('[intervals.icu] fetch error upload activity', e);
+    return{ok:false,error:(e&&e.message)||String(e)};
+  }
+}
+
+async function icuSendWorkouts(workouts, apiKey, athleteId, plan){
   // Remove modal de config se ainda aberto
   const old=document.getElementById('icu-config-modal');
   if(old)old.remove();
 
   // Sincroniza o ritmo de limiar primeiro (silencioso — não bloqueia o envio dos treinos se falhar)
   await icuSyncThresholdPace(apiKey, athleteId);
+  // Limpa eventuais eventos órfãos de versões antigas dessa planilha antes
+  // de mandar os novos — silencioso, não bloqueia o envio se falhar.
+  await icuCleanupOrphanedEvents(plan, workouts, apiKey, athleteId).catch(()=>{});
+
 
   // Modal de progresso
   const prog=document.createElement('div');
@@ -15042,7 +16153,9 @@ function showIntervalsResultModal(ok, fail, failNames, athleteId){
     </div>
   </div>`;
   document.body.appendChild(modal);
-  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  let _mdownOnBackdrop=false;
+    modal.addEventListener('mousedown',e=>{_mdownOnBackdrop=(e.target===modal);});
+    modal.addEventListener('click',e=>{if(e.target===modal&&_mdownOnBackdrop)modal.remove();});
 }
 
 // ── Entry points ─────────────────────────────────────────
@@ -15081,8 +16194,9 @@ function intervalsExportFromRace(race){
       const scheduledAt=new Date(planStart);
       scheduledAt.setDate(planStart.getDate()+wIdx*7+dIdx);
       const name=buildWorkoutLabel(scheduledAt,dayName,day);
+      const idBasis=icuIdBasis(scheduledAt,dayName,day);
       const desc=day.detail||`${day.type}${day.dist?' · '+day.dist:''}${day.pace?' · '+day.pace+'/km':''}`;
-      workouts.push({name,steps,desc,scheduledAt,wIdx});
+      workouts.push({name,idBasis,steps,desc,scheduledAt,wIdx});
     });
   });
 
@@ -15102,6 +16216,11 @@ function intervalsExportFromSaved(id){
   plan.weeks.forEach((wk,wIdx)=>{
     wk.days.forEach((day,dIdx)=>{
       if(day.rest||day.type==='Descanso'||day.type==='Caminhar')return;
+      // Não reenvia dia já marcado como concluído — não faz sentido
+      // represcrever um treino que já aconteceu, e evita deixar um evento
+      // "programado" duplicado no calendário do relógio ao lado da
+      // atividade real já registrada nesse mesmo dia.
+      if(plan.done[`${wIdx}-${dIdx}`])return;
       const steps=dayToGarminSteps(day,plan);
       if(!steps||steps.length===0)return;
       const dayName=DAYS_BR[dIdx];
@@ -15116,13 +16235,14 @@ function intervalsExportFromSaved(id){
         scheduledAt.setDate(planStart.getDate()+wIdx*7+dIdx);
       }
       const name=buildWorkoutLabel(scheduledAt,dayName,day);
+      const idBasis=icuIdBasis(scheduledAt,dayName,day);
       const desc=day.detail||`${day.type}${day.dist?' · '+day.dist:''}${day.pace?' · '+day.pace+'/km':''}`;
-      workouts.push({name,steps,desc,scheduledAt,wIdx});
+      workouts.push({name,idBasis,steps,desc,scheduledAt,wIdx});
     });
   });
 
   if(workouts.length===0){showToast('Nenhum treino para enviar.');return;}
-  icuStartExport(workouts);
+  icuStartExport(workouts, plan);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -15235,10 +16355,24 @@ function icuShowWeeklyModal(workouts, planKey, label){
   window._icuWeeklyWorkouts = window._icuWeeklyWorkouts||{};
   window._icuWeeklyWorkouts[planKey] = weeks;
   document.body.appendChild(modal);
-  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  let _mdownOnBackdrop=false;
+    modal.addEventListener('mousedown',e=>{_mdownOnBackdrop=(e.target===modal);});
+    modal.addEventListener('click',e=>{if(e.target===modal&&_mdownOnBackdrop)modal.remove();});
 }
 
 function icuClickWeekBlock(planKey, wIdx){
+  // Trava contra clicar em duas semanas quase juntas (ex: enviar semana 1
+  // e, sem esperar terminar, já clicar na semana 2) — bug real relatado em
+  // teste: as duas pareciam ter sido enviadas na tela, mas só a primeira
+  // realmente chegava no relógio. Mesmo sem conseguir reproduzir a causa
+  // exata (cada envio usa dados próprios, sem variável compartilhada entre
+  // semanas na nossa lógica), duas chamadas de rede simultâneas pro mesmo
+  // endpoint são a explicação mais provável — essa trava elimina essa
+  // possibilidade de vez, sem custar nada pra quem envia uma de cada vez.
+  if(window._icuWeekSendInProgress){
+    showToast('Aguarde o envio da semana anterior terminar antes de enviar outra.');
+    return;
+  }
   const weeks=(window._icuWeeklyWorkouts&&window._icuWeeklyWorkouts[planKey])||[];
   const wk=weeks.find(w=>w.wIdx===wIdx);
   if(!wk)return;
@@ -15252,14 +16386,29 @@ function icuClickWeekBlock(planKey, wIdx){
 }
 
 async function icuSendWeekBlock(weekWorkouts, planKey, wIdx, apiKey, athleteId){
+  window._icuWeekSendInProgress=true;
   const statusEl=document.getElementById('icu-week-status-'+wIdx);
   const blockEl=document.getElementById('icu-week-'+wIdx);
   const prevStatusTxt=statusEl?statusEl.textContent:'';
   const prevStatusColor=statusEl?statusEl.style.color:'';
   if(statusEl)statusEl.textContent='Enviando…';
-  if(blockEl)blockEl.style.opacity='0.6';
+  if(blockEl){blockEl.style.opacity='0.6';blockEl.style.pointerEvents='none';blockEl.style.cursor='not-allowed';}
+  // Trava visual em TODOS os blocos (não só o clicado) enquanto esse envio
+  // está em voo — a trava lógica (_icuWeekSendInProgress) já impedia o
+  // clique duplo de disparar outra chamada, mas ficava só um toast passageiro
+  // como pista; agora fica claro pra pessoa que precisa esperar essa
+  // resposta real da API voltar antes de poder tocar em outra semana.
+  const allBlocks=document.querySelectorAll('.icu-week-block');
+  allBlocks.forEach(el=>{ if(el!==blockEl){ el.style.opacity='0.4'; el.style.pointerEvents='none'; el.style.cursor='not-allowed'; } });
 
   await icuSyncThresholdPace(apiKey, athleteId);
+  // Mesma limpeza de eventos órfãos do export completo — só dentro da
+  // janela de datas dessa semana específica (silencioso, não bloqueia o
+  // envio se falhar). Busca o objeto do plano a partir do planKey pra
+  // conseguir considerar TODOS os dias da planilha (não só os que estão
+  // sendo enviados agora) na hora de decidir o que é órfão de verdade.
+  const planForCleanup=icuSavedPlanFromKey(planKey);
+  await icuCleanupOrphanedEvents(planForCleanup, weekWorkouts, apiKey, athleteId).catch(()=>{});
 
   const authHeader='Basic '+btoa('API_KEY:'+apiKey);
   const athletePath=athleteId||'0';
@@ -15276,7 +16425,8 @@ async function icuSendWeekBlock(weekWorkouts, planKey, wIdx, apiKey, athleteId){
     console.warn('[intervals.icu] erro de rede envio semanal', e);
   }
 
-  if(blockEl)blockEl.style.opacity='1';
+  if(blockEl){blockEl.style.opacity='1';blockEl.style.pointerEvents='';blockEl.style.cursor='pointer';}
+  allBlocks.forEach(el=>{ el.style.opacity=''; el.style.pointerEvents=''; el.style.cursor='pointer'; });
 
   if(ok>0){
     icuMarkWeekSent(planKey, wIdx);
@@ -15290,6 +16440,7 @@ async function icuSendWeekBlock(weekWorkouts, planKey, wIdx, apiKey, athleteId){
     if(statusEl){statusEl.textContent=prevStatusTxt||'Enviar →';statusEl.style.color=prevStatusColor||'#6633cc';}
     showToast('Falha ao enviar essa semana. Verifique sua API Key.');
   }
+  window._icuWeekSendInProgress=false; // libera a trava, sucesso ou falha — nunca deixa preso
 }
 
 // Da planilha gerada (sem salvar) — versão semanal
@@ -15326,8 +16477,9 @@ function intervalsWeeklyExportFromRace(race){
       const scheduledAt=new Date(planStart);
       scheduledAt.setDate(planStart.getDate()+wIdx*7+dIdx);
       const name=buildWorkoutLabel(scheduledAt,dayName,day);
+      const idBasis=icuIdBasis(scheduledAt,dayName,day);
       const desc=day.detail||`${day.type}${day.dist?' · '+day.dist:''}${day.pace?' · '+day.pace+'/km':''}`;
-      workouts.push({name,steps,desc,scheduledAt,wIdx});
+      workouts.push({name,idBasis,steps,desc,scheduledAt,wIdx});
     });
   });
 
@@ -15354,6 +16506,8 @@ function intervalsWeeklyExportFromSaved(id){
   plan.weeks.forEach((wk,wIdx)=>{
     wk.days.forEach((day,dIdx)=>{
       if(day.rest||day.type==='Descanso'||day.type==='Caminhar')return;
+      // Mesma regra do export completo: não reenvia dia já concluído.
+      if(plan.done[`${wIdx}-${dIdx}`])return;
       const steps=dayToGarminSteps(day,plan);
       if(!steps||steps.length===0)return;
       const dayName=DAYS_BR[dIdx];
@@ -15368,8 +16522,9 @@ function intervalsWeeklyExportFromSaved(id){
         scheduledAt.setDate(planStart.getDate()+wIdx*7+dIdx);
       }
       const name=buildWorkoutLabel(scheduledAt,dayName,day);
+      const idBasis=icuIdBasis(scheduledAt,dayName,day);
       const desc=day.detail||`${day.type}${day.dist?' · '+day.dist:''}${day.pace?' · '+day.pace+'/km':''}`;
-      workouts.push({name,steps,desc,scheduledAt,wIdx});
+      workouts.push({name,idBasis,steps,desc,scheduledAt,wIdx});
     });
   });
 
@@ -15383,14 +16538,14 @@ function intervalsWeeklyExportFromSaved(id){
   icuShowWeeklyModal(workouts, planKey, label);
 }
 
-function icuStartExport(workouts){
+function icuStartExport(workouts, plan){
   const apiKey=icuGetApiKey();
   const athleteId=icuGetAthleteId();
   const cfg=icuGetConfig();
 
   if(!apiKey||!athleteId){
     // Primeira vez — pede API Key/Athlete ID
-    showIntervalsConfigModal((key,id)=>icuSendWorkouts(workouts,key,id));
+    showIntervalsConfigModal((key,id)=>icuSendWorkouts(workouts,key,id,plan));
   } else {
     // Config antiga sem thresholdPaceMs: preenche o padrão silenciosamente
     if(!cfg.thresholdPaceMs){
@@ -15398,11 +16553,11 @@ function icuStartExport(workouts){
       cfg.thresholdPaceLabel = '5:00';
       icuSaveConfig(cfg);
     }
-    icuShowConfirmModal(workouts, apiKey, athleteId, cfg);
+    icuShowConfirmModal(workouts, apiKey, athleteId, cfg, plan);
   }
 }
 
-function icuShowConfirmModal(workouts, apiKey, athleteId, cfg){
+function icuShowConfirmModal(workouts, apiKey, athleteId, cfg, plan){
   const old=document.getElementById('icu-confirm-modal');
   if(old)old.remove();
   const modal=document.createElement('div');
@@ -15419,10 +16574,10 @@ function icuShowConfirmModal(workouts, apiKey, athleteId, cfg){
       Cada treino será adicionado no dia correto do calendário. Se você enviar novamente, os treinos existentes serão <strong>atualizados sem duplicar</strong> (upsert automático pelo external_id).
     </div>
     <div style="padding:1rem 1.4rem;border-top:1px solid var(--bdr);display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap">
-      <button onclick="document.getElementById('icu-confirm-modal').remove();showIntervalsConfigModal((k,id)=>icuSendWorkouts(window._icuPendingWorkouts,k,id))" style="height:36px;padding:0 12px;border-radius:16px;border:1px solid var(--bdr2);background:transparent;color:var(--t3);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit"><svg class="gi"><use href="#i-settings"></use></svg> Alterar config</button>
+      <button onclick="document.getElementById('icu-confirm-modal').remove();showIntervalsConfigModal((k,id)=>icuSendWorkouts(window._icuPendingWorkouts,k,id,window._icuPendingPlan))" style="height:36px;padding:0 12px;border-radius:16px;border:1px solid var(--bdr2);background:transparent;color:var(--t3);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit"><svg class="gi"><use href="#i-settings"></use></svg> Alterar config</button>
       <div style="display:flex;gap:8px">
         <button onclick="document.getElementById('icu-confirm-modal').remove()" style="height:36px;padding:0 12px;border-radius:16px;border:1px solid var(--bdr2);background:transparent;color:var(--t2);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Cancelar</button>
-        <button onclick="document.getElementById('icu-confirm-modal').remove();icuSendWorkouts(window._icuPendingWorkouts,window._icuPendingApiKey,window._icuPendingAthleteId)" style="height:36px;padding:0 16px;border-radius:16px;border:none;background:#6a5fc4;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">Enviar ${workouts.length} treinos →</button>
+        <button onclick="document.getElementById('icu-confirm-modal').remove();icuSendWorkouts(window._icuPendingWorkouts,window._icuPendingApiKey,window._icuPendingAthleteId,window._icuPendingPlan)" style="height:36px;padding:0 16px;border-radius:16px;border:none;background:#6a5fc4;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">Enviar ${workouts.length} treinos →</button>
       </div>
     </div>
   </div>`;
@@ -15432,8 +16587,11 @@ function icuShowConfirmModal(workouts, apiKey, athleteId, cfg){
   window._icuPendingWorkouts = workouts;
   window._icuPendingApiKey = apiKey;
   window._icuPendingAthleteId = athleteId;
+  window._icuPendingPlan = plan;
   document.body.appendChild(modal);
-  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+  let _mdownOnBackdrop=false;
+    modal.addEventListener('mousedown',e=>{_mdownOnBackdrop=(e.target===modal);});
+    modal.addEventListener('click',e=>{if(e.target===modal&&_mdownOnBackdrop)modal.remove();});
 }
 
 window.intervalsExportFromRace=intervalsExportFromRace;
@@ -15490,15 +16648,23 @@ function abrirMontador(race){
   ({tempo,intv}=applyQualityPaceFloor(tempo,intv,raceSpeed,race,usingCustom&&!!customPaces.Z4,usingCustom&&!!customPaces.Z5));
   const obj=is42?planObj42:race==='21'?planObj21:race==='5k'?planObj5k:planObj10k;
 
+  // Se a planilha atual foi gerada com data de prova alvo, o Montador
+  // precisa herdar a MESMA âncora (início futuro + dia da prova certo) —
+  // senão ele reconstrói o banco de treinos do zero, ignorando tudo isso e
+  // sempre começando "hoje" com a prova sempre no domingo, mesmo quando a
+  // planilha original não era assim.
+  const mtTargetAnchor=wzTargetDate?computeTargetDateAnchor(wzTargetDate,planWeeks):null;
+  const mtRaceDayIndex=mtTargetAnchor?mtTargetAnchor.raceDayIndex:(is5k?5:6);
+
   let weeks;
-  if(isShort){({weeks}=buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj));}
-  else{({weeks}=buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj));}
+  if(isShort){({weeks}=buildDaysShort(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,mtRaceDayIndex));}
+  else{({weeks}=buildDays(race,planWeeks,prof,ez,mod,tempo,intv,raceSpeed,obj,mtRaceDayIndex));}
 
   montador={
     race,profKey,ez,mod,tempo,intv,raceSpeed,
     sourceWeeks:weeks,           // banco de treinos (origem, já com paces do atleta)
     weekCount:weeks.length,      // nº de semanas do calendário (editável)
-    startDate:_mtMondaySnap(new Date()),
+    startDate:_mtMondaySnap(mtTargetAnchor?new Date(mtTargetAnchor.startTimestamp):new Date()),
     assigned:new Map(),          // 'wIdx_dIdx' -> day object (clone)
     tapSelected:null             // {wsrc,dsrc} treino selecionado por toque (fallback mobile)
   };
@@ -15866,7 +17032,13 @@ async function lwTryResumeSnapshot(){
     steps:snap.steps,stepIdx:snap.stepIdx||0,
     status:snap.status==='paused'?'paused':'running',
     startedAt:snap.startedAt,pausedAt:snap.status==='paused'?(snap.pausedAt||Date.now()):null,pausedAccumMs:snap.pausedAccumMs||0,
-    totalDistM:snap.totalDistM||0,lastGoodPoint:null,recentSamples:[],
+    // track NÃO é persistido no snapshot (localStorage) — de propósito, pra
+    // não pesar o snapshot salvo a cada tick. Se a página recarregar no meio
+    // do treino, o track reconstruído aqui só cobre a partir da retomada;
+    // totalDistM/tempo continuam corretos (vêm do snapshot), só o .fit de
+    // atividade enviado ao intervals.icu no fim ficará com menos pontos de
+    // GPS nesse caso raro — buildFitActivityFile trata isso (ver comentário lá).
+    totalDistM:snap.totalDistM||0,lastGoodPoint:null,recentSamples:[],track:[],
     segStartDistM:snap.segStartDistM||0,segStartElapsedMs:snap.segStartElapsedMs||0,
     watchId:null,timerId:null,wakeLock:null,wakeLockRequesting:false,
     stepHistory:snap.stepHistory||[],lastBeepKey:null,audioCtx:null,
@@ -15887,7 +17059,7 @@ async function lwTryResumeSnapshot(){
     if(LW.audioCtx.state==='suspended')LW.audioCtx.resume();
   }catch(e){}
   lwStartKeepAlive();
-  if(LW.status==='running')lwStartGPS();
+  if(LW.status==='running'||LW.status==='paused')lwStartGPS(); // pausado (manual) também religa — o GPS agora fica ligado durante a pausa manual, pra continuar avisando se detectar movimento
   lwStartTimer();
   lwStartLockWatcher();
   if(LW.status==='running')lwRequestWakeLock();
@@ -15950,9 +17122,91 @@ function lwPaceZoneMps(paceStr,toleranceSec){
 }
 
 // ── Formatação ──
+// ── Mini-mapa de preview (feature separada dos laps, teto fixo próprio) ──
+// Pega o MESMO LW.track que já existe em memória (gravado a cada ~1-3s pelo
+// GPS, usado pra montar o .fit) e gera uma versão decimada e pequena — só
+// pra desenhar um preview do formato do percurso dentro do próprio app.
+// NÃO mexe no LW.track original (só lê, não consome nem corta), e não tem
+// nenhuma relação com o que sobe pro intervals.icu (aquele já rodou/roda
+// separado, com o track inteiro). Teto fixo de pontos (independente da
+// duração do treino) porque isso, diferente do .fit, fica salvo pra sempre
+// no Firestore junto do resumo do treino.
+const LW_MINIMAP_MAX_POINTS=110;
+function lwDecimateTrackForMiniMap(track,maxPoints){
+  maxPoints=maxPoints||LW_MINIMAP_MAX_POINTS;
+  if(!track||track.length<2)return null;
+  const n=track.length;
+  const round5=v=>Math.round(v*1e5)/1e5; // ~1.1m de precisão — de sobra pra um preview de formato
+  if(n<=maxPoints)return track.map(p=>[round5(p.lat),round5(p.lng)]);
+  const pts=[];
+  const step=(n-1)/(maxPoints-1);
+  for(let i=0;i<maxPoints;i++){
+    const p=track[Math.round(i*step)];
+    pts.push([round5(p.lat),round5(p.lng)]);
+  }
+  return pts;
+}
+// Desenha o preview como um SVG offline (sem nenhuma chamada de mapa/tile) —
+// só a silhueta do percurso, igual ao preview de lista do Strava. Corrige a
+// escala da longitude por cos(latitude), senão o formato fica esticado (um
+// grau de longitude vale menos distância real quanto mais longe do equador).
+function buildMiniMapSvgFromPoints(points){
+  if(!points||points.length<2)return'';
+  const lats=points.map(p=>p[0]), lngs=points.map(p=>p[1]);
+  const latMin=Math.min(...lats), latMax=Math.max(...lats);
+  const lngMin=Math.min(...lngs), lngMax=Math.max(...lngs);
+  const cosLat=Math.cos(((latMin+latMax)/2)*Math.PI/180)||1;
+  const spanLat=Math.max(1e-6,latMax-latMin);
+  const spanLng=Math.max(1e-6,(lngMax-lngMin)*cosLat);
+  const W=200,H=110,PAD=10;
+  const scale=Math.min((W-PAD*2)/spanLng,(H-PAD*2)/spanLat);
+  const offX=(W-spanLng*scale)/2, offY=(H-spanLat*scale)/2;
+  const xy=([lat,lng])=>[
+    (offX+(lng-lngMin)*cosLat*scale).toFixed(1),
+    (H-(offY+(lat-latMin)*scale)).toFixed(1) // Y invertido: latitude maior = mais ao norte = mais pra cima na tela
+  ];
+  const coords=points.map(xy);
+  const [sx,sy]=coords[0], [ex,ey]=coords[coords.length-1];
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" style="display:block">
+    <polyline points="${coords.map(c=>c.join(',')).join(' ')}" fill="none" stroke="var(--acc)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${sx}" cy="${sy}" r="3" fill="var(--acc)"/>
+    <circle cx="${ex}" cy="${ey}" r="3" fill="var(--t1)"/>
+  </svg>`;
+}
+// Busca o mini-mapa (campo `map`) sob demanda, direto pelo ID determinístico
+// do documento em `realizados` (completedLogId) — NÃO precisa que esse
+// treino já esteja carregado em completedLog (que é paginado, só traz os
+// mais recentes). Um único .get() por documento, rápido e barato. Chamado
+// via setTimeout(...,0) pelos pontos que já inseriram o slot vazio no DOM
+// (buildTodayMini / openDayDetailModal) — nesse momento o HTML já foi
+// inserido de verdade na página (mesmo call stack síncrono terminou),
+// então o elemento do slot já existe pra receber o resultado.
+async function lwInjectMiniMapAsync(slotId,planId,wIdx,dIdx){
+  if(!currentUser)return;
+  try{
+    const doc=await realizadosCollection(currentUser.uid).doc(completedLogId(planId,wIdx,dIdx)).get();
+    if(!doc.exists)return;
+    const data=doc.data();
+    if(!data||!data.map||!data.map.length)return;
+    const slot=document.getElementById(slotId);
+    if(!slot)return; // tela já mudou (modal fechado, card recarregado etc.) antes da resposta chegar — não faz nada
+    slot.innerHTML=`<div style="margin-top:10px;border:1px solid var(--bdr2);border-radius:10px;overflow:hidden;background:var(--s2)">${buildMiniMapSvgFromPoints(data.map)}</div>`;
+  }catch(e){ console.warn('[minimap] erro ao buscar preview do percurso',e); }
+}
+// Placeholder vazio + agendamento da busca acima — usado pelos dois lugares
+// que mostram "Realizado" pra um treino "Ao Vivo" (card de hoje e modal de
+// detalhe do dia). Só existe (e só dispara a busca) quando source==='live',
+// já que só esses treinos podem ter percurso de GPS.
+function lwMiniMapSlotHtml(r,planId,wIdx,dIdx){
+  if(!r||r.source!=='live')return'';
+  const slotId=`minimap-${planId}-${wIdx}-${dIdx}-${Math.random().toString(36).slice(2,7)}`; // sufixo aleatório: o mesmo dia pode aparecer simultaneamente no card de hoje E num modal aberto por cima, cada um com seu próprio slot
+  setTimeout(()=>lwInjectMiniMapAsync(slotId,planId,wIdx,dIdx),0);
+  return`<div id="${slotId}"></div>`;
+}
 function lwFmtPaceSecPerKm(sec){
   if(!isFinite(sec)||sec<=0)return'--:--';
-  const m=Math.floor(sec/60), s=Math.round(sec%60);
+  let m=Math.floor(sec/60), s=Math.round(sec%60);
+  if(s===60){s=0;m+=1;}
   return`${m}:${String(s).padStart(2,'0')}`;
 }
 function lwFmtDurationDisplay(sec){
@@ -16020,6 +17274,54 @@ function lwAlertModal(title,message,okLabel){
     div.querySelector('#lw-alert-ok').onclick=()=>{ div.remove(); resolve(); };
     // sem fechar clicando fora de propósito — é um aviso que precisa de ação explícita
   });
+}
+// ── FC opcional depois do Treino ao Vivo — o treino em si não mede FC (sem
+// sensor pareado), então oferece um jeito rápido de completar isso na hora,
+// caso a pessoa saiba o valor de outro lugar (relógio, monitor à parte).
+// Totalmente opcional/dispensável — nunca trava nem exige nada, é só uma
+// oportunidade a mais de guardar o dado (útil pras sugestões de ajuste de
+// ritmo, que só consideram treinos com FC registrada).
+function lwOfferHRPrompt(planId,wIdx,dIdx){
+  const old=document.getElementById('lw-hr-prompt'); if(old)old.remove();
+  const div=document.createElement('div');
+  div.id='lw-hr-prompt';
+  div.style.cssText='position:fixed;inset:0;z-index:970;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px';
+  div.innerHTML=`
+    <div style="background:var(--bg);border-radius:16px;padding:22px 20px;max-width:360px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.35)">
+      <div style="font-size:16px;font-weight:800;color:var(--t1);margin-bottom:8px">Sabe sua FC média desse treino?</div>
+      <div style="font-size:13.5px;color:var(--t2);line-height:1.5;margin-bottom:14px">Opcional — só se você tiver visto num relógio ou monitor à parte. Ajuda o app a entender melhor sua evolução mais pra frente.</div>
+      <div style="display:flex;align-items:center;border:1px solid var(--bdr2);border-radius:10px;background:var(--s1);overflow:hidden;max-width:140px;margin-bottom:16px">
+        <input id="lw-hr-input" inputmode="numeric" placeholder="0" maxlength="3" oninput="shareMaskNumber(this)" style="flex:1;min-width:0;border:none;background:none;padding:9px 4px 9px 11px;font-size:14px;font-family:inherit;color:var(--t1)"/>
+        <span style="color:var(--t3);font-size:12px;padding-right:11px">bpm</span>
+      </div>
+      <button id="lw-hr-save" style="width:100%;height:46px;border-radius:10px;border:none;background:var(--acc);color:var(--on-acc);font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:10px">Salvar</button>
+      <button id="lw-hr-skip" style="width:100%;height:46px;border-radius:10px;border:1px solid var(--bdr2);background:none;color:var(--t2);font-weight:800;font-size:14px;cursor:pointer;font-family:inherit">Não sei / pular</button>
+    </div>`;
+  document.body.appendChild(div);
+  const cleanup=()=>div.remove();
+  div.querySelector('#lw-hr-skip').onclick=cleanup;
+  div.querySelector('#lw-hr-save').onclick=()=>{
+    const hr=(document.getElementById('lw-hr-input')||{}).value||'';
+    if(hr){
+      const plan=savedPlans.find(p=>p.id===planId);
+      const key=`${wIdx}-${dIdx}`;
+      if(plan&&plan.done[key]&&typeof plan.done[key]==='object'){
+        plan.done[key].avgHr=hr;
+        persistAccountPlans();
+        const entryId=completedLogId(planId,wIdx,dIdx);
+        const entry=completedLog.find(e=>e.id===entryId);
+        if(entry){entry.avgHr=hr;persistCompletedEntry(entry);}
+        // Sem isso, o card "Treino concluído" da tela inicial continuava
+        // mostrando a versão de ANTES da FC ser salva (só Distância/Tempo,
+        // sem FC média) até a pessoa navegar pra outro lugar e voltar — o
+        // dado já estava gravado certinho (por isso aparecia em
+        // Compartilhar e em Realizados), só a tela na hora que não
+        // atualizava sozinha.
+        if(typeof renderCalcSummary==='function')renderCalcSummary();
+      }
+    }
+    cleanup();
+  };
 }
 
 // ── Voz ──
@@ -16458,11 +17760,29 @@ function lwGpsBannerDismiss(){
   // risco de brigar com outra.
   if(!lwSpeechBusy())lwSpeak('Atenção: sem GPS ativo, a distância e o ritmo não serão medidos neste treino.',lwFirePendingPauseAnnounce);
 }
+// Avisa (voz + vibração forte) que o treino está pausado MANUALMENTE assim
+// que o GPS detecta que a pessoa já se afastou o suficiente do ponto onde
+// pausou — pedido explícito: pausa manual só destrava no botão (mesmo com a
+// pausa automática ativada), então é fácil esquecer e sair correndo com o
+// treino ainda pausado. Cooldown de 15s entre avisos (junto com o limiar de
+// distância em lwOnPosition) pra não ficar repetindo a cada poucos metros
+// enquanto a pessoa continuar correndo sem perceber — mas continua avisando
+// de novo periodicamente enquanto isso não for corrigido.
+function lwAnnounceManualPauseMoving(){
+  if(!LW||LW.status!=='paused'||LW.autoPaused)return;
+  const now=Date.now();
+  if(LW.manualPauseAlertAt&&now-LW.manualPauseAlertAt<15000)return;
+  LW.manualPauseAlertAt=now;
+  lwVibrate([400,150,400,150,400,150,400]); // 4 vibrações fortes
+  showToast('Atenção: o treino está pausado manualmente.');
+  if(!lwSpeechBusy())lwSpeak('Atenção: o treino está pausado manualmente.');
+}
 function lwOnPosition(pos){
   if(!LW)return;
   const autoPausedNow=LW.status==='paused'&&LW.autoPaused; // na autopausa o GPS continua ligado de propósito, só pra detectar quando a pessoa volta a se mexer
+  const manualPausedNow=LW.status==='paused'&&!LW.autoPaused; // pausa manual: o GPS agora também continua ligado de propósito (pedido explícito) — só pra avisar se a pessoa sair correndo esquecida de despausar; NUNCA retoma sozinha, só avisa (ver lwAnnounceManualPauseMoving mais abaixo)
   const idleNow=LW.status==='idle'; // esperando o toque em "Iniciar" — o GPS já está tentando pegar sinal em segundo plano, mas nada deve ser contado ainda
-  if(LW.status!=='running'&&!autoPausedNow&&!idleNow)return; // pausa manual: o GPS nem está ligado (lwStopGPS já foi chamado), então isso nem deveria disparar — mas por segurança, ignora mesmo assim
+  if(LW.status!=='running'&&!autoPausedNow&&!manualPausedNow&&!idleNow)return;
   LW.gpsDismissed=false; // sinal voltou — se cair de novo depois, pode avisar de novo
   LW.geoUnavailableSince=null;
   LW.gpsRetriedOnce=false;
@@ -16508,6 +17828,21 @@ function lwOnPosition(pos){
     if(accOk&&distFromAnchor>=LW_AUTORESUME_DIST_M)lwDoAutoResume();
     return; // autopausado: só monitora a distância do ponto de parada, não conta distância/pace normal daqui pra baixo
   }
+  if(manualPausedNow){
+    // Pausa MANUAL: diferente da automática, nunca retoma sozinha (só o
+    // botão "Retomar" faz isso) — mas agora avisa (voz + vibração forte)
+    // assim que perceber que a pessoa já se afastou o suficiente do ponto
+    // onde pausou, pra pegar o caso de sair correndo esquecida de despausar.
+    if(!LW.manualPauseAnchor)LW.manualPauseAnchor={lat,lng}; // referência ainda não definida (ex: treino retomado de um snapshot salvo) — usa o primeiro fix recebido como ponto de partida
+    LW.lastGoodPoint={lat,lng,t};
+    const accOk=(acc==null||acc<=20);
+    const distFromAnchor=lwHaversine(LW.manualPauseAnchor.lat,LW.manualPauseAnchor.lng,lat,lng);
+    if(accOk&&distFromAnchor>=LW_AUTORESUME_DIST_M){
+      lwAnnounceManualPauseMoving();
+      LW.manualPauseAnchor={lat,lng}; // reseta a referência, pra poder avisar de novo se continuar se afastando
+    }
+    return; // pausa manual: nunca conta distância/pace normal daqui pra baixo, e nunca retoma sozinha
+  }
   if(LW.autoPauseEnabled)lwHandleAutoPauseStop(isMoving,t);
   if(!isMoving){ if(dt>6)LW.lastGoodPoint={lat,lng,t}; return; } // ruído/parado — não acumula
   LW.totalDistM+=d;
@@ -16515,6 +17850,12 @@ function lwOnPosition(pos){
   LW.recentSamples.push({t,distM:LW.totalDistM});
   const cutoff=t-45000;
   while(LW.recentSamples.length>1&&LW.recentSamples[0].t<cutoff)LW.recentSamples.shift();
+  // Track completo pro .fit de atividade (enviado ao intervals.icu no fim).
+  // spd já é a velocidade instantânea desse fix (d/dt calculado acima) — é
+  // exatamente o que resolve a demora da janela de 45s pra reagir em tiros.
+  // Fica só em memória durante o treino; nunca é persistido no Firestore
+  // nem no snapshot de localStorage.
+  if(LW.track)LW.track.push({t,lat,lng,distM:LW.totalDistM,speedMps:spd});
 }
 function lwCurrentPaceSecPerKm(){
   if(!LW||LW.recentSamples.length<2)return null;
@@ -16557,8 +17898,9 @@ function lwStartTimer(){
   LW.timerId=setInterval(()=>{
     if(!LW)return;
     const autoPausedNow=LW.status==='paused'&&LW.autoPaused; // na autopausa o GPS segue ligado, então ainda faz sentido cuidar de wake lock/GPS/snapshot aqui
+    const manualPausedNow=LW.status==='paused'&&!LW.autoPaused; // pausa manual: o GPS agora também segue ligado (pedido explícito, pra detectar movimento esquecido) — então idem, vale cuidar de wake lock/GPS/snapshot aqui também
     const idleNow=LW.status==='idle'; // esperando o toque em "Iniciar" — o GPS já está tentando pegar sinal, só precisa atualizar a tela (bolinha/banner) periodicamente
-    if(LW.status!=='running'&&!autoPausedNow&&!idleNow)return; // pausa manual: GPS desligado, nada a fazer
+    if(LW.status!=='running'&&!autoPausedNow&&!manualPausedNow&&!idleNow)return;
     if(LW.status==='running'){
       if(LW.isVo2Test){
         vtCheckCompletion(); // modo teste: sem alerta de ritmo, condição de parada própria (tempo ou distância-alvo)
@@ -16662,7 +18004,7 @@ function lwStopTimer(){ if(LW&&LW.timerId){clearInterval(LW.timerId);LW.timerId=
 // sozinho, os dois "brigavam" quase juntos e dava a impressão de trava
 // falhando. Ficando bem abaixo do mínimo do sistema, a trava do app sempre
 // entra em ação primeiro.
-const LW_LOCK_DELAY_MS=10000, LW_DOUBLE_TAP_MS=600;
+const LW_LOCK_DELAY_MS=10000, LW_DOUBLE_TAP_MS=350; // 350ms — janela mais apertada, igual ao duplo toque nativo do Android; 600ms de antes dava margem demais pra dois toques SEM relação (ex: celular balançando na braçadeira) passarem como se fosse um duplo toque de propósito
 function lwStartLockWatcher(){
   LW.lockTimerId=setInterval(()=>{
     if(!LW||LW.touchLock.active)return;
@@ -17001,7 +18343,7 @@ function lwCompleteCurrentStep(){
   const distStepM=LW.totalDistM-LW.segStartDistM;
   const timeStepSec=(lwElapsedMs()-LW.segStartElapsedMs)/1000;
   const paceSec=distStepM>0?timeStepSec/(distStepM/1000):null;
-  LW.stepHistory.push({label:step.label,distM:distStepM,timeSec:timeStepSec,paceSec});
+  LW.stepHistory.push({label:step.label,distM:distStepM,timeSec:timeStepSec,paceSec,atMs:Date.now()});
   // Não fala mais "Etapa concluída" aqui — vai direto pro anúncio da próxima
   // etapa (ou pro aviso de treino completo), sem essa frase intermediária.
   // Reduz a quantidade de fala entre etapas, deixando só o objetivo direto
@@ -17009,27 +18351,25 @@ function lwCompleteCurrentStep(){
   // continuam guardados no stepHistory normalmente (usado em telas/relatórios).
 
   LW.stepIdx++;
-  LW.stepPending=true; // trava o cronômetro/checagem até a fala da próxima etapa terminar
-  LW.pendingStartElapsedMs=lwElapsedMs(); // marca o início dessa espera, pra descontar do "tempo total" depois
+  // Marca o instante da troca — usado só pra zerar (praticamente) o gap
+  // calculado dentro de lwActivateStep logo abaixo, já que agora não tem
+  // mais espera nenhuma entre etapas.
+  LW.pendingStartElapsedMs=lwElapsedMs();
   LW.stepGen=(LW.stepGen||0)+1;
   const myGen=LW.stepGen;
   lwUpdateUI();
 
   if(LW.stepIdx>=LW.steps.length){
-    // Não existe uma "próxima etapa" pra chamar lwActivateStep — que é quem
-    // normalmente libera o cronômetro (stepPending=false) e soma o tempo da
-    // fala ao total descontado. Faz isso na mão, e NA HORA (sem esperar
-    // nenhuma fala terminar) — se dependesse de um callback de fala pra
-    // destravar, um dia que essa fala falhasse/travasse/fosse cortada por
-    // outra fala em cima, o tempo total ficaria preso em "00:00" pra
-    // sempre.
-    LW.totalPendingMs=(LW.totalPendingMs||0)+Math.max(0,lwElapsedMs()-(LW.pendingStartElapsedMs||0));
-    LW.stepPending=false;
-    lwUpdateUI();
     lwSpeak('Treino completo! Todas as etapas foram concluídas.');
     return;
   }
-  lwAnnounceStepStart(LW.steps[LW.stepIdx],myGen);
+  // Pedido explícito: só a PRIMEIRA etapa do treino (ver lwActuallyStart)
+  // toca a contagem "3, 2, 1" em bipes antes de começar. Da segunda etapa
+  // em diante, assim que a etapa anterior termina (com seu sino de 5s no
+  // fim), a próxima já entra ativada NA HORA — sem bipe, sem pausar o
+  // cronômetro/distância da etapa nem do total (LW.stepPending nunca vira
+  // true aqui, então lwCheckStepCompletion nem trava esperando nada).
+  lwActivateStep(myGen);
 }
 
 // ── Início / pausa / retomada / fim ──
@@ -17055,7 +18395,7 @@ async function startLiveWorkout(planId,wIdx,dIdx){
     steps,stepIdx:0,
     status:'idle', // ainda não começou de verdade — espera a pessoa tocar em "Iniciar" na tela. Dá tempo dela resolver a permissão de GPS sem pressa, sem brigar com o cronômetro/fala que só começam de verdade no toque seguinte
     startedAt:null,pausedAt:null,pausedAccumMs:0,
-    totalDistM:0,lastGoodPoint:null,recentSamples:[],
+    totalDistM:0,lastGoodPoint:null,recentSamples:[],track:[], // track: histórico completo de {lat,lng,t,distM,speedMps} de cada fix aceito — usado só na memória, pra montar o .fit de atividade (GPS real) no fim do treino e mandar pro intervals.icu; NUNCA vai pro Firestore
     segStartDistM:0,segStartElapsedMs:0,
     watchId:null,timerId:null,wakeLock:null,wakeLockRequesting:false,
     stepHistory:[],lastBeepKey:null,audioCtx:null,
@@ -17114,8 +18454,18 @@ async function startLiveWorkout(planId,wIdx,dIdx){
   // pergunta antes de simplesmente marcar como concluído sozinho — a pessoa
   // pode querer mesmo assim rastrear ao vivo (ex: testando, ou o relógio
   // pegou um treino errado) e sobrescrever esse registro ao finalizar.
+  //
+  // IMPORTANTE: só mostra esse aviso quando a sincronização de AGORA é que
+  // encontrou/vinculou o treino — não quando o dia já estava marcado como
+  // concluído de ANTES por outro motivo (ex: concluído manualmente). Sem
+  // essa distinção, a mensagem "Encontramos um treino no relógio" aparecia
+  // mesmo quando nada tinha sido encontrado agora — só estava refletindo
+  // uma marcação manual anterior, o que é enganoso (bug real encontrado em
+  // teste: o treino no intervals.icu nem estava concluído, era só o
+  // programado esperando, mas a mensagem dava a entender que sim).
   const key=`${wIdx}-${dIdx}`;
-  if(!plan.done[key]){
+  const wasAlreadyDoneBefore=!!plan.done[key];
+  if(!wasAlreadyDoneBefore){
     const apiKey=icuGetApiKey(),athleteId=icuGetAthleteId();
     if(apiKey&&athleteId){
       try{
@@ -17129,7 +18479,7 @@ async function startLiveWorkout(planId,wIdx,dIdx){
       }catch(e){}
     }
   }
-  if(plan.done[key]){
+  if(!wasAlreadyDoneBefore&&plan.done[key]){
     if(!LW)return;
     const choice=await lwConfirmModal(
       'Treino já registrado',
@@ -17196,7 +18546,13 @@ function lwTogglePause(){
     LW.pausedAt=Date.now();
     LW.autoPaused=false; // pausa manual — não é a automática, não deve retomar sozinha por movimento
     LW.autoPauseStillSince=null;
-    lwStopGPS();
+    // NÃO desliga mais o GPS na pausa manual (pedido explícito): continua
+    // ligado só pra detectar se a pessoa sair correndo esquecida de
+    // despausar (mesmo com a pausa automática ativada — a manual só destrava
+    // no botão) — ver lwOnPosition/lwAnnounceManualPauseMoving. Nunca conta
+    // distância/pace nem retoma sozinha enquanto isso.
+    LW.manualPauseAnchor=LW.lastGoodPoint?{lat:LW.lastGoodPoint.lat,lng:LW.lastGoodPoint.lng}:null;
+    LW.manualPauseAlertAt=null;
     if(!lwSpeechBusy()){
       lwSpeak('Treino pausado.');
     }else{
@@ -17208,10 +18564,12 @@ function lwTogglePause(){
     LW.status='running';
     LW.autoPaused=false;
     LW.autoPauseAnchor=null;
+    LW.manualPauseAnchor=null;
+    LW.manualPauseAlertAt=null;
     LW.pendingPauseAnnounce=null; // se ainda não tinha avisado a pausa (estava esperando uma fala terminar) e a pessoa já retomou, cancela — não faz mais sentido avisar pausa depois de já ter retomado
     LW.lastGoodPoint=null; // evita contar o tempo parado como deslocamento
     LW.recentSamples=[]; // evita que o pace logo após retomar misture o tempo parado com o novo trecho (ficaria artificialmente lento)
-    lwStartGPS();
+    if(!LW.watchId)lwStartGPS(); // a pausa manual já mantém o GPS ligado agora — só religa aqui se por algum motivo ele tiver caído
     if(LW.audioCtx&&LW.audioCtx.state==='suspended'){try{LW.audioCtx.resume();}catch(e){}}
     if(!lwSpeechBusy())lwSpeak('Treino retomado.');
   }
@@ -17229,12 +18587,13 @@ function lwTogglePause(){
 // mostrar que você já se afastou o suficiente dali. Muito mais robusto
 // contra GPS entregando poucas amostras logo depois do início do
 // movimento.
-// Diferente da pausa manual, o GPS continua ativo durante a autopausa (não
-// chama lwStopGPS) — é assim que dá pra detectar quando a pessoa volta a
-// correr sem precisar de nenhum toque. O flag LW.autoPaused é o que
-// distingue essa pausa de uma pausa manual: só permite retomar sozinho se
-// foi o próprio recurso que pausou, nunca desfaz uma pausa que a pessoa deu
-// de propósito.
+// O GPS continua ativo durante a autopausa (não chama lwStopGPS) — é assim
+// que dá pra detectar quando a pessoa volta a correr sem precisar de nenhum
+// toque. (A pausa manual também mantém o GPS ligado agora, mas só pra
+// AVISAR se detectar movimento — nunca pra retomar sozinha.) O flag
+// LW.autoPaused é o que distingue as duas: só permite retomar sozinho se foi
+// o próprio recurso que pausou, nunca desfaz uma pausa que a pessoa deu de
+// propósito.
 const LW_AUTOPAUSE_MS=7000;
 const LW_AUTORESUME_DIST_M=10; // metros de distância do ponto onde parou que já bastam pra considerar "voltou a correr" — acima do ruído típico de GPS parado (poucos metros), mas não tão longe a ponto de demorar pra perceber que você já está correndo de novo
 function lwToggleAutoPause(){
@@ -17425,8 +18784,65 @@ function lwFinishWorkout(){
     if(plan){
       const durationStr=lwFmtDurationStorage(timeSec);
       const paceStr=paceSec?lwFmtPaceSecPerKm(paceSec):null;
-      plan.done[key]={real:true,dist:distKm>0?`${distKm.toFixed(2)}km`:null,duration:durationStr||null,pace:paceStr||null,source:'live',completedAt:Date.now()};
-      finishToggleDoneUI(planId,wIdx,dIdx); // grava local sempre e tenta sincronizar com a nuvem; se estiver offline, fica registrado localmente e sincroniza sozinho quando a conexão voltar (ver listener 'online')
+      // Resumo leve dos laps (um por etapa/tiro/recuperação real do treino),
+      // pra dar pra ver na tela de detalhe do treino realizado dentro do
+      // próprio app, sem precisar abrir intervals.icu/Strava. NÃO são pontos
+      // de GPS — só 4 números pequenos por lap (label, distância em metros,
+      // tempo em segundos, pace em segundos), na faixa de 200-400 bytes por
+      // treino mesmo em planilhas de 16 etapas. Só grava quando o treino
+      // teve mais de 1 etapa de verdade (intervalado) — pra rodagem contínua
+      // de bloco único, o resumo seria idêntico ao dist/duration/pace acima,
+      // então não vale a pena duplicar.
+      const lapsCompact=(LW.stepHistory&&LW.stepHistory.length>1)
+        ?LW.stepHistory.map(h=>({l:h.label,d:Math.round(h.distM||0),t:Math.round(h.timeSec||0),p:(h.paceSec&&isFinite(h.paceSec))?Math.round(h.paceSec):null}))
+        :null;
+      // Preview decimado do percurso (~110 pontos [lat,lng], teto fixo) — só
+      // lê LW.track, não mexe nele; o .fit (mais abaixo) usa o track
+      // original inteiro, sem nenhuma relação com essa cópia resumida.
+      // IMPORTANTE: de propósito NÃO entra em plan.done (documento único de
+      // planilhas, que já acumula toda planilha concluída pra sempre sem
+      // limpeza automática — ver checkAndReplaceActivePlan). Vai só pra
+      // finishToggleDoneUI abaixo, que grava na subcoleção `realizados`
+      // (um documento por treino, sem teto prático de tamanho).
+      const miniMapPoints=lwDecimateTrackForMiniMap(LW.track);
+      plan.done[key]={real:true,dist:distKm>0?`${distKm.toFixed(2)}km`:null,duration:durationStr||null,pace:paceStr||null,source:'live',completedAt:Date.now(),...(lapsCompact?{laps:lapsCompact}:{})};
+      finishToggleDoneUI(planId,wIdx,dIdx,{map:miniMapPoints}); // grava local sempre e tenta sincronizar com a nuvem; se estiver offline, fica registrado localmente e sincroniza sozinho quando a conexão voltar (ver listener 'online')
+    }
+    // ── Sobe a atividade real (GPS + pace por ponto) pro intervals.icu ──
+    // Só quando ESTE é o registro original (não alreadyDone) — evita mandar
+    // atividade duplicada quando o dia já tinha sido concluído por outro
+    // caminho (ex.: relógio -> Garmin -> intervals.icu já sincronizou antes).
+    // Silencioso: nunca trava nem atrasa o fim do treino; roda em paralelo
+    // com o salvamento local/nuvem. Sem API key configurada ou sem nenhum
+    // ponto de GPS aceito, simplesmente não faz nada.
+    const icuApiKeyForUpload=icuGetApiKey();
+    if(icuApiKeyForUpload&&LW.track&&LW.track.length){
+      const activityName=(LW.day&&LW.day.type)?LW.day.type:(LW.isVo2Test?'Teste VO₂ Máx':'Treino');
+      const uploadMeta={startedAtMs:LW.startedAt,endedAtMs:Date.now(),totalTimeSec:timeSec,totalDistM:LW.totalDistM};
+      // Um lap por etapa/repetição real do treino (cada tiro, cada
+      // recuperação — LW.steps já vem achatado, então "8x400m" já é 16
+      // entradas aqui). distM/timeSec vêm do próprio stepHistory (preciso,
+      // não depende de sinal de GPS bom naquele trecho específico);
+      // startMs/endMs (relógio de parede) só definem em qual lap cada ponto
+      // do track cai.
+      const lapsForFit=[];
+      {
+        let segStartMs=LW.startedAt;
+        (LW.stepHistory||[]).forEach(h=>{
+          const segEndMs=h.atMs||segStartMs;
+          lapsForFit.push({startMs:segStartMs,endMs:segEndMs,distM:h.distM||0,timeSec:h.timeSec||0});
+          segStartMs=segEndMs;
+        });
+      }
+      const trackCopy=LW.track.slice();
+      const icuAthleteIdForUpload=icuGetAthleteId();
+      (async()=>{
+        try{
+          const fitBytes=buildFitActivityFile(activityName, trackCopy, uploadMeta, lapsForFit, makeFitIdentity(), (Math.random()*65535)|0);
+          const res=await icuUploadActivity(fitBytes, activityName, icuApiKeyForUpload, icuAthleteIdForUpload);
+          if(res.ok) showToast('Treino enviado pro intervals.icu com o percurso GPS.');
+        }catch(e){ console.warn('[intervals.icu] erro ao montar/enviar .fit de atividade', e); }
+      })();
     }
     // O cálculo do treino (tempo, distância, pace) não depende de internet —
     // só a SINCRONIZAÇÃO com a conta precisa. Por isso, mesmo sem conexão, o
@@ -17438,9 +18854,15 @@ function lwFinishWorkout(){
         'Sem internet agora',
         'Seu treino foi salvo no aparelho, mas ainda não foi enviado pra sua conta (nem pro relógio, se você usa a integração). Ative a internet antes de sair do app — a sincronização acontece sozinha assim que a conexão voltar. Se sair sem internet, o treino continua salvo aqui e sincroniza na próxima vez que você abrir o app já com internet.',
         'Entendi'
-      );
+      ).then(()=>{
+        // Só oferece o prompt de FC DEPOIS de fechar o aviso de offline —
+        // os dois são overlays de tela cheia, então nunca podem aparecer
+        // juntos (um ficaria escondido atrás do outro, sem dar pra fechar).
+        if(plan)lwOfferHRPrompt(planId,wIdx,dIdx);
+      });
     }else{
       showToast('Treino salvo com sucesso!');
+      if(plan)lwOfferHRPrompt(planId,wIdx,dIdx);
     }
   }
   lwHideOverlay();
@@ -17523,8 +18945,16 @@ function lwBuildOverlay(){
 
     <div style="position:relative;display:flex;justify-content:center;margin-bottom:16px">
       <svg width="158" height="158" viewBox="0 0 158 158">
+        <defs>
+          <linearGradient id="lwRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0d6fad"/>
+            <stop offset="55%" style="stop-color:var(--acc)"/>
+            <stop offset="85%" style="stop-color:var(--acc2)"/>
+            <stop offset="100%" style="stop-color:#f2fbff"/>
+          </linearGradient>
+        </defs>
         <circle cx="79" cy="79" r="70" fill="none" stroke="var(--bdr2)" stroke-width="9"/>
-        <circle id="lw-ring-progress" cx="79" cy="79" r="70" fill="none" stroke="#00c2d1" stroke-width="9" stroke-linecap="round" transform="rotate(-90 79 79)" style="transition:stroke-dashoffset .3s linear"/>
+        <circle id="lw-ring-progress" cx="79" cy="79" r="70" fill="none" stroke="url(#lwRingGrad)" stroke-width="9" stroke-linecap="round" transform="rotate(-90 79 79)" style="transition:stroke-dashoffset .3s linear"/>
       </svg>
       <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
         <div id="lw-hero-value" style="font-size:42px;font-weight:900;color:var(--pure-fg);letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums">0.00</div>
@@ -17644,11 +19074,13 @@ function lwUpdateUI(){
   const heroEl=el('lw-hero-value'), heroLblEl=el('lw-hero-label');
   if(heroEl)heroEl.textContent=heroKmText;
   if(heroLblEl)heroLblEl.textContent=heroKmLabel;
-  // Cor padrão (laranja) do campo de destaque — só a etapa ativa com alvo
-  // por TEMPO troca isso pra verde, mais abaixo. Fixar aqui evita que a cor
-  // fique "grudada" no verde depois que essa etapa termina (já que treino
-  // concluído/direto não passa mais por aquele trecho que troca a cor).
-  if(heroEl)heroEl.style.color='#ff9f0a';
+  // Branco (igual aos outros números da tela) — era laranja/vermelho antes;
+  // pedido explícito: tirar a cor do número em destaque de vez, deixando o
+  // anel (agora com o gradiente premium) ser o único elemento de cor ali.
+  // Fixar aqui evita que a cor fique "grudada" errada depois que a etapa
+  // muda (já que treino concluído/direto não passa pelo trecho mais abaixo
+  // que também define essa cor).
+  if(heroEl)heroEl.style.color='var(--pure-fg)';
 
   const distTotalEl=el('lw-dist-total'); if(distTotalEl)distTotalEl.textContent=`${distKm.toFixed(2)} km`;
   // Tempo total = tempo real desde o início, sem descontar as falas entre
@@ -17881,7 +19313,7 @@ function lwUpdateUI(){
     // cronômetro). Só troca o CONTEÚDO dos dois campos; os estilos (tamanho
     // de fonte etc.) de cada campo continuam os mesmos de sempre.
     const heroIsTimeTarget=!step.freeMode&&step.endType==='time';
-    if(heroEl)heroEl.style.color='#e5484d'; // pedido explícito: padronizar — mesmo vermelho tanto pra alvo por tempo quanto por km, sem diferenciar mais por cor
+    if(heroEl)heroEl.style.color='var(--pure-fg)'; // branco, igual aos outros números — pedido explícito: sem cor fixa no número em destaque, o anel (gradiente) já dá o toque de cor
     if(heroIsTimeTarget){
       if(heroEl)heroEl.textContent=timeFieldText;
       if(heroLblEl)heroLblEl.textContent=timeFieldLabel;
