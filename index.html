@@ -1440,7 +1440,32 @@ details[open] summary::after{transform:rotate(90deg)}
 }
 </style>
 </head>
+<style>
+/* ── Overlay de carregamento inicial ──
+   Cobre a tela até o app decidir o que mostrar (apresentação, planilha
+   atual ou perfil), evitando o "pulo" visual de layout (rodapé subindo e
+   depois sendo empurrado pra baixo, cabeçalho sozinho por um instante,
+   etc.) enquanto o JS ainda está carregando os dados. Removido via
+   hideAppLoadingOverlay(), chamado nos dois pontos em que o app já sabe
+   com certeza o que renderizar: fluxo offline (sem Firebase) e fluxo de
+   login (onAuthStateChanged), além de um timeout de segurança. */
+#app-loading-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .25s ease;
+}
+#app-loading-overlay.alo-hide{opacity:0;pointer-events:none}
+#app-loading-overlay .alo-spinner{
+  width:34px;height:34px;border-radius:50%;
+  border:3px solid var(--bdr2,rgba(0,0,0,.1));
+  border-top-color:var(--acc);
+  animation:alo-spin .7s linear infinite;
+}
+@keyframes alo-spin{to{transform:rotate(360deg)}}
+</style>
 <body>
+<div id="app-loading-overlay" aria-hidden="true"><div class="alo-spinner"></div></div>
 <svg style="display:none" aria-hidden="true">
 <symbol id="i-warning" viewBox="0 -960 960 960"><path d="M92-120q-9 0-15.5-4T66-135q-4-7-4.5-14.5T66-165l388-670q5-8 11.5-11.5T480-850q8 0 14.5 3.5T506-835l388 670q5 8 4.5 15.5T894-135q-4 7-10.5 11t-15.5 4H92Zm413.5-125.5Q514-254 514-267t-8.5-21.5Q497-297 484-297t-21.5 8.5Q454-280 454-267t8.5 21.5Q471-237 484-237t21.5-8.5Zm0-111Q514-365 514-378v-164q0-13-8.5-21.5T484-572q-13 0-21.5 8.5T454-542v164q0 13 8.5 21.5T484-348q13 0 21.5-8.5Z"/></symbol>
 <symbol id="i-check_circle" viewBox="0 -960 960 960"><path d="m421-389-98-98q-9-9-22-9t-23 10q-9 9-9 22t9 22l122 123q9 9 21 9t21-9l239-239q10-10 10-23t-10-23q-10-9-23.5-8.5T635-603L421-389Zm59 309q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Z"/></symbol>
@@ -3098,12 +3123,22 @@ function initAuth(){
     updateSavedBadge();
     renderSavedCloudBanner();
     wzRestoreSummaryState();
+    // Reforça o re-render mesmo se wzRestoreSummaryState() não fez nada (ela
+    // sai sem executar quando wzBuildingNew=true — ver seu próprio guard).
+    // Sem isso, quem recarrega a página NO MEIO do assistente (ex: link
+    // "Cancelar e voltar pra planilha atual") fica com esse link escondido
+    // pelo resto da sessão: a primeira renderCalcSummary(), disparada bem
+    // cedo por restoreNavTabEarly()/wzStartNewPlan() antes dos dados locais
+    // carregarem, podia calcular isReturningUser()=false, e nada chamava
+    // renderCalcSummary() de novo depois pra corrigir esse valor.
+    renderCalcSummary();
     wzAutoRestoreFromSavedPlans();
     icuUpdateHeaderSyncVisibility();icuAutoCheckAllPlans();
     restoreLastNavState();
     // Hide login/register buttons since auth is unavailable
     const authBar=document.getElementById('auth-bar');
     if(authBar)authBar.style.display='none';
+    hideAppLoadingOverlay();
     return;
   }
   if(!firebase.apps||!firebase.apps.length){
@@ -3211,11 +3246,18 @@ function initAuth(){
     updateSavedBadge();
     renderSavedCloudBanner();
     if(!wzSummaryPlanId)wzRestoreSummaryState();else renderCalcSummary();
+    // Reforça o re-render mesmo quando wzRestoreSummaryState() não fez nada
+    // (guard de wzBuildingNew=true) — mesmo motivo do comentário análogo no
+    // branch offline acima: sem isso, quem recarrega a página no meio do
+    // assistente fica com o link "Cancelar e voltar pra planilha atual"
+    // escondido pelo resto da sessão.
+    renderCalcSummary();
     // Conta que já tinha planilha salva antes de existir o resumo compacto
     // (wz_summary_state) — garante que a tela inicial mostre a planilha
     // existente já na primeira visita nesta versão, sem precisar gerar outra.
     wzAutoRestoreFromSavedPlans();
     restoreLastNavState();
+    hideAppLoadingOverlay();
   });
 }
 
@@ -4134,6 +4176,12 @@ function wzSaveSummaryState(planId){
   wzStaleAfterDelete=false;
   try{lsSet('wz_summary_state',JSON.stringify({planId:planId,snap:wzSummarySnapshot}));}catch(e){}
   renderCalcSummary();
+  // Sem isso, o botão "+ Nova Planilha" da barra de baixo ficava destacado
+  // mesmo depois de salvar (syncCalcNavHighlight nunca era chamado de novo
+  // aqui), e o sessionStorage continuava com building:true — fazendo um F5
+  // reabrir o assistente do zero em vez de mostrar a planilha recém-salva.
+  if(typeof syncCalcNavHighlight==='function')syncCalcNavHighlight();
+  if(typeof saveNavState==='function')saveNavState('calc',null,{building:false});
 }
 /* Promove uma planilha JÁ EXISTENTE (não recém-criada) a "planilha atual",
    lendo perfil/vo2/distância/objetivo diretamente dos dados salvos na própria
@@ -4147,6 +4195,9 @@ function wzSaveSummaryStateFromPlan(plan){
   wzStaleAfterDelete=false;
   try{lsSet('wz_summary_state',JSON.stringify({planId:plan.id,snap:wzSummarySnapshot}));}catch(e){}
   renderCalcSummary();
+  // Mesmo motivo do fix em wzSaveSummaryState acima.
+  if(typeof syncCalcNavHighlight==='function')syncCalcNavHighlight();
+  if(typeof saveNavState==='function')saveNavState('calc',null,{building:false});
 }
 function wzRestoreSummaryState(){
   // Se já está no meio do assistente de propósito (restaurado por
@@ -4512,6 +4563,32 @@ function buildStandaloneHomeCard(){
 // ou algum recorde/melhor marca registrado. É o único sinal usado pra
 // decidir se a introdução "Planilhas Personalizadas" aparece — mantém a
 // regra simples e num lugar só, em vez de espalhada em vários checks.
+// Esconde o overlay de carregamento inicial (ver <style>/<div> no início do
+// <body>). Chamado nos pontos em que o app já decidiu com certeza o que
+// renderizar (fim do fluxo offline e fim do fluxo de login/onAuthStateChanged
+// em initAuth) — nunca antes disso, pra não descobrir o "pulo" de layout que
+// o overlay existe justamente pra esconder. safe:true == chamada pelo
+// timeout de segurança (não pelo fluxo normal); nesse caso também loga um
+// aviso, pra facilitar notar se algum fluxo novo esquecer de chamar isso.
+var _appLoadingHidden=false;
+function hideAppLoadingOverlay(safe){
+  if(_appLoadingHidden)return;
+  _appLoadingHidden=true;
+  if(safe)console.warn('App loading overlay escondido pelo timeout de segurança — algum fluxo de inicialização pode não ter chamado hideAppLoadingOverlay().');
+  const el=document.getElementById('app-loading-overlay');
+  if(!el)return;
+  el.classList.add('alo-hide');
+  setTimeout(()=>{ try{el.remove();}catch(e){} },300);
+}
+// Timeout de segurança: se por algum motivo nenhum fluxo de inicialização
+// chamar hideAppLoadingOverlay() (erro inesperado, rede muito lenta, etc.),
+// garante que a pessoa nunca fique presa olhando só o spinner.
+// IMPORTANTE: precisa ser MAIOR que a janela de retries do Firebase em
+// initAuth() (até 20×150ms = 3000ms) — senão, em internet ruim, esse
+// timeout dispara ANTES do fluxo offline terminar de configurar a tela,
+// revelando o app pela metade por um instante (o mesmo "flash" que esse
+// overlay existe pra evitar).
+setTimeout(function(){ hideAppLoadingOverlay(true); },3500);
 function isReturningUser(){
   if(savedPlans&&savedPlans.length>0)return true;
   if(wzSummaryPlanId!=null)return true;
@@ -4591,7 +4668,14 @@ function renderCalcSummary(){
     const showWizardArea=wzBuildingNew;
     if(wzWrap)wzWrap.style.display=showWizardArea?'':'none';
     const heroEl=document.getElementById('calc-hero');
-    if(heroEl)heroEl.style.display=(nothingToShow||(showWizardArea&&!returning))?'':'none';
+    // Ao construir uma planilha (assistente aberto, seja clicando em "Nova
+    // Planilha" ou restaurado depois de um recarregamento), o cabeçalho de
+    // apresentação (calc-hero) fica sempre escondido — mostra só o
+    // assistente. Antes, pra quem ainda não era "returning user", o hero
+    // continuava aparecendo junto do assistente mesmo depois de clicar
+    // explicitamente em "Nova Planilha", como se a tela inicial e o
+    // assistente fossem a mesma tela.
+    if(heroEl)heroEl.style.display=(nothingToShow&&!showWizardArea)?'':'none';
     if(!returning||nothingToShow)positionCalcHero(true);
     const ctaBtn=document.getElementById('calc-hero-cta');
     if(ctaBtn)ctaBtn.style.display=(nothingToShow&&!showWizardArea)?'':'none';
@@ -14632,7 +14716,7 @@ window.openLegal=openLegal;
 window.closeLegal=closeLegal;
 
 if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',function(){restoreNavTabEarly();initAuth();initLGPD();showOnboardingIfNeeded();initInstallBanner();wzRestoreSummaryState();lwTryResumeSnapshot();});
+  document.addEventListener('DOMContentLoaded',function(){restoreNavTabEarly();initAuth();initLGPD();showOnboardingIfNeeded();initInstallBanner();lwTryResumeSnapshot();});
 
 // ── Redesenha o canvas de compartilhamento ao voltar do segundo plano ──
 // Em navegadores mobile o conteúdo já desenhado num <canvas> pode ficar
@@ -14774,7 +14858,7 @@ function icuAutoCheckOnResume(){
   },{passive:true});
 })();
 }else{
-  restoreNavTabEarly();initAuth();initLGPD();showOnboardingIfNeeded();initInstallBanner();wzRestoreSummaryState();lwTryResumeSnapshot();
+  restoreNavTabEarly();initAuth();initLGPD();showOnboardingIfNeeded();initInstallBanner();lwTryResumeSnapshot();
 }
 </script>
 
