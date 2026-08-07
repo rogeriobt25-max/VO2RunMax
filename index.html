@@ -1463,9 +1463,29 @@ details[open] summary::after{transform:rotate(90deg)}
   animation:alo-spin .7s linear infinite;
 }
 @keyframes alo-spin{to{transform:rotate(360deg)}}
+/* Indicador discreto de "atualizando", tipo pull-to-refresh (Instagram):
+   fica preso no topo, não cobre a tela — usado quando já existe uma versão
+   local/cacheada pra mostrar na hora, e só falta confirmar/atualizar com a
+   nuvem por trás. Ver showHeaderSyncSpinner()/hideHeaderSyncSpinner(). */
+#header-sync-spinner{
+  position:fixed;top:10px;left:50%;transform:translateX(-50%) translateY(-140%);
+  z-index:9998;width:30px;height:30px;border-radius:50%;
+  background:var(--s1,#1a1a1a);
+  box-shadow:0 2px 10px rgba(0,0,0,.25);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .25s ease,opacity .25s ease;opacity:0;pointer-events:none;
+}
+#header-sync-spinner.hsp-show{transform:translateX(-50%) translateY(0);opacity:1}
+#header-sync-spinner .hsp-dot{
+  width:16px;height:16px;border-radius:50%;
+  border:2.5px solid var(--bdr2,rgba(0,0,0,.15));
+  border-top-color:var(--acc);
+  animation:alo-spin .7s linear infinite;
+}
 </style>
 <body>
 <div id="app-loading-overlay" aria-hidden="true"><div class="alo-spinner"></div></div>
+<div id="header-sync-spinner" aria-hidden="true"><div class="hsp-dot"></div></div>
 <svg style="display:none" aria-hidden="true">
 <symbol id="i-warning" viewBox="0 -960 960 960"><path d="M92-120q-9 0-15.5-4T66-135q-4-7-4.5-14.5T66-165l388-670q5-8 11.5-11.5T480-850q8 0 14.5 3.5T506-835l388 670q5 8 4.5 15.5T894-135q-4 7-10.5 11t-15.5 4H92Zm413.5-125.5Q514-254 514-267t-8.5-21.5Q497-297 484-297t-21.5 8.5Q454-280 454-267t8.5 21.5Q471-237 484-237t21.5-8.5Zm0-111Q514-365 514-378v-164q0-13-8.5-21.5T484-572q-13 0-21.5 8.5T454-542v164q0 13 8.5 21.5T484-348q13 0 21.5-8.5Z"/></symbol>
 <symbol id="i-check_circle" viewBox="0 -960 960 960"><path d="m421-389-98-98q-9-9-22-9t-23 10q-9 9-9 22t9 22l122 123q9 9 21 9t21-9l239-239q10-10 10-23t-10-23q-10-9-23.5-8.5T635-603L421-389Zm59 309q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 31.5-156t86-127Q252-817 325-848.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82-31.5 155T763-197.5q-54 54.5-127 86T480-80Z"/></symbol>
@@ -1974,7 +1994,7 @@ details[open] summary::after{transform:rotate(90deg)}
        Personalizadas") aparecia por um instante em toda reabertura do app,
        mesmo pra quem já tem conta/planilha, até o JS decidir escondê-lo. -->
     <h1 style="text-align:center">Treine baseado<br>no seu <span>VO<sub>2</sub> Máx</span></h1>
-    <p style="font-size:14.5px;line-height:1.55;color:var(--t2);margin:20px 0 4px">Descubra seu VO₂ Máx com testes realizados pelo próprio aplicativo e gere uma planilha personalizada com ritmos ajustados automaticamente.</p>
+    <p style="font-size:14.5px;line-height:1.55;color:var(--t2);margin:20px 0 4px;text-align:center">Planilhas de corrida personalizadas que evoluem com o seu desempenho, com ou sem teste prévio.</p>
     <div class="hero-feature-list" style="margin:34px 0 4px;display:flex;flex-direction:column;gap:19px">
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hero-feat-ico"><svg class="gi"><use href="#i-heart_pulse"></use></svg></span>
@@ -1982,18 +2002,18 @@ details[open] summary::after{transform:rotate(90deg)}
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hero-feat-ico"><svg class="gi"><use href="#i-bolt"></use></svg></span>
-        <span style="font-size:16px;font-weight:400;color:var(--t1)">Ritmos ajustados automaticamente</span>
+        <span style="font-size:16px;font-weight:400;color:var(--t1)">Adaptação de ritmo conforme evolução</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hero-feat-ico"><svg class="gi"><use href="#i-directions_run"></use></svg></span>
-        <span style="font-size:16px;font-weight:400;color:var(--t1)">Treine ao vivo pelo aplicativo</span>
+        <span style="font-size:16px;font-weight:400;color:var(--t1)">Treine pelo celular guiado pelo GPS</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hero-feat-ico"><svg class="gi"><use href="#i-sync"></use></svg></span>
         <span style="font-size:16px;font-weight:400;color:var(--t1)">Envie treinos para seu relógio</span>
       </div>
     </div>
-    <div style="font-size:12.5px;font-style:italic;color:var(--t3);margin:2px 0 18px">Não sabe seu VO<sub style="font-size:.75em">2</sub> Máx? O aplicativo também permite começar sem ele.</div>
+    <div style="font-size:12.5px;font-style:italic;color:var(--t3);margin:2px 0 18px">Não sabe seu VO<sub style="font-size:.75em">2</sub> Máx? Comece a treinar mesmo assim.</div>
     <div class="hero-stat-ribbon">
       <div class="hero-stat-col b">
         <div class="hero-stat-col-ico"><svg class="gi"><use href="#i-heart_pulse"></use></svg></div>
@@ -2876,7 +2896,15 @@ window.addEventListener('online',function(){
     persistAccountPlans();
     icuAutoCheckAllPlans();
   }
-  if(currentUser)retryPendingCompletedSync(currentUser.uid);
+  if(currentUser){
+    const hadPendingOnline=loadCompletedPendingSync(currentUser.uid).length>0;
+    retryPendingCompletedSync(currentUser.uid).then(function(){
+      // Assim que algo pendente confirma, re-renderiza pra tirar o selo
+      // "SINCRONIZANDO…" — sem isso, o card ficava com o selo preso até a
+      // pessoa trocar de aba/tela sozinha.
+      if(hadPendingOnline&&typeof renderCalcSummary==='function')renderCalcSummary();
+    });
+  }
 });
 
 // Diferente de persistAccountPlans, este SEMPRE grava uma cópia local
@@ -3025,6 +3053,20 @@ function markCompletedPending(uid,id,action){
 function clearCompletedPending(uid,id){
   const list=loadCompletedPendingSync(uid).filter(p=>p.id!==id);
   saveCompletedPendingSyncList(uid,list);
+}
+// Indicador visual de "ainda sincronizando" — usado nos cards de treino
+// concluído (mini-card da home e lista de Realizados) pra avisar a pessoa
+// que aquele registro específico ainda não confirmou a gravação na nuvem,
+// em vez de simplesmente sumir/reaparecer sem explicação nenhuma (ver
+// relato do bug "aparece → some → volta depois de uns minutos" — a causa
+// era a escrita otimista no Firestore ainda pendente por causa da conexão
+// instável logo após terminar a corrida).
+function isEntryPendingSync(id){
+  if(!currentUser)return false;
+  return loadCompletedPendingSync(currentUser.uid).some(p=>p.id===id&&p.action==='save');
+}
+function syncingBadgeHtml(){
+  return`<span class="vo2-syncing-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;color:var(--t3);background:var(--s3);border-radius:4px;padding:2px 6px 2px 5px;letter-spacing:.02em;white-space:nowrap"><svg class="gi" style="font-size:12px;animation:icu-spin 1.1s linear infinite"><use href="#i-sync"></use></svg> SINCRONIZANDO…</span>`;
 }
 // Tenta reenviar tudo que ficou pendente (chamado ao reconectar e ao abrir
 // a aba "Realizados"). 'save' busca o dado completo no cache local (a
@@ -3180,7 +3222,35 @@ function initAuth(){
         // dispara a cada carregamento), diferente de só minimizar, que
         // mantém a página viva e não passa por aqui de novo.
         savedPlans=cachedPlans;
+        // Mesmo padrão já usado no modo 100% offline (ver branch acima):
+        // carrega TUDO que já existe localmente pra essa conta — Realizados,
+        // atividades ignoradas, recordes — antes de desenhar a tela. Sem
+        // isso, o card do dia/planilha desenhava com esses dados ainda
+        // vazios (ou nem desenhava, se restoreLastNavState() não achasse
+        // nada pra restaurar), e só o rodapé estático (que já vem pronto no
+        // HTML) ficava visível por um instante — exatamente o "flash" que o
+        // overlay existia pra esconder, só que agora aparecendo ANTES do
+        // overlay sumir cedo demais.
+        completedLog=loadCompletedLogLocal();
+        ignoredActivityIds=loadIgnoredActivityIdsLocal();
+        personalRecords=loadPersonalRecordsLocal();
+        if(sanitizePersonalRecords(personalRecords))saveRecordsLocalCache();
+        updateAuthUI();
+        updateSavedBadge();
+        renderSavedCloudBanner();
+        wzRestoreSummaryState();
+        renderCalcSummary();
+        wzAutoRestoreFromSavedPlans();
         restoreLastNavState();
+        // Só tira o overlay depois que o browser realmente PINTOU essa tela
+        // na tela (dois requestAnimationFrame em sequência garantem isso) —
+        // sem essa espera, dava pra tirar o overlay um instante antes do
+        // conteúdo acima aparecer de verdade, reabrindo a mesma brecha de
+        // flash que a gente está tentando fechar.
+        requestAnimationFrame(()=>requestAnimationFrame(()=>{
+          hideAppLoadingOverlay();
+          showHeaderSyncSpinner();
+        }));
       }else{
         // Sem NENHUM cache local pra essa conta neste aparelho: ou é login
         // de verdade (conta nova neste aparelho), ou troca de conta dentro
@@ -3257,6 +3327,13 @@ function initAuth(){
     // existente já na primeira visita nesta versão, sem precisar gerar outra.
     wzAutoRestoreFromSavedPlans();
     restoreLastNavState();
+    // Se o overlay cheio já tinha sido tirado mais cedo (dado local
+    // disponível), isso aqui só esconde o spinner pequeno do topo — a tela
+    // não pisca nem "some" de novo. Se por algum motivo não havia cache
+    // local (login novo/outro aparelho), hideAppLoadingOverlay() ainda
+    // funciona normalmente aqui (é seguro chamar de novo, ver a flag
+    // _appLoadingHidden dentro dela).
+    hideHeaderSyncSpinner();
     hideAppLoadingOverlay();
   });
 }
@@ -4374,9 +4451,10 @@ function buildUnplannedMiniCardsForToday(){
     // adiantado"). Nunca vincula nada sozinho — a pessoa decide se quer
     // marcar o dia certo da planilha como feito manualmente.
     const displayName=entry.realName?escapeHtmlLite(entry.realName):entry.type;
+    const pendingSync=isEntryPendingSync(entry.id);
     return`<div class="cs-today" style="margin-top:10px">
       <div class="cs-today-eyebrow" style="color:var(--am)"><svg class="gi"><use href="#i-check_circle"></use></svg> TREINO CONCLUÍDO</div>
-      <div style="margin:2px 0 6px"><span style="font-size:10px;font-weight:800;color:var(--am);background:var(--am2);border-radius:4px;padding:2px 6px">NÃO PROGRAMADO HOJE</span></div>
+      <div style="margin:2px 0 6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span style="font-size:10px;font-weight:800;color:var(--am);background:var(--am2);border-radius:4px;padding:2px 6px">NÃO PROGRAMADO HOJE</span>${pendingSync?syncingBadgeHtml():''}</div>
       <div class="cs-today-workout">
         <div class="cs-today-type" style="color:var(--t1)">${displayName}</div>
         ${realInfoHtml}
@@ -4421,8 +4499,9 @@ function buildTodayMini(plan){
     </div>`+adaptiveHtml+unplannedMiniHtml;
   }
   const realInfo=(isDone&&plan.done[`${wIdx}-${dIdx}`]&&typeof plan.done[`${wIdx}-${dIdx}`]==='object')?plan.done[`${wIdx}-${dIdx}`]:null;
+  const pendingSyncToday=isDone&&isEntryPendingSync(completedLogId(plan.id,wIdx,dIdx));
   return`<div class="cs-today">
-    <div class="cs-today-eyebrow"${isDone?' style="color:var(--gr)"':''}>${isDone?'<svg class="gi"><use href="#i-check_circle"></use></svg> TREINO CONCLUÍDO':'TREINO DE HOJE'} · ${todayStr}</div>
+    <div class="cs-today-eyebrow"${isDone?' style="color:var(--gr)"':''}>${isDone?'<svg class="gi"><use href="#i-check_circle"></use></svg> TREINO CONCLUÍDO':'TREINO DE HOJE'} · ${todayStr}${pendingSyncToday?` ${syncingBadgeHtml()}`:''}</div>
     <div class="cs-today-meta">Semana ${week.w} de ${plan.planWeeks}${week.phaseLabel?` · ${week.phaseLabel}`:''} · ${weekRange}</div>
     <div class="cs-today-workout">
       <div class="cs-today-type" style="color:${col}">${day.type}${day.subtypeBadge||''}${day.dist?` · ${day.dist}`:''}</div>
@@ -4524,9 +4603,15 @@ function buildStandaloneHomeCard(){
   const markItems=getBestMarksItems();
   const hasProgress=currentUser&&getWeeklyVolumeData(8).some(w=>w.km>0);
   if(!vo2Live&&!recItems.length&&!markItems.length&&!hasProgress)return'';
+  // Mesma saudação do card "Planilha atual" — o "Olá, Nome" não pode
+  // desaparecer só porque não há planilha ativa agora (ex: planilha
+  // concluída/apagada, mas ainda existe VO2/recordes/progresso salvos).
+  const nomeUsuarioStandalone=(typeof currentUser!=='undefined'&&currentUser)?(currentUser.displayName||currentUser.email||'').split(' ')[0]:'';
+  const greetingStandalone=nomeUsuarioStandalone?`<div class="cs-greeting" style="margin:0 0 12px 0">Olá, ${nomeUsuarioStandalone}!</div>`:'';
   const vo2Block=vo2Live?`${buildVo2RingHtml(vo2Live)}
     <button onclick="wzCalcRealVo2()" style="align-self:flex-start;text-align:left;background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
   return`
+    ${greetingStandalone}
     ${vo2Block}
     ${vo2Live?`<button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()" style="margin-top:.6rem">
       <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-bolt"></use></svg> VO₂ Máx e Zonas</span>
@@ -4589,6 +4674,19 @@ function hideAppLoadingOverlay(safe){
 // revelando o app pela metade por um instante (o mesmo "flash" que esse
 // overlay existe pra evitar).
 setTimeout(function(){ hideAppLoadingOverlay(true); },3500);
+// Indicador discreto de "atualizando" (topo da tela, tipo pull-to-refresh):
+// usado no lugar do overlay cheio quando já dá pra mostrar a tela certa na
+// hora (com dados salvos localmente) e só falta confirmar/puxar o mais
+// recente da nuvem por trás — a tela atual fica visível o tempo todo, só
+// esse círculo pequeno aparece/some no topo.
+function showHeaderSyncSpinner(){
+  const el=document.getElementById('header-sync-spinner');
+  if(el)el.classList.add('hsp-show');
+}
+function hideHeaderSyncSpinner(){
+  const el=document.getElementById('header-sync-spinner');
+  if(el)el.classList.remove('hsp-show');
+}
 function isReturningUser(){
   if(savedPlans&&savedPlans.length>0)return true;
   if(wzSummaryPlanId!=null)return true;
@@ -4727,21 +4825,51 @@ function renderCalcSummary(){
   const vo2Row=vo2?`${buildVo2RingHtml(vo2)}
     <button onclick="wzCalcRealVo2()" style="align-self:flex-start;text-align:left;background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
   const nomeUsuario=(typeof currentUser!=='undefined'&&currentUser)?(currentUser.displayName||currentUser.email||'').split(' ')[0]:'';
+  // Descobre qual botão do bloco de recordes é o último visível, pra tirar a
+  // borda inferior só dele (o vo2zones-btn de cima sempre existe).
+  const showProgressBtn=!!(currentUser&&getWeeklyVolumeData(8).some(w=>w.km>0));
+  const showRecordsBtn=getPersonalRecordsItems().length>0;
+  const showMarksBtn=getBestMarksItems().length>0;
+  const showVo2HistoryBtn=vo2TestHistory.length>0;
+  const lastRecordsBtnKey=showVo2HistoryBtn?'vo2history':showMarksBtn?'marks':showRecordsBtn?'records':showProgressBtn?'progress':'vo2zones';
+  const rbBorder=key=>key===lastRecordsBtnKey?'border-bottom:none':'border-bottom:1px solid var(--bdr2)';
   box.innerHTML=`
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
-      <div style="flex:1;min-width:0">
-        ${nomeUsuario?`<div class="cs-greeting">Olá, ${nomeUsuario}!</div>`:''}
-        <div class="cs-eyebrow"><svg class="gi"><use href="#i-list_alt"></use></svg> Planilha atual</div>
-        <div class="cs-rows">
-          ${profVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${profVal}</span></div>`:''}
-          ${vo2Row?`<div style="margin-top:14px">${vo2Row}</div>`:''}
-          ${distVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${distVal}</span></div>`:''}
-          ${objVal?`<div class="cs-row cs-row-plain"><span class="cs-txt">${objVal}</span></div>`:''}
+    <div style="margin-bottom: 20px;">
+      <!-- Card Único da Planilha Atual -->
+      <div style="background:var(--s1);border:1px solid var(--bdr2);border-radius:16px;padding:16px">
+
+        <!-- Cabeçalho do Card Integrado (Olá + Semanas) -->
+        <!-- align-items:flex-start (em vez de center): o "Olá" precisa ficar
+             sempre alinhado no topo, na mesma altura onde o círculo de
+             semanas começa — com align-items:center, quando o widget de
+             semanas/streak aparecia (mais alto que o texto da esquerda), o
+             "Olá" descia pra ficar centralizado contra ele. Sem streak, o
+             bloco da esquerda era o único filho da linha, então ficava no
+             topo por padrão — daí a diferença visual entre os dois estados. -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+          <div>
+            ${nomeUsuario?`<div class="cs-greeting" style="margin:0 0 4px 0">Olá, ${nomeUsuario}!</div>`:''}
+            <div class="cs-eyebrow" style="margin:0"><svg class="gi"><use href="#i-list_alt"></use></svg> Planilha atual</div>
+          </div>
+          ${progHome?`<div class="wk-progress" id="home-wkprog-${plan.id}">
+            ${buildWeekProgressWidget(plan,progHome,streakHome)}
+          </div>`:''}
         </div>
+
+        <!-- Círculo + Texto do VO2 (Mantido dentro do card) -->
+        ${vo2Row?`<div style="margin:12px 0 38px 0">${vo2Row}</div>`:''}
+
+        <!-- Divisor Interno Inferior -->
+        <div style="border-top:1px solid var(--bdr2);margin:12px 0"></div>
+
+        <!-- Metas e Nível organizados em linha (Rodapé) -->
+        <div style="display:flex;align-items:center;justify-content:space-around;font-size:13px;color:var(--t1);padding-top:10px">
+          ${profVal?`<div>${profVal}</div>`:''}
+          ${distVal?`<span style="color:var(--t3)">•</span><div>${distVal}</div>`:''}
+          ${objVal?`<span style="color:var(--t3)">•</span><div>${objVal}</div>`:''}
+        </div>
+
       </div>
-      ${progHome?`<div class="wk-progress" id="home-wkprog-${plan.id}">
-        ${buildWeekProgressWidget(plan,progHome,streakHome)}
-      </div>`:''}
     </div>
     ${(plan&&planNeedsVo2Refresh(plan))?`<div class="cs-note"><span><svg class="gi"><use href="#i-info"></use></svg></span><div>${plan.vo2IsReal?`Seu VO₂ real foi atualizado desde que esta planilha foi gerada (era ${plan.vo2}, agora é ${Math.round(lastRealTest.vo2*10)/10}).`:'Esta planilha foi gerada com um VO₂ estimado pelo nível. Você possui um VO₂ real calculado.'}<div style="margin-top:6px"><button onclick="recalcPlanVo2(${plan.id})" style="background:none;border:none;padding:0;font-size:14px;font-weight:700;color:var(--acc);text-decoration:underline;cursor:pointer;font-family:inherit">Atualizar planilha com VO₂ real →</button></div></div></div>`:''}
     ${plan?buildTodayMini(plan):''}
@@ -4749,31 +4877,33 @@ function renderCalcSummary(){
     <div class="cs-actions-discrete">
       <button class="cs-link" onclick="goToSavedPlan(${wzSummaryPlanId})"><svg class="gi"><use href="#i-menu_book"></use></svg> Abrir planilha</button>
     </div>
-    <button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()" style="margin-top:.6rem">
-      <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-bolt"></use></svg> VO₂ Máx e Zonas</span>
-      <span class="cs-vo2zones-arrow">▼</span>
-    </button>
-    <div id="vo2zones-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>
-    ${currentUser&&getWeeklyVolumeData(8).some(w=>w.km>0)?`<button class="cs-vo2zones-btn" id="progress-toggle-btn" onclick="toggleProgressPanel()">
-      <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-trending_up"></use></svg> Progresso</span>
-      <span class="cs-vo2zones-arrow">▼</span>
-    </button>
-    <div id="progress-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
-    ${getPersonalRecordsItems().length?`<button class="cs-vo2zones-btn" id="records-toggle-btn" onclick="toggleRecordsPanel()">
-      <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--warm)"><use href="#i-emoji_events"></use></svg> Recordes Pessoais</span>
-      <span class="cs-vo2zones-arrow">▼</span>
-    </button>
-    <div id="records-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
-    ${getBestMarksItems().length?`<button class="cs-vo2zones-btn" id="marks-toggle-btn" onclick="toggleMarksPanel()">
-      <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--warm)"><use href="#i-track_changes"></use></svg> Melhores Marcas</span>
-      <span class="cs-vo2zones-arrow">▼</span>
-    </button>
-    <div id="marks-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
-    ${vo2TestHistory.length?`<button class="cs-vo2zones-btn" id="vo2history-toggle-btn" onclick="toggleVo2HistoryPanel()">
-      <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:4px;color:var(--acc)"><use href="#i-schedule"></use></svg> Histórico de VO₂</span>
-      <span class="cs-vo2zones-arrow">▼</span>
-    </button>
-    <div id="vo2history-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}`;
+    <div style="background:var(--s1);border:1px solid var(--bdr2);border-radius:16px;padding:8px 16px;margin-top:20px">
+      <button class="cs-vo2zones-btn" id="vo2zones-toggle-btn" onclick="toggleVo2ZonesPanel()" style="${rbBorder('vo2zones')};padding:14px 0">
+        <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:8px;color:var(--acc)"><use href="#i-bolt"></use></svg> VO₂ Máx e Zonas</span>
+        <span class="cs-vo2zones-arrow">▼</span>
+      </button>
+      <div id="vo2zones-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>
+      ${showProgressBtn?`<button class="cs-vo2zones-btn" id="progress-toggle-btn" onclick="toggleProgressPanel()" style="${rbBorder('progress')};padding:14px 0">
+        <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:8px;color:var(--acc)"><use href="#i-trending_up"></use></svg> Progresso</span>
+        <span class="cs-vo2zones-arrow">▼</span>
+      </button>
+      <div id="progress-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
+      ${showRecordsBtn?`<button class="cs-vo2zones-btn" id="records-toggle-btn" onclick="toggleRecordsPanel()" style="${rbBorder('records')};padding:14px 0">
+        <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:8px;color:var(--warm)"><use href="#i-emoji_events"></use></svg> Recordes Pessoais</span>
+        <span class="cs-vo2zones-arrow">▼</span>
+      </button>
+      <div id="records-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
+      ${showMarksBtn?`<button class="cs-vo2zones-btn" id="marks-toggle-btn" onclick="toggleMarksPanel()" style="${rbBorder('marks')};padding:14px 0">
+        <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:8px;color:var(--warm)"><use href="#i-track_changes"></use></svg> Melhores Marcas</span>
+        <span class="cs-vo2zones-arrow">▼</span>
+      </button>
+      <div id="marks-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
+      ${showVo2HistoryBtn?`<button class="cs-vo2zones-btn" id="vo2history-toggle-btn" onclick="toggleVo2HistoryPanel()" style="${rbBorder('vo2history')};padding:14px 0">
+        <span class="cs-vo2zones-lbl"><svg class="gi" style="vertical-align:-3px;margin-right:8px;color:var(--acc)"><use href="#i-schedule"></use></svg> Histórico de VO₂</span>
+        <span class="cs-vo2zones-arrow">▼</span>
+      </button>
+      <div id="vo2history-panel" class="vo2zones-panel records-panel-flat" style="display:none"></div>`:''}
+    </div>`;
   box.style.display=wzBuildingNew?'none':'';
   closeVo2ZonesPanel();
   closeRecordsPanel();closeMarksPanel();closeVo2HistoryPanel();
@@ -5532,6 +5662,7 @@ async function vtStartTest(type,weight,sexo){
     initialPendingMs:0,initialActivationDone:false,
     paceAlertsEnabled:false,
     autoPauseEnabled:false, // autopausa não faz sentido num teste de esforço máximo cronometrado
+    autoPauseSensitivity:'stopped',
     autoPaused:false,autoPauseStillSince:null,autoPauseAnchor:null,
     paceOutOfZoneSince:null,paceOutOfZoneDir:null,lastPaceAlertAt:null,geoPermWatching:false,gpsDismissed:false,geoUnavailableSince:null,gpsRetriedOnce:false,gpsBannerSpokenAt:null,lastSilentGpsRetryAt:null,lastAccuracy:null,lastAccuracyAt:null,
     touchLock:{active:false,lastActivityAt:Date.now(),lastTapAt:0},
@@ -12284,6 +12415,7 @@ function renderRealizadosList(){
     // (logUnplannedCompletion) já usam a mesma data pros dois campos.
     const realizadoEmHtmlList=entry.planId!=null?realizadoEmNoteHtml(entry.completedAt,entry.date):'';
     const footNote=[entry.source?completionSourceLabel(entry.source):'',entry.planName||''].filter(Boolean).join(' · ');
+    const pendingSyncList=isEntryPendingSync(entry.id);
     return`<div class="realizado-row" onclick="openRealizadoDetailModal('${entry.id}')">
       <div class="realizado-date-label">${dateLabel}</div>
       <div class="realizado-card-g">
@@ -12300,6 +12432,7 @@ function renderRealizadosList(){
           ${statsHtml?`<div class="realizado-card-stats">${statsHtml}</div>`:''}
         </div>
         ${entry.unplanned?`<div class="realizado-card-badge">REALIZADO EM DATA NÃO PROGRAMADA</div>`:''}
+        ${pendingSyncList?`<div style="margin-top:6px">${syncingBadgeHtml()}</div>`:''}
         ${(footNote||realizadoEmHtmlList)?`<div class="realizado-card-note">${footNote}${realizadoEmHtmlList}</div>`:''}
       </div>
     </div>`;
@@ -14793,6 +14926,15 @@ function icuAutoCheckOnResume(){
   _icuLastResumeCheck=now;
   icuUpdateHeaderSyncVisibility();
   if(_icuFollowupTimer){clearTimeout(_icuFollowupTimer);_icuFollowupTimer=null;}
+  // Reabrir/voltar pro app é justamente o momento mais comum de flagrar uma
+  // gravação ainda pendente (ver bug "aparece → some → volta") — aproveita
+  // pra tentar reenviar e já tirar o selo "SINCRONIZANDO…" assim que confirmar.
+  const hadPendingResume=loadCompletedPendingSync(currentUser.uid).length>0;
+  if(hadPendingResume){
+    retryPendingCompletedSync(currentUser.uid).then(function(){
+      if(typeof renderCalcSummary==='function')renderCalcSummary();
+    });
+  }
   icuAutoCheckAllPlans().then(function(r){
     if(r&&r.error==null&&r.count===0){
       _icuFollowupTimer=setTimeout(function(){
@@ -15389,8 +15531,12 @@ function formatRealInfoBlock(r,scheduledMs,mapDocId,bleedRem){
   if(bleedRem==null)bleedRem=1.2;
   const rows=[];
   rows.push(['Distância',r.dist||'—']);
-  if(r.duration)rows.push(['Tempo',r.duration]);
+  // Ritmo antes de Tempo (nessa ordem quando empilhado em coluna, ao lado do
+  // mini-mapa) — pedido explícito: com o card mais "vertical" (Distância,
+  // Ritmo, Tempo, FC média empilhados), ritmo logo depois da distância lê
+  // melhor que tempo, que fica um degrau abaixo.
   if(r.pace)rows.push(['Ritmo',`${r.pace}/km`]);
+  if(r.duration)rows.push(['Tempo',r.duration]);
   if(r.avgHr)rows.push(['FC média',r.avgHr]);
   if(r.calories)rows.push(['Calorias',r.calories]);
   const cellsHtml=rows.map(([label,val])=>
@@ -15405,7 +15551,30 @@ function formatRealInfoBlock(r,scheduledMs,mapDocId,bleedRem){
   const INSET=10; // px de recuo lateral entre a faixa e a borda do card geral
   const padX=`calc(${b}rem - ${INSET}px)`;
   const lapsHtml=formatRealLapsHtml(r.laps,padX);
+  const hasMap=r.source==='live'&&!!mapDocId; // mesma condição de lwMiniMapSlotHtml — só treino "Ao Vivo" com docId tem percurso de GPS pra mostrar
   const mapHtml=lwMiniMapSlotHtml(r,mapDocId);
+  // Com mapa: dados numa coluna única à esquerda + mapa à direita, na MESMA
+  // linha do grid. "align-items:start" (em vez de "stretch") porque agora o
+  // mapa tem uma altura PRÓPRIA E FIXA (ver lwMiniMapSlotHtml) — do tamanho
+  // que ele teria com todas as 4 informações (Distância, Ritmo, Tempo, FC
+  // média) preenchidas. Assim o card do mapa não varia de tamanho conforme
+  // a quantidade de dados do treino: um treino sem FC média (só 3 linhas)
+  // tem uma coluna de dados mais baixa, mas o mapa ao lado continua do
+  // mesmo tamanho de sempre — só alinhado pelo topo com o título.
+  // Sem mapa (treino manual/relógio, sem GPS): mantém o grid 2x2 de sempre.
+  // Título "Realizado" — quando tem mapa, entra DENTRO da coluna esquerda
+  // (junto com os dados) pra ficar no mesmo grid do mapa: assim o topo do
+  // card do mapa alinha com a própria linha do título azul, em vez de nascer
+  // um degrau abaixo (que é o que acontecia com o título fora do grid, numa
+  // linha própria acima de tudo). Sem mapa, mantém como estava: título numa
+  // linha solta acima do grid 2x2 de dados.
+  const titleHtml=`<div style="font-weight:800;color:var(--acc);font-size:15px;margin-bottom:7px">Realizado</div>`;
+  const dataRowHtml=hasMap
+    ?`<div style="display:grid;grid-template-columns:1fr 1.15fr;gap:14px;align-items:start">`+
+        `<div style="display:flex;flex-direction:column;min-width:0">${titleHtml}<div style="display:flex;flex-direction:column;gap:9px">${cellsHtml}</div></div>`+
+        mapHtml+
+      `</div>`
+    :`${titleHtml}<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px 18px">${cellsHtml}</div>`;
   // Faixa de fundo (var(--s-realizado)) envolve TODO o bloco "Realizado"
   // (rótulo, dados e mapa juntos) e quase sangra até a borda de fora do
   // card/modal (bleedRem), igual o preview de rota do Strava/Garmin — com um
@@ -15418,9 +15587,8 @@ function formatRealInfoBlock(r,scheduledMs,mapDocId,bleedRem){
   // card branco) a borda também ajuda, mas o contraste de claridade já
   // resolve boa parte sozinho.
   return`<div style="margin:10px calc(${INSET}px - ${b}rem) 0;padding:14px ${padX} 16px;background:var(--s-realizado);border:1px solid var(--bdr2);border-radius:var(--r)">`+
-    `<div style="font-weight:800;color:var(--acc);font-size:15px;margin-bottom:7px">Realizado</div>`+
-    `<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px 18px">${cellsHtml}</div>`+
-    `${mapHtml}${lapsHtml}${realizadoEmHtml}`+
+    dataRowHtml+
+    `${lapsHtml}${realizadoEmHtml}`+
   `</div>`;
 }
 // Lista "Tiro 1: 411m em 1:39 (4:00/km) · Recuperação: 205m em 1:33 ..." —
@@ -17511,6 +17679,7 @@ function lwSaveSnapshot(force){
       allowOverwrite:LW.allowOverwrite,
       paceAlertsEnabled:LW.paceAlertsEnabled,
       autoPauseEnabled:LW.autoPauseEnabled,
+      autoPauseSensitivity:LW.autoPauseSensitivity,
       savedAt:now
     }));
   }catch(e){}
@@ -17559,6 +17728,7 @@ async function lwTryResumeSnapshot(){
     initialPendingMs:snap.initialPendingMs||0,initialActivationDone:true,
     paceAlertsEnabled:snap.paceAlertsEnabled!==false,
     autoPauseEnabled:snap.autoPauseEnabled===true,
+    autoPauseSensitivity:snap.autoPauseSensitivity==='walk'?'walk':'stopped',
     autoPaused:false,autoPauseStillSince:null,autoPauseAnchor:null,
     paceOutOfZoneSince:null,paceOutOfZoneDir:null,lastPaceAlertAt:null,geoPermWatching:false,gpsDismissed:false,geoUnavailableSince:null,gpsRetriedOnce:false,gpsBannerSpokenAt:null,lastSilentGpsRetryAt:null,lastAccuracy:null,lastAccuracyAt:null,
     touchLock:{active:false,lastActivityAt:Date.now(),lastTapAt:0},
@@ -17732,7 +17902,16 @@ function buildMiniMapSvgFromPoints(points){
   // do que a versão antiga (200x110/PAD10) — o formato do percurso "ocupa"
   // menos do quadro, o que por si só já deixa o preview com cara mais
   // premium/arejada, parecido com o card do Strava.
-  const W=320,H=170,PAD=26;
+  // W/H escolhidos pra bater com a proporção real da moldura (moldura é
+  // praticamente quadrada — ver height fixo em lwMiniMapSlotHtml). Antes
+  // era 320x170 (bem "paisagem"), enquanto a moldura é quase quadrada — o
+  // preserveAspectRatio="meet" só usava a largura toda e sobrava um monte
+  // de espaço vazio em cima/embaixo do traçado (o desenho ficava pequeno
+  // "flutuando" no meio de uma caixa bem maior). Ficando quadrado (e com
+  // menos PAD proporcional), o traçado passa a ocupar a moldura quase
+  // inteira, sem nunca ultrapassar ela (o SVG continua width/height:100%
+  // dentro da moldura fixa — só cresce até o limite dela, nunca além).
+  const W=220,H=220,PAD=16;
   const scale=Math.min((W-PAD*2)/spanLng,(H-PAD*2)/spanLat);
   const offX=(W-spanLng*scale)/2, offY=(H-spanLat*scale)/2;
   const xy=p=>[
@@ -17769,15 +17948,26 @@ function buildMiniMapSvgFromPoints(points){
   // absoluto por cima do traço, pra destacar contra qualquer cor de fundo/tema.
   // Início = verde (var(--gr)), fim = azul claro (mais claro que o traço em
   // var(--acc)) — cores fixas e só 2 <circle> extras, sem custo de peso real.
-  return`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" style="display:block">
+  // width/height:100% (em vez de um H fixo em px) — o SVG agora vive dentro
+  // da moldura do mini-mapa (ver lwMiniMapSlotHtml), que é quem define o
+  // tamanho real esticando pra bater com a coluna de dados ao lado; o
+  // viewBox continua cuidando só da escala/proporção do desenho.
+  // Traço em gradiente (verde no início → azul no fim, acompanhando as
+  // mesmas cores dos pinos) em vez de cor sólida — pequena diferenciação de
+  // estilo em relação à versão anterior, sem mudar a "leitura" do percurso.
+  return`<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block">
     <defs>
       <filter id="glow-${uid}" x="-30%" y="-30%" width="160%" height="160%">
         <feGaussianBlur stdDeviation="3.2" result="blur"/>
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
+      <linearGradient id="grad-${uid}" x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="var(--gr)"/>
+        <stop offset="100%" stop-color="#5EC8F0"/>
+      </linearGradient>
     </defs>
-    <path d="${d}" fill="none" stroke="var(--acc)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.28" filter="url(#glow-${uid})"/>
-    <path d="${d}" fill="none" stroke="var(--acc)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${d}" fill="none" stroke="url(#grad-${uid})" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.28" filter="url(#glow-${uid})"/>
+    <path d="${d}" fill="none" stroke="url(#grad-${uid})" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
     <circle cx="${ex}" cy="${ey}" r="4.2" fill="#5EC8F0" stroke="#fff" stroke-width="1.6"/>
     <circle cx="${sx}" cy="${sy}" r="4.6" fill="var(--gr)" stroke="#fff" stroke-width="1.6"/>
   </svg>`;
@@ -17824,15 +18014,21 @@ async function lwInjectMiniMapAsync(slotId,docId){
     if(!data||!data.map||!data.map.length)return;
     const slot=document.getElementById(slotId);
     if(!slot)return; // tela já mudou (modal fechado, card recarregado etc.) antes da resposta chegar — não faz nada
-    // "Corrida em Birigui - SP" embaixo do mapa — só aparece quando a
-    // cidade já foi resolvida e gravada nesse documento (ver
-    // lwReverseGeocodeCity/lwFinishWorkout). Sem isso (treino antigo antes
-    // dessa função existir, ou GPS sem fix nenhum), essa linha some sozinha,
-    // sem quebrar o resto do card.
-    const cityHtml=data.city?`<div style="margin-top:6px;font-size:12.5px;font-weight:700;color:var(--t1)">${lwActivityWordFor(data)} em ${data.city}${data.uf?` - ${data.uf}`:''}</div>`:'';
-    // Sem fundo/borda própria aqui — o mapa já fica dentro da faixa que
-    // envolve o bloco "Realizado" inteiro (ver formatRealInfoBlock).
-    slot.innerHTML=`<div style="margin-top:10px">${buildMiniMapSvgFromPoints(data.map)}${cityHtml}</div>`;
+    // Chip só aparece quando a cidade já foi resolvida e gravada nesse
+    // documento (ver lwReverseGeocodeCity/lwFinishWorkout) — treino antigo
+    // antes dessa função existir, ou GPS sem fix nenhum, simplesmente não
+    // mostra o chip, sem quebrar o resto do card.
+    // Chip sobreposto no canto inferior-esquerdo do mapa (estilo Strava/
+    // Garmin), em vez de uma linha de texto abaixo dele — com o mapa agora
+    // esticado pra ocupar a coluna inteira ao lado dos dados, não sobra
+    // espaço embaixo pra um texto separado, e a sobreposição fica mais
+    // "premium" mesmo. Fundo escuro translúcido garante leitura em cima de
+    // qualquer trecho do traço/tema.
+    const cityHtml=data.city?`<div style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:3px 8px;border-radius:7px;background:rgba(0,0,0,.5);font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lwActivityWordFor(data)} em ${data.city}${data.uf?` - ${data.uf}`:''}</div>`:'';
+    // O slot (moldura) já existe com border/background — aqui só preenche o
+    // miolo: o SVG absoluto ocupando 100% da moldura + o chip da cidade por
+    // cima.
+    slot.innerHTML=`<div style="position:absolute;inset:0">${buildMiniMapSvgFromPoints(data.map)}</div>${cityHtml}`;
   }catch(e){ console.warn('[minimap] erro ao buscar preview do percurso',e); }
 }
 // Placeholder vazio + agendamento da busca acima — usado pelos lugares que
@@ -17844,7 +18040,19 @@ function lwMiniMapSlotHtml(r,docId){
   if(!r||r.source!=='live'||!docId)return'';
   const slotId=`minimap-${Math.random().toString(36).slice(2,9)}`; // sufixo aleatório: o mesmo treino pode aparecer simultaneamente no card de hoje E num modal aberto por cima, cada um com seu próprio slot
   setTimeout(()=>lwInjectMiniMapAsync(slotId,docId),0);
-  return`<div id="${slotId}"></div>`;
+  // O placeholder já nasce com a moldura final (borda sutil + fundo
+  // levemente diferente da faixa "Realizado" por trás) — isso faz o mapa se
+  // destacar como um "cartão dentro do cartão", em vez de se misturar com o
+  // fundo (antes os dois usavam exatamente a mesma cor). Nascer já com esse
+  // tamanho/moldura também evita o conteúdo "pular" quando o SVG chega
+  // depois (busca assíncrona — ver lwInjectMiniMapAsync).
+  // "height" é FIXO (não "min-height" mais) — de propósito: esse valor foi
+  // calculado pra bater com a altura do título "Realizado" + as 4 linhas de
+  // dados (Distância, Ritmo, Tempo, FC média), o cenário "completo". Assim
+  // o card do mapa tem sempre o MESMO tamanho, treino a treino, não importa
+  // se faltam campos (ex: sem FC média) — só a coluna de dados ao lado fica
+  // mais baixa nesse caso (ver align-items:start em formatRealInfoBlock).
+  return`<div id="${slotId}" style="position:relative;height:184px;border-radius:12px;border:1px solid var(--bdr2);background:rgba(127,127,127,.07);overflow:hidden"></div>`;
 }
 function lwFmtPaceSecPerKm(sec){
   if(!isFinite(sec)||sec<=0)return'--:--';
@@ -18454,7 +18662,14 @@ function lwOnPosition(pos){
   // caminhada real — mesmo em ritmos bem lentos (~1,2-1,5m/s de caminhada),
   // o intervalo entre leituras do GPS (1-3s) já entrega bem mais que 3m de
   // deslocamento genuíno.
-  const isMoving=d>=3;
+  // No modo de sensibilidade 'walk' (pausa automática também em caminhada
+  // lenta, estilo Garmin), troca esse filtro por VELOCIDADE em vez de
+  // distância bruta: abaixo de LW_WALK_SPEED_THRESHOLD_MPS (~caminhada) já
+  // conta como "parado" pro cronômetro de 7s de lwHandleAutoPauseStop —
+  // mesmo que a pessoa esteja de fato se deslocando um pouco (passos
+  // lentos). No modo padrão 'stopped', continua exatamente como sempre foi:
+  // só o parado total (sem deslocamento nenhum) pausa.
+  const isMoving=(LW.autoPauseSensitivity==='walk')?(spd>=LW_WALK_SPEED_THRESHOLD_MPS):(d>=3);
   if(autoPausedNow){
     // Atualiza o ponto de referência mesmo autopausado (só por consistência
     // — não é mais usado pra decidir a retomada, que agora compara com o
@@ -19062,6 +19277,7 @@ async function startLiveWorkout(planId,wIdx,dIdx){
     initialPendingMs:0,initialActivationDone:false, // só o tempo dos bipes ANTES da etapa 1 de verdade começar é descontado do "Tempo total" — depois disso, cada troca de etapa continua contando normalmente (comportamento já validado como correto)
     paceAlertsEnabled:(()=>{ try{return localStorage.getItem('vo2-lw-pace-alerts')!=='0';}catch(e){return true;} })(),
     autoPauseEnabled:(()=>{ try{return localStorage.getItem('vo2-lw-autopause')==='1';}catch(e){return false;} })(), // desligada por padrão — só liga se a pessoa já tiver ativado antes
+    autoPauseSensitivity:(()=>{ try{return localStorage.getItem('vo2-lw-autopause-sens')==='walk'?'walk':'stopped';}catch(e){return'stopped';} })(), // 'stopped' por padrão — só pausa também em caminhada lenta se a pessoa já tiver escolhido isso antes
     autoPaused:false,autoPauseStillSince:null,autoPauseAnchor:null,
     paceOutOfZoneSince:null,paceOutOfZoneDir:null,lastPaceAlertAt:null,geoPermWatching:false,gpsDismissed:false,geoUnavailableSince:null,gpsRetriedOnce:false,gpsBannerSpokenAt:null,lastSilentGpsRetryAt:null,lastAccuracy:null,lastAccuracyAt:null,
     touchLock:{active:false,lastActivityAt:Date.now(),lastTapAt:0},
@@ -19254,6 +19470,24 @@ function lwTogglePause(){
 // propósito.
 const LW_AUTOPAUSE_MS=7000;
 const LW_AUTORESUME_DIST_M=10; // metros de distância do ponto onde parou que já bastam pra considerar "voltou a correr" — acima do ruído típico de GPS parado (poucos metros), mas não tão longe a ponto de demorar pra perceber que você já está correndo de novo
+// Limiar de velocidade do modo de sensibilidade 'walk' (pausa também em
+// caminhada lenta) — 1.4 m/s ≈ 11:54/km. Escolhido pra ficar ACIMA do ritmo
+// de uma caminhada normal (tipicamente ~1,2-1,5m/s) mas ABAIXO de qualquer
+// corrida de verdade, mesmo bem leve (ritmos de corrida raramente ficam sob
+// 8-9min/km ≈ 1,9-2,2m/s). Numa recuperação andando bem devagar, a
+// velocidade instantânea costuma cair bem abaixo disso — é o que o Garmin
+// também usa como sinal (velocidade, não só "parado total") pra decidir
+// pausar.
+const LW_WALK_SPEED_THRESHOLD_MPS=1.4;
+function lwToggleAutoPauseSensitivity(){
+  if(!LW||!LW.autoPauseEnabled)return; // sub-opção só existe com a pausa automática ligada
+  LW.autoPauseSensitivity=(LW.autoPauseSensitivity==='walk')?'stopped':'walk';
+  LW.autoPauseStillSince=null; // troca de modo no meio do treino não deve aproveitar um cronômetro de "parado" que já vinha contando sob o critério antigo
+  try{localStorage.setItem('vo2-lw-autopause-sens',LW.autoPauseSensitivity);}catch(e){}
+  showToast(LW.autoPauseSensitivity==='walk'?'Pausa também em caminhada lenta, mesmo se você continuar se mexendo devagar.':'Pausa só no parado total — caminhada lenta continua contando normalmente.');
+  lwUpdateUI();
+  lwRenderSettingsModal();
+}
 function lwToggleAutoPause(){
   if(!LW)return;
   LW.autoPauseEnabled=!LW.autoPauseEnabled;
@@ -20074,13 +20308,43 @@ function lwSettingsRowHtml(enabled,iconOn,iconOff,label){
     <div style="font-size:11px;font-weight:800;color:${enabled?'var(--acc)':'var(--t3)'}">${enabled?'LIGADO':'DESLIGADO'}</div>
   </div>`;
 }
+// Sub-opção de sensibilidade — só aparece com a pausa automática ligada.
+// Lista empilhada (estilo radio), não um segmented-control lado a lado: os
+// dois rótulos têm tamanhos bem diferentes ("Quando parado" vs "Também
+// caminhando lentamente" — termos do próprio Garmin), e dividir a largura
+// ao meio deixaria o texto maior quebrando em 2-3 linhas espremido, com o
+// outro botão sobrando espaço vazio do lado. Empilhado, cada opção usa a
+// largura toda disponível, então o rótulo mais longo cabe numa linha só.
+function lwSensitivityRowHtml(sensitivity){
+  const optRow=(val,label)=>{
+    const active=(sensitivity===val);
+    return`<div onclick="event.stopPropagation();lwToggleAutoPauseSensitivity()" style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;background:${active?'var(--acc3)':'transparent'}">
+      <div style="width:16px;height:16px;flex-shrink:0;border-radius:50%;border:2px solid ${active?'var(--acc)':'var(--t3)'};display:flex;align-items:center;justify-content:center">${active?`<div style="width:7px;height:7px;border-radius:50%;background:var(--acc)"></div>`:''}</div>
+      <div style="font-size:12.5px;font-weight:700;color:${active?'var(--t1)':'var(--t2)'}">${label}</div>
+    </div>`;
+  };
+  // Descrição muda conforme a opção selecionada — antes ficava fixa sempre
+  // descrevendo o modo "walk", mesmo com "Quando parado" escolhido, o que
+  // dava a entender (errado) que a caminhada lenta pausava mesmo nesse modo.
+  const descText=(sensitivity==='walk')
+    ?'Pausa também em caminhada lenta, mesmo sem parar de vez.'
+    :'Só pausa quando fica parado de verdade — caminhada lenta continua contando.';
+  return`<div style="padding:2px 2px 14px 2px;margin-left:28px">
+    <div style="font-size:11.5px;color:var(--t3);margin-bottom:7px">${descText}</div>
+    <div style="display:flex;flex-direction:column;gap:1px;padding:3px;border-radius:10px;background:var(--s3)">
+      ${optRow('stopped','Quando parado')}
+      ${optRow('walk','Também caminhando lentamente')}
+    </div>
+  </div>`;
+}
 function lwRenderSettingsModal(){
   if(!LW)return;
   const body=document.getElementById('lw-settings-modal-body');
   if(!body)return;
   body.innerHTML=`
     <div onclick="lwTogglePaceAlerts()" style="border-bottom:1px solid var(--bdr2);cursor:pointer">${lwSettingsRowHtml(LW.paceAlertsEnabled,'i-track_changes','i-visibility_off','Alerta de ritmo')}</div>
-    <div onclick="lwToggleAutoPause()" style="cursor:pointer">${lwSettingsRowHtml(LW.autoPauseEnabled,'i-refresh','i-visibility_off','Pausa automática')}</div>`;
+    <div onclick="lwToggleAutoPause()" style="cursor:pointer;${LW.autoPauseEnabled?'':'border-bottom:1px solid var(--bdr2)'}">${lwSettingsRowHtml(LW.autoPauseEnabled,'i-refresh','i-visibility_off','Pausa automática')}</div>
+    ${LW.autoPauseEnabled?`<div style="border-bottom:1px solid var(--bdr2)">${lwSensitivityRowHtml(LW.autoPauseSensitivity)}</div>`:''}`;
 }
 function lwOpenSettingsModal(){
   if(!LW)return;
