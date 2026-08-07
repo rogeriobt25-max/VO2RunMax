@@ -421,14 +421,17 @@ body{
 .hero-stat-ribbon{display:flex;align-items:stretch;background:var(--mc-bg);border:1px solid var(--bdr2);border-radius:14px;padding:16px 4px;margin-top:16px;box-shadow:var(--mc-shadow)}
 .hero-stat-col{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:0 6px;min-width:0}
 .hero-stat-col:not(:last-child){border-right:1px solid var(--bdr2)}
-.hero-stat-col-ico{width:20px;height:20px;display:flex;align-items:center;justify-content:center}
-.hero-stat-col-ico svg{width:100%;height:100%}
-.hero-stat-col.b .hero-stat-col-ico{color:var(--acc)}
-.hero-stat-col.g .hero-stat-col-ico{color:var(--gr)}
-.hero-stat-col.p .hero-stat-col-ico{color:var(--pu)}
+.hero-stat-col-ico{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:10px}
+.hero-stat-col-ico svg{width:16px;height:16px}
+.hero-stat-col.b .hero-stat-col-ico{color:var(--acc);background:var(--acc3)}
+.hero-stat-col.g .hero-stat-col-ico{color:var(--gr);background:var(--gr2)}
+.hero-stat-col.p .hero-stat-col-ico{color:var(--pu);background:var(--pu2)}
 .hero-stat-col-num{font-family:'Oswald',sans-serif;font-size:23px;font-weight:700;color:var(--t1);line-height:1}
 .hero-stat-col-lbl{font-size:9.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--t3);line-height:1.3}
-.hero-feat-ico{width:19px;height:19px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:16.5px;font-weight:900;color:var(--acc);margin-top:1px}
+.hero-feat-ico{width:34px;height:34px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:16.5px;font-weight:900;color:var(--acc);background:var(--acc3);border-radius:10px}
+.hero-feat-ico .gi{width:17px;height:17px}
+.hero-feature-list>div{align-items:flex-start!important}
+.hero-feature-list>div>span:last-child{padding-top:7px;line-height:1.35}
 
 /* METHOD TABS */
 .mtabs{display:flex;gap:6px;margin-bottom:1.4rem;flex-wrap:wrap}
@@ -2002,15 +2005,15 @@ details[open] summary::after{transform:rotate(90deg)}
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hero-feat-ico"><svg class="gi"><use href="#i-bolt"></use></svg></span>
-        <span style="font-size:16px;font-weight:400;color:var(--t1)">Adaptação de ritmo conforme evolução</span>
+        <span style="font-size:16px;font-weight:400;color:var(--t1)">Ritmo que evolui com você</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hero-feat-ico"><svg class="gi"><use href="#i-directions_run"></use></svg></span>
-        <span style="font-size:16px;font-weight:400;color:var(--t1)">Treine pelo celular guiado pelo GPS</span>
+        <span style="font-size:16px;font-weight:400;color:var(--t1)">Treino guiado por GPS</span>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <span class="hero-feat-ico"><svg class="gi"><use href="#i-sync"></use></svg></span>
-        <span style="font-size:16px;font-weight:400;color:var(--t1)">Envie treinos para seu relógio</span>
+        <span style="font-size:16px;font-weight:400;color:var(--t1)">Sincronize com seu relógio</span>
       </div>
     </div>
     <div style="font-size:12.5px;font-style:italic;color:var(--t3);margin:2px 0 18px">Não sabe seu VO<sub style="font-size:.75em">2</sub> Máx? Comece a treinar mesmo assim.</div>
