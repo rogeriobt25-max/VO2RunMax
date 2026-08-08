@@ -4865,12 +4865,16 @@ function renderCalcSummary(){
         <!-- Divisor Interno Inferior -->
         <div style="border-top:1px solid var(--bdr2);margin:12px 0"></div>
 
-        <!-- Metas e Nível organizados em linha (Rodapé) -->
-        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;row-gap:6px;column-gap:10px;font-size:13px;color:var(--t1);padding-top:10px">
-          ${profVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${profVal}</div>`:''}
-          ${distVal?`<span style="color:var(--t3)">•</span><div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${distVal}</div>`:''}
-          ${objVal?`<span style="color:var(--t3)">•</span><div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${objVal}</div>`:''}
-        </div>
+        <!-- Metas e Nível organizados em linha única, centralizados (Rodapé) -->
+        ${(()=>{
+          const items=[
+            profVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${profVal}</div>`:'',
+            distVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px;font-size:17px;font-weight:800">${distVal}</div>`:'',
+            objVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${objVal}</div>`:''
+          ].filter(Boolean);
+          const sep='<span style="width:1px;height:14px;background:var(--bdr2);flex-shrink:0"></span>';
+          return items.length?`<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;row-gap:10px;column-gap:18px;font-size:14px;color:var(--t1);padding-top:14px">${items.join(sep)}</div>`:'';
+        })()}
 
       </div>
     </div>
