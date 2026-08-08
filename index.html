@@ -2465,12 +2465,16 @@ async function deleteCompletedEntryFromCloud(uid,id){
 }
 // Busca uma "página" (mais recentes primeiro). cursor = doc do Firestore
 // (não o id) do último item da página anterior, pra continuar de onde parou.
+// Ordena e filtra por `completedAt` (quando a pessoa de fato realizou/marcou
+// o treino), não por `date` (dia programado da planilha) — um treino
+// atrasado ou adiantado precisa aparecer pela ordem real de conclusão, com
+// a data original visível só no card de detalhe ("Realizado em: ...").
 async function loadCompletedPageFromCloud(uid,pageSize,cursor,sinceMs,untilMs){
   try{
     let q=realizadosCollection(uid);
-    if(sinceMs)q=q.where('date','>=',sinceMs);
-    if(untilMs)q=q.where('date','<=',untilMs);
-    q=q.orderBy('date','desc').limit(pageSize);
+    if(sinceMs)q=q.where('completedAt','>=',sinceMs);
+    if(untilMs)q=q.where('completedAt','<=',untilMs);
+    q=q.orderBy('completedAt','desc').limit(pageSize);
     if(cursor)q=q.startAfter(cursor);
     const snap=await q.get();
     return{
@@ -2904,8 +2908,9 @@ window.addEventListener('online',function(){
     retryPendingCompletedSync(currentUser.uid).then(function(){
       // Assim que algo pendente confirma, re-renderiza pra tirar o selo
       // "SINCRONIZANDO…" — sem isso, o card ficava com o selo preso até a
-      // pessoa trocar de aba/tela sozinha.
-      if(hadPendingOnline&&typeof renderCalcSummary==='function')renderCalcSummary();
+      // pessoa trocar de aba/tela sozinha. Atualiza tanto a tela inicial
+      // quanto "Meus Treinos" (Realizados), se estiver aberta.
+      if(hadPendingOnline)refreshSyncingBadges();
     });
   }
 });
@@ -3071,6 +3076,16 @@ function isEntryPendingSync(id){
 function syncingBadgeHtml(){
   return`<span class="vo2-syncing-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;color:var(--t3);background:var(--s3);border-radius:4px;padding:2px 6px 2px 5px;letter-spacing:.02em;white-space:nowrap"><svg class="gi" style="font-size:12px;animation:icu-spin 1.1s linear infinite"><use href="#i-sync"></use></svg> SINCRONIZANDO…</span>`;
 }
+// Re-renderiza tudo que pode estar mostrando o selo "SINCRONIZANDO…" assim
+// que uma gravação pendente confirma — cobre tanto a tela inicial (card do
+// treino do dia / "não programado") quanto a aba "Realizados" de "Meus
+// Treinos", se estiver aberta. Antes, alguns pontos só atualizavam a tela
+// inicial e deixavam o card de "Meus Treinos" preso no selo até a pessoa
+// atualizar a página manualmente.
+function refreshSyncingBadges(){
+  if(typeof renderCalcSummary==='function')renderCalcSummary();
+  if(typeof renderRealizadosList==='function' && document.getElementById('saved-realizados-tab') && document.getElementById('saved-realizados-tab').style.display!=='none')renderRealizadosList();
+}
 // Tenta reenviar tudo que ficou pendente (chamado ao reconectar e ao abrir
 // a aba "Realizados"). 'save' busca o dado completo no cache local (a
 // cópia completa em localStorage, não a lista paginada da nuvem, que pode
@@ -3112,7 +3127,13 @@ async function persistCompletedEntry(entry){
   const uid=currentUser.uid;
   markCompletedPending(uid,entry.id,'save');
   const ok=await saveCompletedEntryToCloud(uid,entry);
-  if(ok)clearCompletedPending(uid,entry.id);
+  if(ok){
+    clearCompletedPending(uid,entry.id);
+    // Sem isso, o card ficava preso no selo "SINCRONIZANDO…" (tela inicial
+    // e/ou "Meus Treinos") até a pessoa atualizar a página manualmente,
+    // mesmo já tendo confirmado a gravação na nuvem.
+    refreshSyncingBadges();
+  }
 }
 async function persistCompletedRemoval(id){
   if(!currentUser)return;
@@ -12414,7 +12435,9 @@ function renderRealizadosList(){
   const{sinceMs:cutoff,untilMs}=realizadosFilterRange();
   // Offline: o filtro de período é aplicado aqui mesmo (tudo já está local);
   // logado: já vem filtrado da consulta na nuvem (ver loadCompletedPageFromCloud).
-  const sortedLocal=loggedIn?null:[...completedLog].filter(e=>(!cutoff||e.date>=cutoff)&&(!untilMs||e.date<=untilMs)).sort((a,b)=>b.date-a.date);
+  // Ordena/filtra por completedAt (data real de conclusão), não por date
+  // (dia programado) — mesmo critério usado na consulta da nuvem.
+  const sortedLocal=loggedIn?null:[...completedLog].filter(e=>(!cutoff||e.completedAt>=cutoff)&&(!untilMs||e.completedAt<=untilMs)).sort((a,b)=>b.completedAt-a.completedAt);
   const list=loggedIn?completedLog:sortedLocal.slice(0,completedLogShownOffline);
   const hasMore=loggedIn?completedLogHasMore:(sortedLocal.length>completedLogShownOffline);
   const filterBarHtml=buildRealizadosFilterBar();
@@ -12434,7 +12457,13 @@ function renderRealizadosList(){
     return;
   }
   wrap.innerHTML=filterBarHtml+`<div class="saved-list realizados-list">`+list.map((entry)=>{
-    const dateLabel=fmtDateFull(new Date(entry.date));
+    // Rótulo de cima = data que a pessoa REALIZOU (completedAt), não o dia
+    // originalmente programado (entry.date) — tem que bater com a ordem da
+    // lista (mais recente realizado primeiro), senão fica confuso ver um
+    // treino do dia 11/08 aparecer acima de um do dia 13/08 só porque foi
+    // concluído depois. A data original continua visível ao abrir o
+    // detalhe do card (ver openRealizadoDetailModal).
+    const dateLabel=fmtDateFull(new Date(entry.completedAt||entry.date));
     const title=entry.realName?escapeHtmlLite(entry.realName):entry.type;
     // Ícone do card: heurística simples pelo nome/tipo — força usa halteres,
     // o restante (corrida, moderado, fartlek, intervalado etc.) usa a
@@ -12447,16 +12476,24 @@ function renderRealizadosList(){
     const mainVal=distMatch?distMatch[1]:(entry.duration||'--');
     const mainUnit=distMatch?(distMatch[2]||'km').toUpperCase():'';
     // Estatísticas secundárias (label + valor), na ordem Garmin: tempo,
-    // ritmo, FC — pulando o que já virou destaque principal.
+    // ritmo, FC. Antes só entravam quando o dado existia, então um treino
+    // manual sem FC informada (ou um ao vivo sem sensor pareado) mostrava
+    // menos linhas que um vindo completo do relógio — deixando os cards da
+    // lista com alturas diferentes. Agora sempre mostra as mesmas linhas
+    // (com "--" no que faltar) pra qualquer treino com distância, pra
+    // manter a estrutura padronizada; treino de força continua sem
+    // ritmo/FC, já que não se aplicam.
     const stats=[];
-    if(distMatch&&entry.duration)stats.push(['TEMPO',entry.duration,'']);
-    if(entry.pace)stats.push(['RITMO',entry.pace,'/km']);
-    if(entry.avgHr)stats.push(['FC MÉDIA',entry.avgHr,'bpm']);
+    if(distMatch)stats.push(['TEMPO',entry.duration||'--','']);
+    if(!isStrength){
+      stats.push(['RITMO',entry.pace||'--','/km']);
+      stats.push(['FC MÉDIA',entry.avgHr||'--','bpm']);
+    }
     const statsHtml=stats.slice(0,3).map(([lbl,val,unit])=>`<div class="realizado-card-stat"><span class="lbl">${lbl}</span><span class="val">${val}${unit?`<span class="unit">${unit}</span>`:''}</span></div>`).join('');
-    // Só mostra a nota de "realizado em" quando o treino tem um dia
-    // programado de verdade (planId presente) — os "não programados"
-    // (logUnplannedCompletion) já usam a mesma data pros dois campos.
-    const realizadoEmHtmlList=entry.planId!=null?realizadoEmNoteHtml(entry.completedAt,entry.date):'';
+    // Nota "Realizado em" tirada do card da lista — o rótulo de cima já é a
+    // data real de conclusão agora, então mostrar de novo aqui dentro só
+    // duplicava/confundia com a data original. A comparação com o dia
+    // programado continua disponível ao abrir o detalhe do treino.
     const footNote=[entry.source?completionSourceLabel(entry.source):'',entry.planName||''].filter(Boolean).join(' · ');
     const pendingSyncList=isEntryPendingSync(entry.id);
     return`<div class="realizado-row" onclick="openRealizadoDetailModal('${entry.id}')">
@@ -12476,7 +12513,7 @@ function renderRealizadosList(){
         </div>
         ${entry.unplanned?`<div class="realizado-card-badge">REALIZADO EM DATA NÃO PROGRAMADA</div>`:''}
         ${pendingSyncList?`<div style="margin-top:6px">${syncingBadgeHtml()}</div>`:''}
-        ${(footNote||realizadoEmHtmlList)?`<div class="realizado-card-note">${footNote}${realizadoEmHtmlList}</div>`:''}
+        ${footNote?`<div class="realizado-card-note">${footNote}</div>`:''}
       </div>
     </div>`;
   }).join('')+`</div>`
@@ -15015,7 +15052,7 @@ function icuAutoCheckOnResume(){
   const hadPendingResume=loadCompletedPendingSync(currentUser.uid).length>0;
   if(hadPendingResume){
     retryPendingCompletedSync(currentUser.uid).then(function(){
-      if(typeof renderCalcSummary==='function')renderCalcSummary();
+      refreshSyncingBadges();
     });
   }
   icuAutoCheckAllPlans().then(function(r){
@@ -16097,6 +16134,10 @@ async function icuAutoCheckAllPlans(force){
     updateSavedBadge();
     renderSavedList();
     renderCalcSummary();
+    // Sem isso, um treino recém-vinculado pelo relógio ficava com o selo
+    // "SINCRONIZANDO…" preso na aba "Realizados" de "Meus Treinos" (se
+    // estiver aberta) até a página ser atualizada manualmente.
+    if(typeof renderRealizadosList==='function' && document.getElementById('saved-realizados-tab') && document.getElementById('saved-realizados-tab').style.display!=='none')renderRealizadosList();
   }
   return result;
 }
@@ -16121,6 +16162,10 @@ async function icuManualSyncPlan(planId,btn){
         updateSavedBadge();
         renderSavedList();
         renderCalcSummary();
+        // Mesmo motivo do check automático: sem isso, o card em "Meus
+        // Treinos" > "Realizados" ficava preso no selo "SINCRONIZANDO…"
+        // até a página ser atualizada manualmente.
+        if(typeof renderRealizadosList==='function' && document.getElementById('saved-realizados-tab') && document.getElementById('saved-realizados-tab').style.display!=='none')renderRealizadosList();
         showToast(`${count} treino${count!==1?'s':''} atualizado${count!==1?'s':''} a partir do relógio.`);
       }else{
         showToast('Nenhum treino novo concluído encontrado.');
