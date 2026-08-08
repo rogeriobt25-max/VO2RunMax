@@ -1251,7 +1251,7 @@ details[open] summary::after{transform:rotate(90deg)}
 .cs-row{display:flex;align-items:center;gap:10px}
 .cs-row-plain .cs-txt{font-size:15px;font-weight:700;color:var(--t1)}
 .cs-row-vo2{gap:11px}
-.cs-vo2-ring{width:88px;height:88px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:4px;position:relative}
+.cs-vo2-ring{width:88px;height:88px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:9px;position:relative;filter:saturate(1.25) brightness(1.08)}
 .cs-vo2-ring-in{width:100%;height:100%;border-radius:50%;background:var(--s1);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:var(--t1);position:relative;z-index:1}
 .cs-vo2-pointer{position:absolute;top:0;left:0;width:100%;height:100%;transform-origin:50% 50%;pointer-events:none;z-index:2}
 .cs-vo2-pointer::after{content:'';position:absolute;top:0;left:50%;width:11px;height:11px;margin-left:-5.5px;border-radius:50%;background:var(--dot-color,#333a42);box-shadow:0 0 0 2px var(--s1)}
@@ -4588,7 +4588,7 @@ function buildVo2RingHtml(vo2){
   const pct=Math.max(4,Math.min(100,Math.round((vo2-20)/50*100)));
   // Faixas de cor do gauge seguem os mesmos cortes de nível da tabela FIT_N,
   // convertidos pra % nessa mesma escala (20-70 ml/kg/min) usada no ponteiro.
-  const vo2GaugeBg='conic-gradient(#ff4466 0 12%,#ff7828 12% 24%,#ffb830 24% 40%,#00ff88 40% 60%,#00e5ff 60% 100%)';
+  const vo2GaugeBg='conic-gradient(#ff4466 0%,#ff4466 9%,#ff7828 13%,#ff7828 20%,#ffb830 24%,#ffb830 36%,#00e69a 40%,#00e69a 56%,#00c2ff 60%,#00c2ff 96%,#ff4466 100%)';
   const vo2DotColor=pct<12?'#ff4466':pct<24?'#ff7828':pct<40?'#ffb830':pct<60?'#00ff88':'#00e5ff';
   return`<div class="cs-row cs-row-vo2">
       <div class="cs-vo2-ring" style="background:${vo2GaugeBg}"><div class="cs-vo2-pointer" style="transform:rotate(${pct*3.6}deg);--dot-color:${vo2DotColor}"></div><div class="cs-vo2-ring-in">${Math.round(vo2*10)/10}</div></div>
@@ -4865,16 +4865,14 @@ function renderCalcSummary(){
         <!-- Divisor Interno Inferior -->
         <div style="border-top:1px solid var(--bdr2);margin:12px 0"></div>
 
-        <!-- Metas e Nível organizados em linha única, centralizados (Rodapé) -->
-        ${(()=>{
-          const items=[
-            profVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${profVal}</div>`:'',
-            distVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${distVal}</div>`:'',
-            objVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${objVal}</div>`:''
-          ].filter(Boolean);
-          const sep='<span style="width:1px;height:14px;background:var(--bdr2);flex-shrink:0"></span>';
-          return items.length?`<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;row-gap:10px;column-gap:10px;font-size:14px;color:var(--t1);padding-top:14px">${items.join(sep)}</div>`:'';
-        })()}
+        <!-- Metas e Nível: coluna esquerda empilhada, distância à direita (Rodapé) -->
+        ${(profVal||objVal||distVal)?`<div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;color:var(--t1)">
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:14px">
+            ${profVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${profVal}</div>`:''}
+            ${objVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${objVal}</div>`:''}
+          </div>
+          ${distVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px;font-size:20px;font-weight:800">${distVal}</div>`:''}
+        </div>`:''}
 
       </div>
     </div>
