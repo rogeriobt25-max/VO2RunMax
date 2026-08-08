@@ -4823,7 +4823,7 @@ function renderCalcSummary(){
     return;
   }
   const profVal=({'init':'<svg class="gi"><use href="#i-directions_walk"></use></svg> Iniciante','inter':'<svg class="gi"><use href="#i-directions_run"></use></svg> Intermediário','avance':'<svg class="gi"><use href="#i-bolt"></use></svg> Avançado'})[profKey]||'';
-  const distVal=({'10k':`${medalIconSvg('#2563EB','#1D4ED8',18)} 10 km`,'21':`${medalIconSvg('#F5C518','#B8860B',18)} Meia-maratona · 21 km`,'42':`${trophyIconSvg(18)} Maratona · 42 km`})[dist]||'';
+  const distVal=({'10k':`${medalIconSvg('#2563EB','#1D4ED8',18)} 10km`,'21':`${medalIconSvg('#F5C518','#B8860B',18)} 21km`,'42':`${trophyIconSvg(18)} 42km`})[dist]||'';
   const objVal=({'finish':'<svg class="gi"><use href="#i-track_changes"></use></svg> Completar a prova','target':'<svg class="gi"><use href="#i-schedule"></use></svg> Tempo alvo','improve':'<svg class="gi"><use href="#i-trending_up"></use></svg> Melhorar tempo atual'})[obj]||'';
   const vo2Row=vo2?`${buildVo2RingHtml(vo2)}
     <button onclick="wzCalcRealVo2()" style="align-self:flex-start;text-align:left;background:none;border:none;padding:0;margin:2px 0 0 0;font-size:12.5px;font-weight:600;color:var(--t3);text-decoration:underline;cursor:pointer;font-family:inherit">Calcular novo VO₂</button>`:'';
@@ -4866,10 +4866,10 @@ function renderCalcSummary(){
         <div style="border-top:1px solid var(--bdr2);margin:12px 0"></div>
 
         <!-- Metas e Nível organizados em linha (Rodapé) -->
-        <div style="display:flex;align-items:center;justify-content:space-around;font-size:13px;color:var(--t1);padding-top:10px">
-          ${profVal?`<div>${profVal}</div>`:''}
-          ${distVal?`<span style="color:var(--t3)">•</span><div>${distVal}</div>`:''}
-          ${objVal?`<span style="color:var(--t3)">•</span><div>${objVal}</div>`:''}
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;row-gap:6px;column-gap:10px;font-size:13px;color:var(--t1);padding-top:10px">
+          ${profVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${profVal}</div>`:''}
+          ${distVal?`<span style="color:var(--t3)">•</span><div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${distVal}</div>`:''}
+          ${objVal?`<span style="color:var(--t3)">•</span><div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${objVal}</div>`:''}
         </div>
 
       </div>
