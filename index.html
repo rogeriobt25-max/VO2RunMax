@@ -1320,7 +1320,7 @@ details[open] summary::after{transform:rotate(90deg)}
 /* Recordes Pessoais/Melhores Marcas usam a mesma mecânica de abrir/fechar
    do vo2zones-panel, mas os itens já são cards azuis por si só — sem essa
    classe, ficava um cartão branco por baixo, sobrepondo o título. */
-.vo2zones-panel.records-panel-flat{background:none;border:none;box-shadow:none;padding:0;margin-top:.6rem}
+.vo2zones-panel.records-panel-flat{background:none;border:none;box-shadow:none;padding:0;margin-top:.9rem}
 .cs-link:hover{color:var(--acc)}
 .wz-step{background:var(--bg);border:none;border-bottom:1px solid var(--bdr);border-radius:0;padding:1.2rem 0;margin-bottom:.75rem;animation:wzFadeIn .28s ease;box-shadow:none}
 @keyframes wzFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -3726,7 +3726,7 @@ function syncCalcNavHighlight(){
 //     convidado, etc.)
 let _vo2SelfNav=false; // true enquanto ESTE código está mexendo no histórico, pra não reagir ao próprio efeito colateral
 
-const VO2_DYNAMIC_MODAL_IDS=['share-modal','icu-config-modal','watch-export-modal','realizado-detail-modal','lw-confirm-modal','lw-alert-modal','lw-settings-modal','day-detail-modal','garmin-modal','garmin-send-modal','icu-confirm-modal','icu-result-modal','icu-send-modal','icu-weekly-modal','manual-done-modal'];
+const VO2_DYNAMIC_MODAL_IDS=['share-modal','icu-config-modal','watch-export-modal','vincular-picker-modal','realizado-detail-modal','lw-confirm-modal','lw-alert-modal','lw-settings-modal','day-detail-modal','garmin-modal','garmin-send-modal','icu-confirm-modal','icu-result-modal','icu-send-modal','icu-weekly-modal','manual-done-modal'];
 const VO2_CLASS_MODAL_IDS=['auth-modal','cooper-how-modal','cooper-warn-modal','delete-account-modal','how1600-modal','how2400-modal','how3km-modal','marathon42-warn-modal','onb-modal','streak-info-modal','vo2-update-modal','modal-termos','modal-privacidade'];
 const VO2_STYLE_MODAL_IDS=['modal-guest-notice','modal-mt-save','modal-profile','modal-profile-estimate-notice','modal-save','modal-save-success','modal-vo2-updated','montador-overlay'];
 
@@ -3764,6 +3764,7 @@ function vo2CloseModalById(id){
     // modal de novo sozinha, mesmo já tendo sido fechada de propósito.
     clearModalState();
     const el=document.getElementById(id); if(el)el.remove();
+    vo2SyncSummaryScrollLock();
     return;
   }
   if(id==='share-modal'){
@@ -3774,6 +3775,7 @@ function vo2CloseModalById(id){
     // propósito pelo botão voltar.
     clearModalState();
     const el=document.getElementById(id); if(el)el.remove();
+    vo2SyncSummaryScrollLock();
     return;
   }
   if(VO2_DYNAMIC_MODAL_IDS.includes(id)){
@@ -3783,6 +3785,17 @@ function vo2CloseModalById(id){
   }else if(VO2_STYLE_MODAL_IDS.includes(id)){
     const el=document.getElementById(id); if(el)el.style.display='none';
   }
+}
+// ── Trava o scroll de fundo enquanto o resumo do treino realizado e/ou o
+// compartilhar estiverem abertos (mesmo padrão já usado em outros modais do
+// app, ex: onboarding, histórico de VO2, treino ao vivo). Como o resumo pode
+// ficar aberto POR BAIXO do compartilhar (ver openShareModalFromLog/
+// openVincularPicker — não removem mais o resumo antes de abrir por cima,
+// senão o botão voltar pulava direto pra listagem), só libera o scroll
+// quando NENHUM dos dois estiver mais no DOM.
+function vo2SyncSummaryScrollLock(){
+  const stillOpen=document.getElementById('realizado-detail-modal')||document.getElementById('share-modal');
+  document.body.style.overflow=stillOpen?'hidden':'';
 }
 let _vo2TrackedModalId=null;
 function vo2SyncModalHistory(){
@@ -3860,7 +3873,17 @@ window.addEventListener('popstate',function(){
     const id=_vo2TrackedModalId;
     _vo2TrackedModalId=null;
     vo2CloseModalById(id);
-
+    // Caso a modal fechada estivesse por cima de OUTRA já aberta (ex:
+    // Compartilhar aberto sobre o detalhe de um Realizado — ver comentário
+    // em vo2SyncSummaryScrollLock), essa outra modal continua visível e já
+    // tem sua PRÓPRIA entrada de histórico, empurrada lá atrás quando ela
+    // foi aberta pela primeira vez. Só re-sincroniza o rastreador com ela
+    // (sem chamar pushState de novo) — se deixasse pro observer/poller
+    // perceberem sozinhos, eles empurrariam uma entrada NOVA e desnecessária
+    // pra essa modal, e o próximo toque em voltar cairia nessa entrada
+    // fantasma sem fechar nada (é exatamente o bug: "aperto voltar e volta
+    // pro card do Realizado, mas apertando de novo não fecha mais nada").
+    _vo2TrackedModalId=vo2FindOpenModalId();
     return;
   }
   if(_vo2LwGuardPushed){
@@ -4866,7 +4889,7 @@ function renderCalcSummary(){
         <div style="border-top:1px solid var(--bdr2);margin:12px 0"></div>
 
         <!-- Metas e Nível: coluna esquerda empilhada, distância à direita (Rodapé) -->
-        ${(profVal||objVal||distVal)?`<div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;color:var(--t1)">
+        ${(profVal||objVal||distVal)?`<div style="display:flex;align-items:center;justify-content:space-between;padding-top:4px;color:var(--t1)">
           <div style="display:flex;flex-direction:column;gap:8px;font-size:14px">
             ${profVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${profVal}</div>`:''}
             ${objVal?`<div style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px">${objVal}</div>`:''}
@@ -10803,6 +10826,7 @@ async function vincularNaoProgramado(entryId,planId,wIdx,dIdx){
   finishToggleDoneUI(planId,wIdx,dIdx);
   const pickerModal=document.getElementById('vincular-picker-modal');if(pickerModal)pickerModal.remove();
   const detailModal=document.getElementById('realizado-detail-modal');if(detailModal)detailModal.remove();
+  vo2SyncSummaryScrollLock();
   renderCalcSummary();
   showToast('Treino vinculado à planilha!');
 }
@@ -10924,6 +10948,7 @@ function deleteRealizadoEntry(logId){
   completedLog=completedLog.filter(e=>e.id!==logId);
   persistCompletedRemoval(logId);
   const modal=document.getElementById('realizado-detail-modal');if(modal)modal.remove();
+  vo2SyncSummaryScrollLock();
   renderRealizadosList();
   showToast('Registro excluído.');
 }
@@ -11358,11 +11383,24 @@ function openShareModal(planId,wIdx,dIdx){
   modal.innerHTML=`<div class="modal-box" style="max-width:420px;max-height:92vh;overflow-y:auto">
     <div class="modal-title" style="margin-bottom:.8rem">Compartilhar treino</div>
     <div id="share-modal-body"></div>
-    <button class="btn-modal-ok" style="width:100%;background:none;color:var(--t2);margin-top:.8rem" onclick="document.getElementById('share-modal').remove();clearModalState()">Fechar</button>
+    <button class="btn-modal-ok" style="width:100%;background:none;color:var(--t2);margin-top:.8rem" onclick="closeShareModal()">Fechar</button>
   </div>`;
   document.body.appendChild(modal);
+  vo2SyncSummaryScrollLock();
+  vo2SyncAllHistory(); // empurra a entrada de histórico na hora — mesmo motivo/mesmo padrão do openRealizadoDetailModal
   renderShareModalBody();
 }
+// Fecha o modal de Compartilhar e resolve a entrada de histórico empurrada
+// ao abrir (ver openShareModal/openShareModalFromLog) — usado tanto pelo
+// botão "Fechar" quanto (indiretamente) pelo botão voltar do celular.
+function closeShareModal(){
+  const el=document.getElementById('share-modal');
+  if(el)el.remove();
+  clearModalState();
+  vo2SyncSummaryScrollLock();
+  vo2SyncAllHistory();
+}
+window.closeShareModal=closeShareModal;
 
 function renderShareModalBody(){
   const body=document.getElementById('share-modal-body');if(!body||!shareCtx)return;
@@ -12468,15 +12506,39 @@ function openRealizadoDetailModal(logId){
       ${entry.planName?`<div class="modal-sub" style="text-align:left;margin-bottom:.5rem">${entry.planName}</div>`:''}
       ${realInfoHtml}
       <div class="modal-actions" style="flex-direction:column;gap:10px;margin-top:1.1rem;flex-shrink:0">
-        ${entry.unplanned?`<button class="btn-modal-ok" style="width:100%;height:48px;font-size:14.5px;background:var(--acc)" onclick="document.getElementById('realizado-detail-modal').remove();clearModalState();openVincularPicker('${entry.id}')"><svg class="gi"><use href="#i-link"></use></svg> Vincular a um treino da planilha</button>`:''}
-        <button class="btn-modal-ok" style="width:100%;height:48px;font-size:14.5px" onclick="document.getElementById('realizado-detail-modal').remove();clearModalState();openShareModalFromLog('${entry.id}')"><svg class="gi"><use href="#i-share"></use></svg> Compartilhar</button>
-        <button class="btn-modal-cancel" style="width:100%;height:44px;font-size:13.5px" onclick="document.getElementById('realizado-detail-modal').remove();clearModalState()">Fechar</button>
+        ${entry.unplanned?`<button class="btn-modal-ok" style="width:100%;height:48px;font-size:14.5px;background:var(--acc)" onclick="openVincularPicker('${entry.id}')"><svg class="gi"><use href="#i-link"></use></svg> Vincular a um treino da planilha</button>`:''}
+        <button class="btn-modal-ok" style="width:100%;height:48px;font-size:14.5px" onclick="openShareModalFromLog('${entry.id}')"><svg class="gi"><use href="#i-share"></use></svg> Compartilhar</button>
+        <button class="btn-modal-cancel" style="width:100%;height:44px;font-size:13.5px" onclick="closeRealizadoDetailModal()">Fechar</button>
         <button style="width:100%;height:40px;font-size:13px;background:none;border:none;color:var(--rd);cursor:pointer;font-family:inherit;font-weight:600" onclick="clearModalState();deleteRealizadoEntry('${entry.id}')"><svg class="gi" style="font-size:15px;vertical-align:-2px"><use href="#i-delete"></use></svg> Excluir registro</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
-  modal.addEventListener('click',e=>{if(e.target===modal){modal.remove();clearModalState();}});
+  vo2SyncSummaryScrollLock();
+  // Empurra o estado de histórico NA HORA (síncrono), em vez de confiar só no
+  // MutationObserver/poller de 300ms (ver vo2SyncAllHistory) — que também
+  // continuam funcionando como reforço, mas escreviam o histórico com um
+  // pequeno atraso. Numa tela de "Meus Treinos" já bastante carregada
+  // (Firestore sincronizando em segundo plano, etc.), esse atraso podia dar
+  // tempo da pessoa apertar voltar ANTES da entrada existir no histórico —
+  // nesse caso o navegador simplesmente saía do app (nada pra "desfazer"),
+  // e só o botão "Fechar" (que não depende do histórico) funcionava.
+  vo2SyncAllHistory();
+  modal.addEventListener('click',e=>{if(e.target===modal)closeRealizadoDetailModal();});
 }
+// Fecha o modal de detalhe de um Realizado E resolve a entrada de histórico
+// que foi empurrada ao abrir (ver openRealizadoDetailModal) — assim o botão
+// "Fechar" e o botão voltar do celular ficam simétricos: os dois deixam o
+// histórico exatamente como estava antes de abrir essa modal, sem entrada
+// "fantasma" sobrando (que faria o próximo voltar precisar de um toque a
+// mais, sem fechar nada visível).
+function closeRealizadoDetailModal(){
+  const el=document.getElementById('realizado-detail-modal');
+  if(el)el.remove();
+  clearModalState();
+  vo2SyncSummaryScrollLock();
+  vo2SyncAllHistory();
+}
+window.closeRealizadoDetailModal=closeRealizadoDetailModal;
 
 // ── Abre o modal de compartilhar a partir de um registro de "Realizados"
 // (não depende de planId/wIdx/dIdx existirem mais — usa a cópia gravada).
@@ -12513,9 +12575,11 @@ function openShareModalFromLog(logId){
   modal.innerHTML=`<div class="modal-box" style="max-width:420px;max-height:92vh;overflow-y:auto">
     <div class="modal-title" style="margin-bottom:.8rem">Compartilhar treino</div>
     <div id="share-modal-body"></div>
-    <button class="btn-modal-ok" style="width:100%;background:none;color:var(--t2);margin-top:.8rem" onclick="document.getElementById('share-modal').remove();clearModalState()">Fechar</button>
+    <button class="btn-modal-ok" style="width:100%;background:none;color:var(--t2);margin-top:.8rem" onclick="closeShareModal()">Fechar</button>
   </div>`;
   document.body.appendChild(modal);
+  vo2SyncSummaryScrollLock();
+  vo2SyncAllHistory(); // empurra a entrada de histórico na hora — mesmo motivo/mesmo padrão do openRealizadoDetailModal
   renderShareModalBody();
 }
 
@@ -12526,18 +12590,25 @@ function openShareModalFromLog(logId){
 function buildVo2HistoryPanelGrid(){
   if(!vo2TestHistory.length)return`<div style="text-align:center;color:var(--t3);font-size:14px;padding:.5rem 0">Nenhum teste registrado ainda.</div>`;
   const recent=vo2TestHistory.slice(0,5);
-  const rows=recent.map((t,i)=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--bdr2)">
+  const rows=recent.map((t,i)=>{
+    const fit=getFit(t.vo2,t.methodType==='profileDefault'?'N':undefined);
+    return`
+    <div style="background:var(--mc-bg);border:1px solid var(--bdr2);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px">
       <div style="min-width:0">
-        <div style="font-size:14px;font-weight:800;color:var(--t1)">${Math.round(t.vo2*10)/10} <span style="font-size:11px;font-weight:600;color:var(--t3)">ml/kg/min</span></div>
-        <div style="font-size:11.5px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.methodLabel||''}</div>
+        <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
+          <span style="font-size:16px;font-weight:800;color:${fit.c}">${Math.round(t.vo2*10)/10}</span>
+          <span style="font-size:11px;font-weight:600;color:var(--t3)">ml/kg/min</span>
+          <span style="font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:4px;background:${fit.bg};color:${fit.c};white-space:nowrap">${fit.l}</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px">${t.methodLabel||''}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         <div style="font-size:12px;color:var(--t3);white-space:nowrap">${t.date}</div>
         <button onclick="deleteVo2TestEntry(${i})" title="Excluir teste" style="background:none;border:none;padding:2px;color:var(--t3);cursor:pointer;display:flex"><svg class="gi" style="font-size:16px"><use href="#i-delete"></use></svg></button>
       </div>
-    </div>`).join('');
-  const moreBtn=vo2TestHistory.length>5?`<button onclick="openVo2HistoryModal()" style="width:100%;margin-top:10px;height:38px;border:1px solid var(--bdr2);background:none;border-radius:var(--rb);color:var(--acc);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Ver histórico completo (${vo2TestHistory.length})</button>`:'';
+    </div>`;
+  }).join('');
+  const moreBtn=vo2TestHistory.length>5?`<button onclick="openVo2HistoryModal()" style="width:100%;margin-top:2px;height:38px;border:1px solid var(--bdr2);background:none;border-radius:var(--rb);color:var(--acc);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Ver histórico completo (${vo2TestHistory.length})</button>`:'';
   return`<div>${rows}</div>${moreBtn}`;
 }
 
@@ -12599,19 +12670,26 @@ function renderVo2HistoryModalList(){
   const wrap=document.getElementById('vo2-history-modal-list');
   if(!wrap)return;
   const slice=vo2TestHistory.slice(0,vo2HistoryModalShown);
-  const rows=slice.map((t,i)=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--bdr2)">
+  const rows=slice.map((t,i)=>{
+    const fit=getFit(t.vo2,t.methodType==='profileDefault'?'N':undefined);
+    return`
+    <div style="background:var(--mc-bg);border:1px solid var(--bdr2);box-shadow:var(--mc-shadow);border-radius:var(--r2);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px">
       <div style="min-width:0">
-        <div style="font-size:14px;font-weight:800;color:var(--t1)">${Math.round(t.vo2*10)/10} <span style="font-size:11px;font-weight:600;color:var(--t3)">ml/kg/min</span></div>
-        <div style="font-size:11.5px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.methodLabel||''}</div>
+        <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
+          <span style="font-size:16px;font-weight:800;color:${fit.c}">${Math.round(t.vo2*10)/10}</span>
+          <span style="font-size:11px;font-weight:600;color:var(--t3)">ml/kg/min</span>
+          <span style="font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:4px;background:${fit.bg};color:${fit.c};white-space:nowrap">${fit.l}</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px">${t.methodLabel||''}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         <div style="font-size:12px;color:var(--t3);white-space:nowrap">${t.date}</div>
         <button onclick="deleteVo2TestEntry(${i})" title="Excluir teste" style="background:none;border:none;padding:2px;color:var(--t3);cursor:pointer;display:flex"><svg class="gi" style="font-size:16px"><use href="#i-delete"></use></svg></button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const hasMore=vo2TestHistory.length>vo2HistoryModalShown;
-  wrap.innerHTML=`${rows}${hasMore?`<button onclick="vo2HistoryModalShown+=20;renderVo2HistoryModalList()" style="width:100%;margin-top:10px;height:38px;border:1px solid var(--bdr2);background:none;border-radius:var(--rb);color:var(--acc);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Ver mais 20</button>`:''}`;
+  wrap.innerHTML=`${rows}${hasMore?`<button onclick="vo2HistoryModalShown+=20;renderVo2HistoryModalList()" style="width:100%;margin-top:2px;height:38px;border:1px solid var(--bdr2);background:none;border-radius:var(--rb);color:var(--acc);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Ver mais 20</button>`:''}`;
 }
 window.renderVo2HistoryModalList=renderVo2HistoryModalList;
 
@@ -12623,14 +12701,14 @@ window.renderVo2HistoryModalList=renderVo2HistoryModalList;
 // (nunca escaneia o histórico inteiro pra montar isso).
 function buildRecordsGridHtml(items){
   if(!items.length)return`<div style="text-align:center;color:var(--t3);font-size:14px;padding:.5rem 0">Nenhum recorde ainda — conclua um treino informando tempo ou pace pra começar a registrar.</div>`;
-  return`<div style="display:flex;gap:10px;flex-wrap:wrap">
+  return`<div style="display:flex;gap:14px;flex-wrap:wrap">
     ${items.map(([label,value,date,icon,completedAt,color])=>`
-      <div class="stat-card" style="flex:1;min-width:140px;padding:10px 12px 14px;position:relative;overflow:hidden">
+      <div class="stat-card" style="flex:1;min-width:140px;padding:14px 16px 18px;position:relative;overflow:hidden">
         <div style="position:absolute;left:0;right:0;bottom:0;height:4px;background:${color}"></div>
-        <div style="width:26px;height:26px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;margin-bottom:6px"><svg class="gi" style="font-size:14px;color:#fff"><use href="#${icon}"></use></svg></div>
+        <div style="width:26px;height:26px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;margin-bottom:8px"><svg class="gi" style="font-size:14px;color:#fff"><use href="#${icon}"></use></svg></div>
         <div style="font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.05em">${label}</div>
-        <div style="font-size:20px;font-weight:800;color:${color};margin-top:4px">${value}</div>
-        <div style="font-size:10.5px;color:var(--t3);margin-top:2px">${fmtDateFull(new Date(date))}</div>
+        <div style="font-size:20px;font-weight:800;color:${color};margin-top:5px">${value}</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:3px">${fmtDateFull(new Date(date))}</div>
         ${realizadoEmNoteHtml(completedAt,date)}
       </div>`).join('')}
   </div>`;
@@ -15557,7 +15635,15 @@ function formatRealInfoBlock(r,scheduledMs,mapDocId,bleedRem){
   const padX=`calc(${b}rem - ${INSET}px)`;
   const lapsHtml=formatRealLapsHtml(r.laps,padX);
   const hasMap=r.source==='live'&&!!mapDocId; // mesma condição de lwMiniMapSlotHtml — só treino "Ao Vivo" com docId tem percurso de GPS pra mostrar
-  const mapHtml=lwMiniMapSlotHtml(r,mapDocId);
+  // Placeholder da linha "Corrida em: Cidade - UF", preenchido de forma
+  // assíncrona por lwInjectMiniMapAsync junto com o mapa (mesma busca, mesmo
+  // documento — sem chamada extra). Nasce oculto (display:none) porque só
+  // deve ocupar espaço quando a cidade realmente existir pra esse treino;
+  // vazio (treino sem GPS) ou undefined/erro na busca, o card fica igual a
+  // antes, sem buraco em branco.
+  const cityLineId=hasMap?`citytxt-${Math.random().toString(36).slice(2,9)}`:null;
+  const cityLineHtml=cityLineId?`<div id="${cityLineId}" style="display:none"></div>`:'';
+  const mapHtml=lwMiniMapSlotHtml(r,mapDocId,cityLineId);
   // Com mapa: dados numa coluna única à esquerda + mapa à direita, na MESMA
   // linha do grid. "align-items:start" (em vez de "stretch") porque agora o
   // mapa tem uma altura PRÓPRIA E FIXA (ver lwMiniMapSlotHtml) — do tamanho
@@ -15593,7 +15679,7 @@ function formatRealInfoBlock(r,scheduledMs,mapDocId,bleedRem){
   // resolve boa parte sozinho.
   return`<div style="margin:10px calc(${INSET}px - ${b}rem) 0;padding:14px ${padX} 16px;background:var(--s-realizado);border:1px solid var(--bdr2);border-radius:var(--r)">`+
     dataRowHtml+
-    `${lapsHtml}${realizadoEmHtml}`+
+    `${lapsHtml}${realizadoEmHtml}${cityLineHtml}`+
   `</div>`;
 }
 // Lista "Tiro 1: 411m em 1:39 (4:00/km) · Recuperação: 205m em 1:33 ..." —
@@ -18010,7 +18096,7 @@ function lwActivityWordFor(data){ return(data&&data.type==='Caminhar')?'Caminhad
 // (buildTodayMini / openDayDetailModal) — nesse momento o HTML já foi
 // inserido de verdade na página (mesmo call stack síncrono terminou),
 // então o elemento do slot já existe pra receber o resultado.
-async function lwInjectMiniMapAsync(slotId,docId){
+async function lwInjectMiniMapAsync(slotId,docId,cityLineId){
   if(!currentUser)return;
   try{
     const doc=await realizadosCollection(currentUser.uid).doc(docId).get();
@@ -18019,21 +18105,24 @@ async function lwInjectMiniMapAsync(slotId,docId){
     if(!data||!data.map||!data.map.length)return;
     const slot=document.getElementById(slotId);
     if(!slot)return; // tela já mudou (modal fechado, card recarregado etc.) antes da resposta chegar — não faz nada
-    // Chip só aparece quando a cidade já foi resolvida e gravada nesse
-    // documento (ver lwReverseGeocodeCity/lwFinishWorkout) — treino antigo
-    // antes dessa função existir, ou GPS sem fix nenhum, simplesmente não
-    // mostra o chip, sem quebrar o resto do card.
-    // Chip sobreposto no canto inferior-esquerdo do mapa (estilo Strava/
-    // Garmin), em vez de uma linha de texto abaixo dele — com o mapa agora
-    // esticado pra ocupar a coluna inteira ao lado dos dados, não sobra
-    // espaço embaixo pra um texto separado, e a sobreposição fica mais
-    // "premium" mesmo. Fundo escuro translúcido garante leitura em cima de
-    // qualquer trecho do traço/tema.
-    const cityHtml=data.city?`<div style="position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);padding:3px 8px;border-radius:7px;background:rgba(0,0,0,.5);font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${lwActivityWordFor(data)} em ${data.city}${data.uf?` - ${data.uf}`:''}</div>`:'';
     // O slot (moldura) já existe com border/background — aqui só preenche o
-    // miolo: o SVG absoluto ocupando 100% da moldura + o chip da cidade por
-    // cima.
-    slot.innerHTML=`<div style="position:absolute;inset:0">${buildMiniMapSvgFromPoints(data.map)}</div>${cityHtml}`;
+    // miolo: o SVG absoluto ocupando 100% da moldura.
+    slot.innerHTML=`<div style="position:absolute;inset:0">${buildMiniMapSvgFromPoints(data.map)}</div>`;
+    // Cidade: em vez de um chip apertado sobreposto no canto do mapa (onde
+    // nome de cidade grande ficava cortado/espremido), mostra como uma linha
+    // de texto de largura plena logo abaixo de "Realizado em" — mesmo
+    // tratamento do resto do card, sem risco de estourar a moldura do mapa.
+    // Só aparece quando a cidade já foi resolvida e gravada nesse documento
+    // (ver lwReverseGeocodeCity/lwFinishWorkout) — treino antigo antes dessa
+    // função existir, ou GPS sem fix nenhum, simplesmente não mostra a linha,
+    // sem quebrar o resto do card.
+    if(cityLineId&&data.city){
+      const cityLine=document.getElementById(cityLineId);
+      if(cityLine){
+        cityLine.style.display='block';
+        cityLine.innerHTML=`<div style="margin-top:6px;font-size:13px;color:var(--t3)">${lwActivityWordFor(data)} em: <strong style="color:var(--t2)">${data.city}${data.uf?` - ${data.uf}`:''}</strong></div>`;
+      }
+    }
   }catch(e){ console.warn('[minimap] erro ao buscar preview do percurso',e); }
 }
 // Placeholder vazio + agendamento da busca acima — usado pelos lugares que
@@ -18041,10 +18130,10 @@ async function lwInjectMiniMapAsync(slotId,docId){
 // detalhe do dia, detalhe de Realizados). Só existe (e só dispara a busca)
 // quando source==='live' E existe um docId válido pra buscar — já que só
 // esses treinos podem ter percurso de GPS.
-function lwMiniMapSlotHtml(r,docId){
+function lwMiniMapSlotHtml(r,docId,cityLineId){
   if(!r||r.source!=='live'||!docId)return'';
   const slotId=`minimap-${Math.random().toString(36).slice(2,9)}`; // sufixo aleatório: o mesmo treino pode aparecer simultaneamente no card de hoje E num modal aberto por cima, cada um com seu próprio slot
-  setTimeout(()=>lwInjectMiniMapAsync(slotId,docId),0);
+  setTimeout(()=>lwInjectMiniMapAsync(slotId,docId,cityLineId),0);
   // O placeholder já nasce com a moldura final (borda sutil + fundo
   // levemente diferente da faixa "Realizado" por trás) — isso faz o mapa se
   // destacar como um "cartão dentro do cartão", em vez de se misturar com o
