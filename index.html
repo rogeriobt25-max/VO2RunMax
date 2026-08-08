@@ -10984,7 +10984,11 @@ function logUnplannedCompletion(act,dateStr){
   const totalSec=act.moving_time||act.elapsed_time||null;
   const durLabel=totalSec?fmtDurationHMS(totalSec):null;
   const paceLabel=(act.distance&&totalSec)?s2p((act.distance/1000)/(totalSec/3600)):null;
-  const hrLabel=act.average_heartrate?`${Math.round(act.average_heartrate)} bpm`:null;
+  // Sem unidade "bpm" aqui — o valor fica só o número, igual ao que vem de
+  // treino manual/ao vivo, pra não duplicar "bpm bpm" nos lugares que já
+  // acrescentam a unidade na hora de exibir (ver formatRealInfoBlock e o
+  // card de Realizados).
+  const hrLabel=act.average_heartrate?`${Math.round(act.average_heartrate)}`:null;
   // meio-dia local, pra nunca "cair" no dia errado por causa de fuso horário
   const dateMs=new Date(dateStr+'T12:00:00').getTime();
   const entry={
@@ -12487,7 +12491,7 @@ function renderRealizadosList(){
     if(distMatch)stats.push(['TEMPO',entry.duration||'--','']);
     if(!isStrength){
       stats.push(['RITMO',entry.pace||'--','/km']);
-      stats.push(['FC MÉDIA',entry.avgHr||'--','bpm']);
+      stats.push(['FC MÉDIA',entry.avgHr?String(entry.avgHr).replace(/[^\d]/g,''):'--','bpm']);
     }
     const statsHtml=stats.slice(0,3).map(([lbl,val,unit])=>`<div class="realizado-card-stat"><span class="lbl">${lbl}</span><span class="val">${val}${unit?`<span class="unit">${unit}</span>`:''}</span></div>`).join('');
     // Nota "Realizado em" tirada do card da lista — o rótulo de cima já é a
@@ -15657,7 +15661,9 @@ function formatRealInfoBlock(r,scheduledMs,mapDocId,bleedRem){
   // melhor que tempo, que fica um degrau abaixo.
   if(r.pace)rows.push(['Ritmo',`${r.pace}/km`]);
   if(r.duration)rows.push(['Tempo',r.duration]);
-  if(r.avgHr)rows.push(['FC média',r.avgHr]);
+  // avgHr agora é sempre só o número (relógio, manual ou ao vivo, mesmo
+  // padrão) — a unidade "bpm" é acrescentada aqui na exibição, uma vez só.
+  if(r.avgHr)rows.push(['FC média',`${String(r.avgHr).replace(/[^\d]/g,'')} bpm`]);
   if(r.calories)rows.push(['Calorias',r.calories]);
   const cellsHtml=rows.map(([label,val])=>
     `<div style="min-width:0"><div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px">${label}</div><div style="font-size:14.5px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${val}</div></div>`
@@ -16062,7 +16068,10 @@ async function icuCheckPlanCompletionsInner(plan,apiKey,athleteId,usedActivityId
       // pronto da API) — mesmo formato M:SS/km usado no resto do app.
       const paceLabel=(act.distance&&totalSec)?s2p((act.distance/1000)/(totalSec/3600)):null;
       const calLabel=act.calories?`${Math.round(act.calories)} kcal`:null;
-      const hrLabel=act.average_heartrate?`${Math.round(act.average_heartrate)} bpm`:null;
+      // Sem unidade "bpm" aqui — mesmo motivo do outro hrLabel acima: o
+      // valor fica só o número, padronizado com treino manual/ao vivo, e
+      // quem exibe é que acrescenta "bpm".
+      const hrLabel=act.average_heartrate?`${Math.round(act.average_heartrate)}`:null;
       // Se esse treino já tinha virado um registro "não programado" antes
       // (ex: detectado num dia de descanso, e só depois você gerou uma
       // planilha nova que tem treino programado nesse mesmo dia) — remove
